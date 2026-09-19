@@ -1,0 +1,22 @@
+export type UserRoleName =
+  | 'SUPER_ADMIN'
+  | 'NATIONAL_COORDINATION'
+  | 'PROVINCIAL_COORDINATION'
+  | 'PROVINCIAL_AGENT'
+  | 'SUB_PROVINCIAL_COORDINATION'
+  | 'SUB_PROVINCIAL_AGENT'
+  | 'SCHOOL_DIRECTOR'
+  | 'TEACHER'
+  | 'PARENT'
+  | 'STUDENT';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  phone?: string;
+  role: UserRoleName;
+  createdAt: string;
+}

@@ -1,0 +1,51 @@
+export default function DashboardPage() {
+  const summary = [
+    { label: 'Élèves', value: '2,640' },
+    { label: 'Enseignants', value: '184' },
+    { label: 'Classes', value: '48' },
+    { label: 'Documents', value: '1,289' }
+  ];
+
+  return (
+    <main className="min-h-screen bg-slate-100 p-6 text-slate-900">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-blue-600">Tableau de bord</p>
+            <h1 className="mt-2 text-3xl font-bold">Vue d&apos;ensemble</h1>
+          </div>
+          <a href="/" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Accueil</a>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {summary.map((item) => (
+            <div key={item.label} className="rounded-2xl bg-white p-5 shadow-soft">
+              <p className="text-sm text-slate-500">{item.label}</p>
+              <p className="mt-3 text-3xl font-bold">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl bg-white p-6 shadow-soft">
+            <h2 className="text-xl font-semibold">Activités récentes</h2>
+            <ul className="mt-4 space-y-3 text-sm text-slate-600">
+              <li>• Nouvel élève inscrit dans l&apos;école de Kinshasa.</li>
+              <li>• Absence signalée pour 3 élèves.</li>
+              <li>• Document partagé avec les parents.</li>
+            </ul>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-soft">
+            <h2 className="text-xl font-semibold">Points d&apos;attention</h2>
+            <ul className="mt-4 space-y-3 text-sm text-slate-600">
+              <li>• Vérification des paiements de frais scolaires.</li>
+              <li>• Contrôle des permissions de fichier.</li>
+              <li>• Validation de la géographie scolaire.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
