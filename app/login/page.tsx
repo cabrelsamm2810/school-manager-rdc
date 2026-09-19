@@ -1,41 +1,57 @@
-export default function LoginPage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-soft">
-        <div className="mb-8 text-center">
-          <p className="text-sm uppercase tracking-[0.2em] text-blue-600">School Manager RDC</p>
-          <h1 className="mt-4 text-3xl font-bold text-slate-900">Connexion</h1>
-        </div>
+# School Manager RDC
 
-        <form className="space-y-5">
-          <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Adresse e-mail</label>
-            <input id="email" type="email" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none ring-0 transition focus:border-blue-500" placeholder="nom@ecole.cd" />
-          </div>
+Plateforme scolaire destinée à la RDC, migrée progressivement depuis l’ancienne version Base44 vers une architecture moderne basée sur Next.js + TypeScript + PostgreSQL + Prisma + stockage externe compatible S3.
 
-          <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">Mot de passe</label>
-            <input id="password" type="password" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none ring-0 transition focus:border-blue-500" placeholder="••••••••" />
-          </div>
+## Objectif
+- rester compatible avec les milliers d’utilisateurs à venir
+- préserver l’ancienne version Base44 intacte
+- préparer une architecture modulaire et évolutive
+- utiliser des variables d’environnement pour les secrets
+- externaliser les fichiers et photos de profil
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-slate-600">
-              <input type="checkbox" className="h-4 w-4 rounded border-slate-300" />
-              Se souvenir de moi
-            </label>
-            <a href="/register" className="text-blue-600 hover:underline">Mot de passe oublié ?</a>
-          </div>
+## Stack
+- Next.js App Router
+- TypeScript
+- PostgreSQL
+- Prisma ORM
+- Tailwind CSS
+- stockage S3-compatible
+- validation Zod
+- architecture RBAC
 
-          <button type="submit" className="w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-500">
-            Se connecter
-          </button>
-        </form>
+## Structure principale
+- app/
+- components/
+- lib/
+- prisma/
+- public/
+- types/
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Vous n&apos;avez pas de compte ?{' '}
-          <a href="/register" className="font-medium text-blue-600 hover:underline">Créer un compte</a>
-        </p>
-      </div>
-    </main>
-  );
-}
+## Variables d’environnement
+Voir `.env.example`.
+
+## Démarrage
+```bash
+npm install
+cp .env.example .env
+npx prisma generate
+npm run test
+npm run dev
+```
+
+## Migration progressive
+Voir `MIGRATION.md`.
+
+## Sécurité
+- pas de secrets dans le code
+- validation côté serveur
+- contrôle d’accès côté serveur
+- fichiers stockés hors PostgreSQL
+- permissions explicites sur les fichiers et conversations
+
+## Important
+Cette version est la fondation de la nouvelle architecture. L’ancienne version Base44 n’a pas été supprimée ni modifiée.
+
+---
+
+School Manager RDC — architecture préparée pour évoluer progressivement.

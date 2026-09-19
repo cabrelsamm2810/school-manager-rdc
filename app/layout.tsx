@@ -1,15 +1,21 @@
-import './globals.css';
-import type { Metadata } from 'next';
+import { RegisterForm } from '@/components/auth/RegisterForm';
 
-export const metadata: Metadata = {
-  title: 'School Manager RDC',
-  description: 'School management for the Democratic Republic of Congo.'
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RegisterPage() {
   return (
-    <html lang="fr">
-      <body>{children}</body>
-    </html>
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
+      <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-soft">
+        <div className="mb-8 text-center">
+          <p className="text-sm uppercase tracking-[0.2em] text-blue-600">School Manager RDC</p>
+          <h1 className="mt-4 text-3xl font-bold text-slate-900">Créer un compte</h1>
+        </div>
+
+        <RegisterForm />
+
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Vous avez déjà un compte ?{' '}
+          <a href="/login" className="font-medium text-blue-600 hover:underline">Se connecter</a>
+        </p>
+      </div>
+    </main>
   );
 }

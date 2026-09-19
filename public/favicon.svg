@@ -1,0 +1,20 @@
+import { describe, expect, it } from 'vitest';
+import { ensureRoleIsSafe, isSuperAdmin, validateRoleAssignment } from '@/lib/rbac';
+
+describe('RBAC utilities', () => {
+  it('allows only known roles', () => {
+    expect(validateRoleAssignment('teacher')).toBe(true);
+    expect(validateRoleAssignment('super-admin')).toBe(true);
+    expect(validateRoleAssignment('random-role')).toBe(false);
+  });
+
+  it('does not automatically grant the super admin status', () => {
+    expect(isSuperAdmin('teacher')).toBe(false);
+    expect(isSuperAdmin('SUPER_ADMIN')).toBe(true);
+  });
+
+  it('keeps system role validation explicit', () => {
+    expect(ensureRoleIsSafe('SUPER_ADMIN')).toBe(true);
+    expect(ensureRoleIsSafe('TEACHER')).toBe(false);
+  });
+});
