@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  COORDINATION_NATIONALE
+  COORDINATION_PROVINCIALE
+  AGENT_PROVINCIAL
+  COORDINATION_SOUS_PROVINCIALE
+  AGENT_SOUS_PROVINCIAL
+  DIRECTION_ECOLE
+  ENSEIGNANT
+  PARENT
+  ELEVE
+}
+
+model User {
+  id              String   @id @default(cuid())
+  nom             String
+  postNom        String   @default("")
+  prenom          String
+  email           String   @unique
+  telephone       String   @default("")
+  passwordHash    String
+  role            Role     @default(ELEVE)
+  profilePhotoUrl String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
