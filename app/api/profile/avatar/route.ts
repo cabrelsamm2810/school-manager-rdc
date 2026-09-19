@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAllowedFileSize, isAllowedFileType, MAX_FILE_SIZE, STORAGE_FOLDERS } from '@/lib/security';
 import { z } from 'zod';
 
 const avatarUploadSchema = z.object({
   ownerId: z.string().min(1),
-  folder: z.enum(STORAGE_FOLDERS),
+  folder: z.enum(['profiles', 'students', 'schoolchat', 'communication', 'documents', 'schools']),
   fileName: z.string().min(1),
   contentType: z.string().min(1),
-  size: z.number().max(MAX_FILE_SIZE)
+  size: z.number().max(10 * 1024 * 1024)
 });
 
 export async function POST(request: NextRequest) {
@@ -25,12 +24,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Aucun fichier reçu.' }, { status: 400 });
     }
 
-    if (!isAllowedFileType(file.type)) {
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    if (!allowedTypes.has(file.type)) {
       return NextResponse.json({ error: 'Type de fichier non autorisé.' }, { status: 415 });
     }
 
-    if (!isAllowedFileSize(file.size)) {
-      return NextResponse.json({ error: 'Le fichier est trop volumineux.' }, { status: 413 });
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Le fichier dépasse la limite autorisée.' }, { status: 413 });
     }
 
     const ownerId = (formData.get('ownerId') ?? 'demo-user-1').toString();

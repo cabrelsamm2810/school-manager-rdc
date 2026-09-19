@@ -1,21 +1,26 @@
+import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export type SessionUser = {
-  id: string;
-  email: string;
-  role: string;
-};
+const protectedPaths = ['/dashboard', '/profile', '/schoolchat', '/settings'];
 
-export function getSessionUser(request: NextRequest): SessionUser | null {
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isProtected = protectedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+
+  if (!isProtected) {
+    return NextResponse.next();
+  }
+
   const session = request.cookies.get('session')?.value;
 
   if (!session) {
-    return null;
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  return {
-    id: 'demo-user-1',
-    email: 'schoolmanager@ecole.cd',
-    role: 'SCHOOL_DIRECTOR'
-  };
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/profile/:path*', '/schoolchat/:path*', '/settings/:path*']
+};

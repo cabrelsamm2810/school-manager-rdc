@@ -1,14 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-export function GET(request: NextRequest) {
+export type SessionUser = {
+  id: string;
+  email: string;
+  role: string;
+};
+
+export function getSessionUser(request: NextRequest): SessionUser | null {
   const session = request.cookies.get('session')?.value;
 
-  if (!session) {
-    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
-  }
+  if (!session) return null;
 
-  return NextResponse.json({
-    ok: true,
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80'
-  });
+  return {
+    id: 'demo-user-1',
+    email: 'schoolmanager@ecole.cd',
+    role: 'SCHOOL_DIRECTOR'
+  };
 }

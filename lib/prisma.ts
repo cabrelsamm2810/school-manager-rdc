@@ -1,27 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+import { PrismaClient } from '@prisma/client';
 
-:root {
-  color-scheme: light;
-}
+const prisma = new PrismaClient();
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
-}
-
-a {
-  text-decoration: none;
-}
-
-* {
-  box-sizing: border-box;
-}
+export default prisma;

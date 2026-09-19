@@ -1,78 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { hashPassword } from '@/lib/auth';
 
-const uploadSchema = z.object({
-  ownerId: z.string().min(1),
-  folder: z.enum(['profiles', 'students', 'schoolchat', 'communication', 'documents', 'schools']),
-  fileName: z.string().min(1),
-  contentType: z.string().min(1),
-  size: z.number().max(Number(process.env.FILE_MAX_SIZE ?? 10 * 1024 * 1024))
+const registerSchema = z.object({
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+  role: z.enum([
+    'SUPER_ADMIN',
+    'NATIONAL_COORDINATION',
+    'PROVINCIAL_COORDINATION',
+    'PROVINCIAL_AGENT',
+    'SUB_PROVINCIAL_COORDINATION',
+    'SUB_PROVINCIAL_AGENT',
+    'SCHOOL_DIRECTOR',
+    'TEACHER',
+    'PARENT',
+    'STUDENT'
+  ])
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file');
-
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: 'Aucun fichier reçu.' }, { status: 400 });
-    }
-
-    const allowedTypes = new Set([
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ]);
-
-    if (!allowedTypes.has(file.type)) {
-      return NextResponse.json({ error: 'Type de fichier non autorisé.' }, { status: 415 });
-    }
-
-    const maxBytes = Number(process.env.FILE_MAX_SIZE ?? 10 * 1024 * 1024);
-    if (file.size > maxBytes) {
-      return NextResponse.json({ error: 'Le fichier dépasse la limite autorisée.' }, { status: 413 });
-    }
-
-    const ownerId = (formData.get('ownerId') ?? '').toString();
-    const folder = (formData.get('folder') ?? 'profiles').toString();
-
-    const parsed = uploadSchema.safeParse({
-      ownerId,
-      folder,
-      fileName: file.name,
-      contentType: file.type,
-      size: file.size
-    });
+    const body = await request.json();
+    const parsed = registerSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Données invalides.' }, { status: 400 });
+      return NextResponse.json({
+        error: parsed.error.issues[0]?.message ?? 'Données invalides.'
+      }, { status: 400 });
     }
 
-    const key = `${parsed.data.folder}/${parsed.data.ownerId}/${Date.now()}-${parsed.data.fileName}`;
-    const publicUrl = `${process.env.S3_ENDPOINT ?? 'https://example.com'}/${process.env.S3_BUCKET ?? 'school-manager-rdc'}/${key}`;
+    const passwordHash = await hashPassword(parsed.data.password);
 
     return NextResponse.json({
       ok: true,
-      file: {
-        key,
-        url: publicUrl,
-        fileName: file.name,
-        contentType: file.type,
-        size: file.size,
-        ownerId: parsed.data.ownerId,
-        folder: parsed.data.folder
+      message: 'Compte préparé pour création sécurisée.',
+      user: {
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        email: parsed.data.email,
+        role: parsed.data.role,
+        passwordHashLength: passwordHash.length
       }
     });
   } catch (error) {
-    console.error('Upload error', error);
+    console.error('Register route error', error);
 
     return NextResponse.json({
-      error: 'Erreur lors de l’upload du fichier.'
+      error: 'Erreur lors de l’inscription.'
     }, { status: 500 });
   }
 }

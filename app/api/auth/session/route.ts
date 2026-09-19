@@ -1,27 +1,18 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-const protectedPaths = ['/dashboard', '/profile', '/schoolchat', '/settings'];
-
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isProtected = protectedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-
-  if (!isProtected) {
-    return NextResponse.next();
-  }
-
+export function GET(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
 
   if (!session) {
-    const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
-  return NextResponse.next();
+  return NextResponse.json({
+    authenticated: true,
+    user: {
+      id: 'demo-user-1',
+      email: 'schoolmanager@ecole.cd',
+      role: 'SCHOOL_DIRECTOR'
+    }
+  });
 }
-
-export const config = {
-  matcher: ['/dashboard/:path*', '/profile/:path*', '/schoolchat/:path*', '/settings/:path*']
-};
