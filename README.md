@@ -1,41 +1,31 @@
 # School Manager RDC
 
-## Supabase + Prisma configuration
+## Validation PostgreSQL
 
-Prisma is configured for PostgreSQL with two connection URLs:
-
-- `DATABASE_URL`: Supabase Transaction Pooler URL, normally port `6543`, with `pgbouncer=true` and `connection_limit=1`.
-- `DIRECT_URL`: Supabase direct/session connection, normally port `5432`, used by Prisma CLI for migrations.
-
-Do not commit `.env`, `.env.local`, credentials, private keys, or generated certificates. Use `.env.example` only as a template.
-
-### Obtain the URLs in Supabase
-
-1. Open the Supabase project.
-2. Go to **Project Settings > Database**.
-3. Open **Connection string**.
-4. Copy the **Transaction pooler** URI into `DATABASE_URL`.
-5. Copy the **Session pooler** or direct connection URI into `DIRECT_URL`.
-6. Replace the local placeholders with the project reference and database password locally only.
-
-If the database password is unknown, reset it in **Project Settings > Database**. Do not paste it into chat or GitHub.
-
-## Local validation without connecting to PostgreSQL
-
-`prisma generate` reads the schema and generates the client; it does not need a live database connection:
+Les commandes suivantes utilisent les variables d’environnement locales et ne révèlent jamais leur contenu :
 
 ```bash
 npm install
+npx prisma validate
 npx prisma generate
-npm run build
+npm run prisma:check
 npm test
+npm run test:db
+npm run build
 ```
 
-The following commands do require a configured Supabase connection and must be run only after creating `.env` locally:
+`npm run test:db` est ignoré automatiquement si `RUN_DB_TESTS=true` et `DATABASE_URL` ne sont pas disponibles. Lorsqu’il est activé, le test crée un utilisateur dans une transaction puis provoque un rollback volontaire ; aucune donnée de test n’est conservée.
+
+Pour appliquer les migrations déjà présentes sans réinitialiser la base :
+
+```bash
+npm run prisma:deploy
+```
+
+Pour une migration de développement non destructive après revue du schéma :
 
 ```bash
 npx prisma migrate dev --name auth_initial
-npm run prisma:seed
 ```
 
-No reset, force-reset, or destructive database command is part of this setup.
+Ne pas utiliser `prisma migrate reset`, `prisma db push --force-reset` ou une commande de suppression de tables.
