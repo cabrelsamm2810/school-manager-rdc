@@ -1,15 +1,11 @@
 import { NextRequest } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function getSessionUser(request: NextRequest) {
-  const sessionCookie = request.cookies.get(process.env.SESSION_COOKIE_NAME || 'school_manager_session')?.value;
-  if (!sessionCookie) return null;
-
-  return {
-    id: 'demo-user-id',
-    email: 'demo@ecole.cd',
-    role: 'DIRECTION_ECOLE',
-    nom: 'School',
-    postNom: 'Manager',
-    prenom: 'Demo'
-  };
+  const sessionId = request.cookies.get(process.env.SESSION_COOKIE_NAME || 'school_manager_session')?.value;
+  if (!sessionId) return null;
+  return prisma.user.findFirst({
+    where: { id: sessionId, isActive: true },
+    select: { id: true, email: true, role: true, nom: true, postNom: true, prenom: true, telephone: true, profilePhotoUrl: true }
+  });
 }
