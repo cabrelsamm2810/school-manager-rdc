@@ -1,53 +1,15 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-const institutionTypes = [
-  { value: 'ECOLE', label: 'École' },
-  { value: 'COLLEGE', label: 'Collège' },
-  { value: 'LYCEE', label: 'Lycée' },
-  { value: 'UNIVERSITE', label: 'Université' },
-  { value: 'MINISTERE', label: 'Ministère / Administration' },
-  { value: 'AUTRE', label: 'Autre' }
-];
-
-const roleOptions = [
-  { value: 'ELEVE', label: 'Élève' },
-  { value: 'PARENT', label: 'Parent' },
-  { value: 'ENSEIGNANT', label: 'Enseignant' },
-  { value: 'DIRECTION_ECOLE', label: 'Direction d’école' },
-  { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent sous provincial' },
-  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
-  { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
-  { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
-  { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
-  { value: 'SUPER_ADMIN', label: 'Super administrateur' }
-];
-
-const provinces = [
-  'Kinshasa',
-  'Kongo-Central',
-  'Kasaï',
-  'Kasaï-Central',
-  'Kasaï-Oriental',
-  'Lualaba',
-  'Haut-Katanga',
-  'Haut-Lomami',
-  'Maniema',
-  'Tshopo',
-  'Ituri',
-  'Nord-Kivu',
-  'Sud-Kivu',
-  'Bas-Uele',
-  'Haut-Uele',
-  'Tanganyika',
-  'Nord-Ubangi',
-  'Sud-Ubangi',
-  'Mongala',
-  'Equateur',
-  'Province orientale'
-];
+import {
+  defaultInstitutionTypes,
+  defaultProvinces,
+  defaultRoleOptions,
+  type InstitutionType,
+  type Province,
+  type RoleOption
+} from '@/lib/meta-data';
 
 const needsEducationProvince = new Set([
   'ELEVE',
@@ -75,8 +37,40 @@ export function RegisterForm() {
     provinceAdministrative: 'Kinshasa',
     provinceEducationnelle: 'Kinshasa'
   });
+  const [institutionTypes, setInstitutionTypes] = useState<InstitutionType[]>(defaultInstitutionTypes);
+  const [roleOptions, setRoleOptions] = useState<RoleOption[]>(defaultRoleOptions);
+  const [provinces, setProvinces] = useState<Province[]>(defaultProvinces);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadMetadata() {
+      try {
+        const response = await fetch('/api/meta');
+        if (!response.ok) return;
+
+        const payload = await response.json();
+        if (!active) return;
+
+        setInstitutionTypes(payload.institutionTypes ?? defaultInstitutionTypes);
+        setRoleOptions(payload.roleOptions ?? defaultRoleOptions);
+        setProvinces(payload.provinces ?? defaultProvinces);
+      } catch {
+        // Keep local defaults when the API is unavailable.
+      } finally {
+        if (active) setOptionsLoading(false);
+      }
+    }
+
+    loadMetadata();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const showEducationProvince = needsEducationProvince.has(form.role);
 
@@ -126,6 +120,16 @@ export function RegisterForm() {
     }
   }
 
+  const institutionOptions = useMemo(
+    () => institutionTypes.map((item) => ({ value: item.value, label: item.label })),
+    [institutionTypes]
+  );
+
+  const roleChoices = useMemo(
+    () => roleOptions.map((role) => ({ value: role.value, label: role.label })),
+    [roleOptions]
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div className="space-y-2">
@@ -134,8 +138,9 @@ export function RegisterForm() {
           value={form.typeInstitution}
           onChange={(event) => updateField('typeInstitution', event.target.value)}
           className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          disabled={optionsLoading}
         >
-          {institutionTypes.map((item) => (
+          {institutionOptions.map((item) => (
             <option key={item.value} value={item.value}>{item.label}</option>
           ))}
         </select>
@@ -240,8 +245,9 @@ export function RegisterForm() {
           value={form.role}
           onChange={(event) => updateField('role', event.target.value)}
           className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          disabled={optionsLoading}
         >
-          {roleOptions.map((role) => (
+          {roleChoices.map((role) => (
             <option key={role.value} value={role.value}>{role.label}</option>
           ))}
         </select>
@@ -256,6 +262,7 @@ export function RegisterForm() {
             value={form.provinceAdministrative}
             onChange={(event) => updateField('provinceAdministrative', event.target.value)}
             className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            disabled={optionsLoading}
           >
             {provinces.map((province) => (
               <option key={province} value={province}>{province}</option>
@@ -272,6 +279,7 @@ export function RegisterForm() {
               value={form.provinceEducationnelle}
               onChange={(event) => updateField('provinceEducationnelle', event.target.value)}
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              disabled={optionsLoading}
             >
               {provinces.map((province) => (
                 <option key={province} value={province}>{province}</option>
