@@ -172,14 +172,45 @@ export default function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="relative z-10 border-t border-slate-800 px-5 py-6 text-center md:px-10">
-          <div className="flex items-center justify-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-white">
-              <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
+        <footer className="relative z-10 border-t border-slate-800/60 bg-slate-950/80">
+          <div className="mx-auto max-w-5xl px-5 py-10 md:px-10 md:py-12">
+            <div className="flex flex-col items-center gap-8 md:flex-row md:items-start md:justify-between">
+              {/* Identity */}
+              <div className="flex flex-col items-center text-center md:items-start md:text-left">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-white shadow-md">
+                    <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
+                  </div>
+                  <span className="text-sm font-bold tracking-wide md:text-base">School Manager RDC</span>
+                </div>
+                <p className="mt-3 max-w-xs text-xs leading-relaxed text-slate-400 md:text-sm">
+                  La plateforme numérique pour une gestion scolaire moderne en RDC.
+                </p>
+              </div>
+
+              {/* Navigation */}
+              <nav className="flex flex-col items-center gap-3 md:items-start">
+                <Link href="/" className="footer-link">Accueil</Link>
+                <Link href="/login" className="footer-link">Se connecter</Link>
+                <Link href="/register" className="footer-link">Créer un compte</Link>
+                <span className="footer-link cursor-default">À propos</span>
+                <span className="footer-link cursor-default">Contact</span>
+              </nav>
+
+              {/* Information */}
+              <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
+                <p className="text-xs font-medium text-slate-300 md:text-sm">Solution numérique de gestion scolaire</p>
+                <p className="text-xs text-slate-500 md:text-sm">Accessible sur téléphone, tablette et ordinateur</p>
+              </div>
             </div>
-            <span className="text-xs text-slate-500 md:text-sm">
-              School Manager RDC — République Démocratique du Congo
-            </span>
+
+            {/* Copyright */}
+            <div className="mt-10 border-t border-slate-800/60 pt-6">
+              <div className="flex flex-col items-center gap-1.5 text-center">
+                <p className="text-xs text-slate-500 md:text-sm">© 2026 School Manager RDC — Tous droits réservés.</p>
+                <p className="text-xs text-slate-600 md:text-sm">Un produit de Skybox Business</p>
+              </div>
+            </div>
           </div>
         </footer>
       </main>
