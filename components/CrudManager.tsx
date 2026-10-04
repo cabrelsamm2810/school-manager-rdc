@@ -100,6 +100,14 @@ export function CrudManager({ config }: { config: CrudConfig }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // ── Actions groupées ──
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBatchForm, setShowBatchForm] = useState(false);
+  const [batchForm, setBatchForm] = useState<Record<string, any>>(() => emptyForm(config));
+  const [batchFields, setBatchFields] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchError, setBatchError] = useState('');
+
   async function loadData() {
     setLoading(true);
     try {
@@ -179,7 +187,127 @@ export function CrudManager({ config }: { config: CrudConfig }) {
     }
   }
 
+  // ── Sélection groupée ──
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((i) => i.id)));
+    }
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+    setShowBatchForm(false);
+  }
+
+  async function handleBatchDelete() {
+    const count = selectedIds.size;
+    if (!confirm(`Voulez-vous vraiment supprimer ${count} enregistrement(s) ?`)) return;
+    setBatchLoading(true);
+    try {
+      const res = await fetch(config.apiPath, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [...selectedIds] }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBatchError(data.error ?? 'Erreur lors de la suppression.');
+      } else {
+        clearSelection();
+        loadData();
+      }
+    } catch {
+      setBatchError('Impossible de joindre le serveur.');
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  function startBatchEdit() {
+    setBatchForm(emptyForm(config));
+    setBatchFields(new Set());
+    setBatchError('');
+    setShowBatchForm(true);
+  }
+
+  function toggleBatchField(name: string) {
+    setBatchFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
+
+  async function handleBatchSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBatchError('');
+
+    if (batchFields.size === 0) {
+      setBatchError('Sélectionnez au moins un champ à modifier.');
+      return;
+    }
+
+    const data: Record<string, any> = {};
+    for (const name of batchFields) {
+      data[name] = batchForm[name];
+    }
+
+    setBatchLoading(true);
+    try {
+      const res = await fetch(config.apiPath, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [...selectedIds], data }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setBatchError(result.error ?? 'Erreur lors de la modification.');
+      } else {
+        clearSelection();
+        loadData();
+      }
+    } catch {
+      setBatchError('Impossible de joindre le serveur.');
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  // ── Colonne checkbox ──
+  const selectColumn: Column<Record<string, any>> = {
+    key: '_select',
+    label: (
+      <input
+        type="checkbox"
+        checked={items.length > 0 && selectedIds.size === items.length}
+        onChange={toggleSelectAll}
+        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+      />
+    ) as any,
+    render: (item) => (
+      <input
+        type="checkbox"
+        checked={selectedIds.has(item.id)}
+        onChange={() => toggleSelect(item.id)}
+        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+      />
+    ),
+  };
+
   const columnsWithActions: Column<Record<string, any>>[] = [
+    selectColumn,
     ...config.columns,
     {
       key: '_actions',
@@ -297,8 +425,100 @@ export function CrudManager({ config }: { config: CrudConfig }) {
             </div>
           </form>
         </div>
+      ) : showBatchForm ? (
+        /* ── Formulaire de modification groupée ── */
+        <div className="rounded-2xl bg-white p-5 shadow-soft md:p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">
+              Modifier {selectedIds.size} enregistrement(s)
+            </h2>
+            <button
+              onClick={() => setShowBatchForm(false)}
+              className="text-sm text-slate-500 transition hover:text-slate-700"
+            >
+              ← Retour à la liste
+            </button>
+          </div>
+          <p className="mb-5 rounded-xl bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
+            Cochez les champs à appliquer, puis saisissez la nouvelle valeur. Seuls les champs cochés seront modifiés.
+          </p>
+          <form onSubmit={handleBatchSubmit} className="space-y-5" noValidate>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {config.fields.map((f) => (
+                <div key={f.name} className={f.half ? '' : 'sm:col-span-2'}>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={batchFields.has(f.name)}
+                      onChange={() => toggleBatchField(f.name)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label className="text-sm font-medium text-slate-700" htmlFor={`batch-${f.name}`}>
+                      {f.label}
+                    </label>
+                  </div>
+                  {f.type === 'select' ? (
+                    <select
+                      id={`batch-${f.name}`}
+                      value={batchForm[f.name]}
+                      disabled={!batchFields.has(f.name)}
+                      onChange={(e) => setBatchForm({ ...batchForm, [f.name]: e.target.value })}
+                      className={`${inputClass} disabled:opacity-40`}
+                    >
+                      <option value="">— Choisir —</option>
+                      {f.options?.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  ) : f.type === 'checkbox' ? (
+                    <label className="flex items-center gap-2">
+                      <input
+                        id={`batch-${f.name}`}
+                        type="checkbox"
+                        checked={batchForm[f.name]}
+                        disabled={!batchFields.has(f.name)}
+                        onChange={(e) => setBatchForm({ ...batchForm, [f.name]: e.target.checked })}
+                        className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40"
+                      />
+                      <span className="text-sm text-slate-700">{f.label}</span>
+                    </label>
+                  ) : (
+                    <input
+                      id={`batch-${f.name}`}
+                      type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
+                      value={batchForm[f.name]}
+                      disabled={!batchFields.has(f.name)}
+                      onChange={(e) => setBatchForm({ ...batchForm, [f.name]: e.target.value })}
+                      className={`${inputClass} disabled:opacity-40`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            {batchError && (
+              <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{batchError}</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowBatchForm(false)}
+                className="btn-secondary-light px-4 py-2.5 text-sm"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={batchLoading || batchFields.size === 0}
+                className="btn-primary px-6 py-2.5 text-sm disabled:opacity-50"
+              >
+                {batchLoading ? 'Modification…' : `Appliquer à ${selectedIds.size} élément(s)`}
+              </button>
+            </div>
+          </form>
+        </div>
       ) : (
         <>
+          {/* ── Barre de recherche + filtres ── */}
           <div className="mb-4 flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
@@ -324,6 +544,42 @@ export function CrudManager({ config }: { config: CrudConfig }) {
               );
             })}
           </div>
+
+          {/* ── Barre d'actions groupées ── */}
+          {selectedIds.size > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-3">
+              <span className="text-sm font-semibold text-blue-700">
+                {selectedIds.size} sélectionné(s)
+              </span>
+              <div className="flex-1" />
+              <button
+                onClick={toggleSelectAll}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-100"
+              >
+                {selectedIds.size === items.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+              </button>
+              <button
+                onClick={startBatchEdit}
+                className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+              >
+                Modifier en lot
+              </button>
+              <button
+                onClick={handleBatchDelete}
+                disabled={batchLoading}
+                className="rounded-lg bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {batchLoading ? '…' : 'Supprimer en lot'}
+              </button>
+              <button
+                onClick={clearSelection}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
+              >
+                Annuler
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
               Chargement…
@@ -338,6 +594,15 @@ export function CrudManager({ config }: { config: CrudConfig }) {
               data={items}
               mobileCard={(item) => (
                 <div className="space-y-2">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-xs font-medium text-slate-400">Sélectionner</span>
+                  </div>
                   {config.columns.map((col) => (
                     <div key={col.key} className="flex justify-between gap-2 text-sm">
                       <span className="text-slate-500">{col.label}</span>

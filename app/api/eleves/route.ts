@@ -112,3 +112,79 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ eleve }, { status: 201 });
 }
+
+/** PATCH /api/eleves — mise à jour groupée de plusieurs élèves. */
+export async function PATCH(request: NextRequest) {
+  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: 403 });
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body?.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+    return NextResponse.json({ error: 'Aucun identifiant fourni.' }, { status: 400 });
+  }
+
+  const updateData: Record<string, unknown> = {};
+  const allowedFields = ['classe', 'sexe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId'];
+  for (const field of allowedFields) {
+    if (body.data?.[field] === undefined || body.data[field] === '' || body.data[field] === null) continue;
+    updateData[field] = field === 'etablissementId'
+      ? body.data[field]
+      : body.data[field];
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 });
+  }
+
+  // Filtrage hiérarchique
+  const scope = getScopeLevel(auth.user.role);
+  const scopeWhere: Record<string, unknown> = {};
+  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
+    scopeWhere.etablissement = { coordSousProvincialeId: (auth.user as any).coordSousProvincialeId };
+  } else if (scope === 'school' && (auth.user as any).etablissementId) {
+    scopeWhere.etablissementId = (auth.user as any).etablissementId;
+  } else if (scope !== 'national') {
+    const userProv = (auth.user as any).provinceAdministrative;
+    if (userProv) scopeWhere.etablissement = { province: userProv };
+  }
+
+  const result = await prisma.eleve.updateMany({
+    where: { id: { in: body.ids }, ...scopeWhere },
+    data: updateData,
+  });
+
+  return NextResponse.json({ updated: result.count });
+}
+
+/** DELETE /api/eleves — suppression groupée de plusieurs élèves. */
+export async function DELETE(request: NextRequest) {
+  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: 403 });
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body?.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+    return NextResponse.json({ error: 'Aucun identifiant fourni.' }, { status: 400 });
+  }
+
+  // Filtrage hiérarchique
+  const scope = getScopeLevel(auth.user.role);
+  const scopeWhere: Record<string, unknown> = {};
+  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
+    scopeWhere.etablissement = { coordSousProvincialeId: (auth.user as any).coordSousProvincialeId };
+  } else if (scope === 'school' && (auth.user as any).etablissementId) {
+    scopeWhere.etablissementId = (auth.user as any).etablissementId;
+  } else if (scope !== 'national') {
+    const userProv = (auth.user as any).provinceAdministrative;
+    if (userProv) scopeWhere.etablissement = { province: userProv };
+  }
+
+  const result = await prisma.eleve.deleteMany({
+    where: { id: { in: body.ids }, ...scopeWhere },
+  });
+
+  return NextResponse.json({ deleted: result.count });
+}

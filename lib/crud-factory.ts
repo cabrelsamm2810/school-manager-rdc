@@ -207,5 +207,74 @@ export function createCrudHandlers(config: CrudModelConfig) {
     return NextResponse.json({ ok: true });
   }
 
-  return { GET, POST, PUT, DELETE };
+  /** PATCH (collection) — mise à jour groupée de plusieurs enregistrements. */
+  async function PATCH(request: NextRequest) {
+    const auth = await requireRole(request, config.minRole);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: 403 });
+    }
+
+    const body = await request.json().catch(() => null);
+    if (!body?.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+      return NextResponse.json({ error: 'Aucun identifiant fourni.' }, { status: 400 });
+    }
+
+    // Construire le payload partiel à partir des champs fournis
+    const updateData: Record<string, unknown> = {};
+    for (const f of config.fields) {
+      if (body.data?.[f.name] === undefined) continue;
+      const val = body.data[f.name];
+      if (val === '' || val === null) continue;
+      if (f.type === 'number') updateData[f.name] = Number(val);
+      else if (f.type === 'boolean') updateData[f.name] = Boolean(val);
+      else if (f.type === 'date') updateData[f.name] = new Date(val);
+      else updateData[f.name] = val;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 });
+    }
+
+    const scopeCfg: ScopeConfig = {
+      provinceField: config.provinceField,
+      sousProvincialeField: config.sousProvincialeField,
+      etablissementField: config.etablissementField,
+    };
+    const scopeW = buildScopeWhere(auth.user, scopeCfg);
+
+    const result = await config.delegate.updateMany({
+      where: { id: { in: body.ids }, ...scopeW },
+      data: updateData,
+    });
+
+    return NextResponse.json({ updated: result.count });
+  }
+
+  /** BATCH_DELETE (collection) — suppression groupée de plusieurs enregistrements. */
+  async function BATCH_DELETE(request: NextRequest) {
+    const auth = await requireRole(request, config.minRole);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: 403 });
+    }
+
+    const body = await request.json().catch(() => null);
+    if (!body?.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
+      return NextResponse.json({ error: 'Aucun identifiant fourni.' }, { status: 400 });
+    }
+
+    const scopeCfg: ScopeConfig = {
+      provinceField: config.provinceField,
+      sousProvincialeField: config.sousProvincialeField,
+      etablissementField: config.etablissementField,
+    };
+    const scopeW = buildScopeWhere(auth.user, scopeCfg);
+
+    const result = await config.delegate.deleteMany({
+      where: { id: { in: body.ids }, ...scopeW },
+    });
+
+    return NextResponse.json({ deleted: result.count });
+  }
+
+  return { GET, POST, PUT, DELETE, PATCH, BATCH_DELETE };
 }
