@@ -27,12 +27,22 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
   const [search, setSearch] = useState('');
   const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
   const [etablissementFilter, setEtablissementFilter] = useState('');
+  const [classeFilter, setClasseFilter] = useState('');
+  const [classes, setClasses] = useState<string[]>([]);
 
   useEffect(() => {
     fetch('/api/etablissements')
       .then((res) => res.json())
       .then((data) => {
         if (data.etablissements) setEtablissements(data.etablissements);
+      })
+      .catch(() => {});
+    fetch('/api/eleves')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.eleves) {
+          setClasses([...new Set(data.eleves.map((e: Eleve) => e.classe))].sort());
+        }
       })
       .catch(() => {});
   }, []);
@@ -45,6 +55,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (etablissementFilter) params.set('etablissementId', etablissementFilter);
+      if (classeFilter) params.set('classe', classeFilter);
       try {
         const res = await fetch(`/api/eleves?${params.toString()}`);
         const data = await res.json();
@@ -59,7 +70,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
     return () => {
       active = false;
     };
-  }, [refreshKey, search, etablissementFilter]);
+  }, [refreshKey, search, etablissementFilter, classeFilter]);
 
   if (loading) {
     return <p className="py-8 text-center text-sm text-slate-500">Chargement des élèves…</p>;
@@ -86,11 +97,21 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
         <select
           value={etablissementFilter}
           onChange={(e) => setEtablissementFilter(e.target.value)}
-          className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-64"
+          className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-56"
         >
           <option value="">Tous les établissements</option>
           {etablissements.map((et) => (
             <option key={et.id} value={et.id}>{et.nom}</option>
+          ))}
+        </select>
+        <select
+          value={classeFilter}
+          onChange={(e) => setClasseFilter(e.target.value)}
+          className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-48"
+        >
+          <option value="">Toutes les classes</option>
+          {classes.map((classe) => (
+            <option key={classe} value={classe}>{classe}</option>
           ))}
         </select>
       </div>
