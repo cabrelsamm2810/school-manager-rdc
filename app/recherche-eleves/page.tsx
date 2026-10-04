@@ -1,28 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
 import { DataTable, type Column } from '@/components/ui/Table';
-import { demoElevesRecherche } from '@/lib/demo-data';
+
+type Eleve = {
+  id: string;
+  matricule: string;
+  nom: string;
+  prenom: string;
+  classe: string;
+  etablissement?: { id: string; nom: string; province: string } | null;
+};
 
 export default function RechercheElevesPage() {
   const [search, setSearch] = useState('');
   const [classe, setClasse] = useState('');
-  const [province, setProvince] = useState('');
+  const [etablissementId, setEtablissementId] = useState('');
+  const [data, setData] = useState<Eleve[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState<string[]>([]);
 
-  const data = demoElevesRecherche.filter((e) => {
-    const matchSearch = !search || e.nom.toLowerCase().includes(search.toLowerCase()) || e.matricule.toLowerCase().includes(search.toLowerCase());
-    const matchClasse = !classe || e.classe === classe;
-    const matchProvince = !province || e.province === province;
-    return matchSearch && matchClasse && matchProvince;
-  });
+  async function loadData() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (classe) params.set('classe', classe);
+      if (etablissementId) params.set('etablissementId', etablissementId);
+      const res = await fetch(`/api/eleves?${params.toString()}`);
+      const json = await res.json();
+      if (res.ok) {
+        setData(json.eleves ?? []);
+        // Extraire les classes uniques
+        const uniqueClasses = [...new Set((json.eleves ?? []).map((e: Eleve) => e.classe).filter(Boolean))].sort();
+        setClasses(uniqueClasses as string[]);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const columns: Column<typeof demoElevesRecherche[0]>[] = [
+  useEffect(() => {
+    const timer = setTimeout(loadData, search ? 300 : 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, classe, etablissementId]);
+
+  const columns: Column<Eleve>[] = [
     { key: 'matricule', label: 'Matricule', render: (e) => <span className="font-medium text-slate-700">{e.matricule}</span> },
-    { key: 'nom', label: 'Nom', render: (e) => <span className="font-medium text-slate-900">{e.nom}</span> },
+    { key: 'nom', label: 'Nom', render: (e) => <span className="font-medium text-slate-900">{e.nom} {e.prenom}</span> },
     { key: 'classe', label: 'Classe' },
-    { key: 'etablissement', label: 'Établissement' },
-    { key: 'province', label: 'Province' },
+    { key: 'etablissement', label: 'Établissement', render: (e) => e.etablissement?.nom ?? '—' },
+    { key: 'province', label: 'Province', render: (e) => e.etablissement?.province ?? '—' },
   ];
 
   return (
@@ -37,27 +69,16 @@ export default function RechercheElevesPage() {
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Classe</label>
             <select value={classe} onChange={(e) => setClasse(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
               <option value="">Toutes</option>
-              <option>6ème primaire</option>
-              <option>5ème primaire</option>
-              <option>4ème secondaire</option>
-              <option>3ème secondaire</option>
-              <option>6ème secondaire</option>
+              {classes.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Province</label>
-            <select value={province} onChange={(e) => setProvince(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
-              <option value="">Toutes</option>
-              <option>Kinshasa</option>
-              <option>Kongo Central</option>
-              <option>Haut-Katanga</option>
-              <option>Nord-Kivu</option>
-              <option>Kwilu</option>
-            </select>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Établissement</label>
+            <input type="text" value={etablissementId} onChange={(e) => setEtablissementId(e.target.value)} placeholder="ID établissement…" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
           </div>
         </div>
       </div>
-      <p className="mb-4 text-sm text-slate-500">{data.length} résultat(s)</p>
+      <p className="mb-4 text-sm text-slate-500">{loading ? 'Chargement…' : `${data.length} résultat(s)`}</p>
       <DataTable columns={columns} data={data} />
     </ModulePage>
   );

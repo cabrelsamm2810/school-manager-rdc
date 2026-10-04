@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
+import { mergeProvinceFilter, isNationalScope } from '@/lib/territory-filter';
 
 export type CrudFieldDef = {
   name: string;
@@ -19,6 +20,7 @@ export type CrudModelConfig = {
   searchFields: string[];
   fields: CrudFieldDef[];
   defaultSort?: { field: string; order: 'asc' | 'desc' };
+  provinceField?: string; // champ utilisé pour le filtrage par périmètre (défaut: 'province')
 };
 
 function buildSchema(fields: CrudFieldDef[]) {
@@ -81,6 +83,15 @@ export function createCrudHandlers(config: CrudModelConfig) {
       const val = searchParams.get(f.name);
       if (val) {
         where[f.name] = val;
+      }
+    }
+
+    // Filtrage par périmètre territorial (province de l'utilisateur)
+    const provField = config.provinceField ?? 'province';
+    if (config.fields.some((f) => f.name === provField) && !isNationalScope(auth.user.role)) {
+      const userProv = (auth.user as any).provinceAdministrative;
+      if (userProv) {
+        where[provField] = userProv;
       }
     }
 

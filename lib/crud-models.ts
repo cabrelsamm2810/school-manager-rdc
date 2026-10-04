@@ -33,6 +33,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['nom', 'chefLieu'],
     defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: 'nom',
     fields: [
       { name: 'nom', type: 'string', required: true, unique: true },
       { name: 'chefLieu', type: 'string' },
@@ -49,6 +50,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['nom', 'province'],
     defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: 'province',
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'type', type: 'string' },
@@ -65,6 +67,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_NATIONALE',
     searchFields: ['province', 'coordonnateur'],
     defaultSort: { field: 'province', order: 'asc' },
+    provinceField: 'province',
     fields: [
       { name: 'province', type: 'string', required: true },
       { name: 'coordonnateur', type: 'string' },
@@ -81,6 +84,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['province'],
     defaultSort: { field: 'province', order: 'asc' },
+    provinceField: 'province',
     fields: [
       { name: 'province', type: 'string', required: true },
       { name: 'bureaux', type: 'number' },
@@ -97,6 +101,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_SOUS_PROVINCIALE',
     searchFields: ['nom', 'province'],
     defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: 'province',
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'province', type: 'string' },

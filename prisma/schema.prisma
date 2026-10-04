@@ -93,22 +93,28 @@ model Presence {
 }
 
 model Etablissement {
-  id          String   @id @default(cuid())
-  nom         String
-  type        String   @default("")
-  province    String   @default("")
-  ville       String   @default("")
-  adresse     String   @default("")
-  telephone   String   @default("")
-  email       String   @default("")
-  effectif   Int      @default(0)
-  statut      String   @default("Actif")
-  eleves      Eleve[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  nom                  String
+  type                 String   @default("")
+  province             String   @default("")
+  ville                String   @default("")
+  adresse              String   @default("")
+  telephone            String   @default("")
+  email                String   @default("")
+  effectif             Int      @default(0)
+  statut               String   @default("Actif")
+  coordSousProvincialeId String?
+  coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
+  ecErcId              String?
+  ecErc                EcErc?   @relation(fields: [ecErcId], references: [id], onDelete: SetNull)
+  eleves               Eleve[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([province])
   @@index([type])
+  @@index([coordSousProvincialeId])
+  @@index([ecErcId])
   @@map("etablissements")
 }
 
@@ -151,6 +157,7 @@ model EcErc {
   province  String   @default("")
   ecoles    Int      @default(0)
   statut    String   @default("Actif")
+  etablissements Etablissement[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -179,6 +186,7 @@ model CoordProvinciale {
   agents    Int      @default(0)
   dossiers  Int      @default(0)
   statut    String   @default("Actif")
+  sousProvinciales CoordSousProvinciale[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -187,16 +195,20 @@ model CoordProvinciale {
 }
 
 model CoordSousProvinciale {
-  id        String   @id @default(cuid())
-  nom       String
-  province  String   @default("")
-  bureaux   Int      @default(0)
-  agents    Int      @default(0)
-  statut    String   @default("Actif")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  nom                 String
+  province            String   @default("")
+  bureaux             Int      @default(0)
+  agents              Int      @default(0)
+  statut              String   @default("Actif")
+  coordProvincialeId  String?
+  coordProvinciale    CoordProvinciale? @relation(fields: [coordProvincialeId], references: [id], onDelete: SetNull)
+  etablissements      Etablissement[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@index([province])
+  @@index([coordProvincialeId])
   @@map("coord_sous_provinciale")
 }
 

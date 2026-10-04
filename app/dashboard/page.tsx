@@ -15,6 +15,22 @@ type SessionUser = {
   email: string;
   role: string;
   profilePhotoUrl?: string | null;
+  provinceAdministrative?: string;
+};
+
+type DashboardStats = {
+  totalEleves: number;
+  totalEtablissements: number;
+  totalEnseignants: number;
+  totalClasses: number;
+  totalProvinces: number;
+  totalDossiers: number;
+};
+
+type StatsResponse = {
+  stats: DashboardStats;
+  activite: string[];
+  scope: string;
 };
 
 /** Raccourcis affichés sur le dashboard, filtrés par rôle. */
@@ -69,12 +85,26 @@ function getShortcutDesc(href: string): string {
 
 export default function DashboardPage() {
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activite, setActivite] = useState<string[]>([]);
 
   useEffect(() => {
     fetch('/api/auth/session')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.authenticated) setUser(data.user);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/dashboard/stats')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: StatsResponse | null) => {
+        if (data?.stats) {
+          setStats(data.stats);
+          setActivite(data.activite ?? []);
+        }
       })
       .catch(() => {});
   }, []);
@@ -102,10 +132,10 @@ export default function DashboardPage() {
           {/* ── Cartes statistiques ── */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
-              { label: 'Élèves', value: '2 640', hint: 'Inscrits cette année', icon: 'users', color: 'blue' },
-              { label: 'Enseignants', value: '184', hint: 'Actifs', icon: 'teacher', color: 'emerald' },
-              { label: 'Classes', value: '48', hint: 'Tous niveaux', icon: 'school', color: 'amber' },
-              { label: 'Documents', value: '1 289', hint: 'Dossiers numériques', icon: 'folder', color: 'violet' },
+              { label: 'Élèves', value: stats ? stats.totalEleves.toLocaleString('fr-FR') : '—', hint: 'Inscrits cette année', icon: 'users', color: 'blue' },
+              { label: 'Enseignants', value: stats ? stats.totalEnseignants.toLocaleString('fr-FR') : '—', hint: 'Actifs', icon: 'teacher', color: 'emerald' },
+              { label: 'Classes', value: stats ? stats.totalClasses.toLocaleString('fr-FR') : '—', hint: 'Tous niveaux', icon: 'school', color: 'amber' },
+              { label: 'Établissements', value: stats ? stats.totalEtablissements.toLocaleString('fr-FR') : '—', hint: 'Actifs', icon: 'folder', color: 'violet' },
             ].map((stat, i) => (
               <div
                 key={stat.label}
@@ -155,17 +185,17 @@ export default function DashboardPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-base font-semibold text-slate-900">Activité récente</h2>
               <ul className="mt-4 space-y-3">
-                {[
-                  'Nouvelle inscription — École Lumumba',
-                  'Cahier de notes mis à jour — 6e année',
-                  'Visite numérique planifiée — Kongo-Central',
-                  'Carte scolaire générée — 12 élèves',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-slate-600">
+                {activite.length > 0 ? activite.map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm text-slate-600">
                     <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
                     {item}
                   </li>
-                ))}
+                )) : (
+                  <li className="flex items-center gap-3 text-sm text-slate-400">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-slate-300" />
+                    Aucune activité récente
+                  </li>
+                )}
               </ul>
             </div>
 

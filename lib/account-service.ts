@@ -108,7 +108,7 @@ export async function loginUser(payload: unknown) {
   return { ok: true, user };
 }
 
-export async function createSessionCookieResponse(response: NextResponse, userId: string) {
+export async function createSessionCookieResponse(response: NextResponse, userId: string, role?: string) {
   response.cookies.set(process.env.SESSION_COOKIE_NAME || 'school_manager_session', userId, {
     httpOnly: true,
     sameSite: 'lax',
@@ -116,5 +116,15 @@ export async function createSessionCookieResponse(response: NextResponse, userId
     path: '/',
     maxAge: Number(process.env.SESSION_MAX_AGE || 60 * 60 * 24 * 7)
   });
+  // Cookie de rôle pour le middleware (edge, sans accès Prisma)
+  if (role) {
+    response.cookies.set('school_manager_role', role, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: Number(process.env.SESSION_MAX_AGE || 60 * 60 * 24 * 7)
+    });
+  }
   return response;
 }

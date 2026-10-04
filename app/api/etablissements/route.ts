@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
+import { isNationalScope } from '@/lib/territory-filter';
 
 const createSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom est obligatoire.'),
@@ -39,9 +40,16 @@ export async function GET(request: NextRequest) {
     ];
   }
 
+  // Filtrage par périmètre territorial
+  if (!isNationalScope(auth.user.role)) {
+    const userProv = (auth.user as any).provinceAdministrative;
+    if (userProv) where.province = userProv;
+  }
+
   const etablissements = await prisma.etablissement.findMany({
     where,
     orderBy: [{ nom: 'asc' }],
+    include: { coordSousProvinciale: { select: { id: true, nom: true } }, ecErc: { select: { id: true, nom: true } } },
   });
 
   return NextResponse.json({ etablissements });
