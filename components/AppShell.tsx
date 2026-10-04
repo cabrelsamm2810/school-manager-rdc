@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
@@ -42,6 +42,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setSidebarOpen(false);
     setUserMenuOpen(false);
   }, [pathname]);
+
+  // Touche Échap pour fermer le drawer ou le menu utilisateur
+  useEffect(() => {
+    if (!sidebarOpen && !userMenuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+        setUserMenuOpen(false);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sidebarOpen, userMenuOpen]);
+
+  // Verrouille le défilement du body quand le drawer est ouvert
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [sidebarOpen]);
+
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -103,6 +127,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 transition hover:bg-slate-100"
+                  aria-expanded={userMenuOpen}
+                  aria-label="Menu utilisateur"
                 >
                   {user.profilePhotoUrl ? (
                     <img src={user.profilePhotoUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
@@ -121,45 +147,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </button>
 
+                {/* Backdrop invisible pour fermeture au clic extérieur */}
                 {userMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                      <div className="border-b border-slate-100 px-4 py-3">
-                        <p className="truncate text-sm font-semibold text-slate-900">
-                          {user.prenom} {user.nom}
-                        </p>
-                        <p className="truncate text-xs text-slate-500">{user.email}</p>
-                        <p className="mt-1.5 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
-                          {ROLE_LABELS[user.role] ?? user.role}
-                        </p>
-                      </div>
-                      <div className="py-1">
-                        <Link
-                          href="/profile"
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
-                        >
-                          <Icon name="user" className="h-4 w-4 text-slate-400" />
-                          Mon profil
-                        </Link>
-                        <Link
-                          href="/parametres"
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
-                        >
-                          <Icon name="settings" className="h-4 w-4 text-slate-400" />
-                          Paramètres
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
-                        >
-                          <Icon name="logout" className="h-4 w-4" />
-                          Déconnexion
-                        </button>
-                      </div>
-                    </div>
-                  </>
+                  <div className="fixed inset-0 z-40" onClick={closeUserMenu} />
                 )}
+                {/* Menu déroulant avec transition fluide */}
+                <div
+                  className={clsx(
+                    'absolute right-0 top-full z-50 mt-2 w-60 origin-top-right overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg transition-all duration-200 ease-out',
+                    userMenuOpen
+                      ? 'scale-100 opacity-100'
+                      : 'pointer-events-none scale-95 opacity-0'
+                  )}
+                >
+                  <div className="border-b border-slate-100 px-4 py-3">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {user.prenom} {user.nom}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">{user.email}</p>
+                    <p className="mt-1.5 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                      {ROLE_LABELS[user.role] ?? user.role}
+                    </p>
+                  </div>
+                  <div className="py-1">
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Icon name="user" className="h-4 w-4 text-slate-400" />
+                      Mon profil
+                    </Link>
+                    <Link
+                      href="/parametres"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Icon name="settings" className="h-4 w-4 text-slate-400" />
+                      Paramètres
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
+                    >
+                      <Icon name="logout" className="h-4 w-4" />
+                      Déconnexion
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <Link
@@ -180,33 +213,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarContent groups={visibleGroups} pathname={pathname} />
         </aside>
 
-        {/* ── Drawer (mobile) ── */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <div
-              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-              onClick={() => setSidebarOpen(false)}
-            />
-            <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto bg-white">
-              <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
-                    <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
-                  </div>
-                  <span className="font-bold text-slate-900">School Manager RDC</span>
-                </div>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
-                  aria-label="Fermer"
-                >
-                  <Icon name="close" />
-                </button>
+        {/* ── Drawer (mobile) — toujours rendu, transition CSS ── */}
+        {/* Backdrop */}
+        <div
+          className={clsx(
+            'fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 lg:hidden',
+            sidebarOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+          )}
+          onClick={closeSidebar}
+        />
+        {/* Panneau coulissant */}
+        <aside
+          className={clsx(
+            'fixed left-0 top-0 z-50 h-full w-72 max-w-[85vw] overflow-y-auto bg-white transition-transform duration-300 ease-out lg:hidden',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
+          <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+                <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
               </div>
-              <SidebarContent groups={visibleGroups} pathname={pathname} />
-            </aside>
+              <span className="font-bold text-slate-900">School Manager RDC</span>
+            </div>
+            <button
+              onClick={closeSidebar}
+              className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
+              aria-label="Fermer"
+            >
+              <Icon name="close" />
+            </button>
           </div>
-        )}
+          <SidebarContent groups={visibleGroups} pathname={pathname} />
+        </aside>
 
         {/* ── Contenu principal ── */}
         <main className="min-h-[calc(100vh-4rem)] flex-1">{children}</main>
@@ -283,7 +322,7 @@ function SidebarContent({
             </button>
 
             {isExpanded && (
-              <ul className="mt-1 space-y-0.5">
+              <ul className="nav-group-expand mt-1 space-y-0.5">
                 {group.items.map((item) => {
                   const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                   return (

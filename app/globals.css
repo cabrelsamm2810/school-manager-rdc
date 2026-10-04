@@ -279,6 +279,13 @@ body {
 }
 .dash-card { animation: dashCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
 
+/* ── Sidebar group expand animation ── */
+@keyframes navGroupExpand {
+  0% { opacity: 0; transform: translateY(-4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.nav-group-expand { animation: navGroupExpand 0.2s ease-out forwards; }
+
 .login-background {
   position: relative;
   background-image:
