@@ -31,10 +31,12 @@ type DashboardStats = {
 };
 
 type BreakdownItem = { label: string; value: number; sublabel: string };
+type ChartItem = { label: string; value: number };
 
 type StatsResponse = {
   stats: DashboardStats;
   breakdown: BreakdownItem[];
+  chartData: ChartItem[];
   activite: string[];
   scope: 'national' | 'provincial' | 'sousProvincial' | 'school';
   provinceLabel: string | null;
@@ -91,6 +93,7 @@ export default function DashboardPage() {
   const dashProps = {
     stats: data.stats,
     breakdown: data.breakdown,
+    chartData: data.chartData,
     activite: data.activite,
   };
 

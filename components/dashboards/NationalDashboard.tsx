@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { StatCard } from './StatCard';
+import { DonutChart, BarCompare } from './Charts';
 
 type Stats = {
   totalEleves: number;
@@ -16,10 +17,12 @@ type Stats = {
 };
 
 type BreakdownItem = { label: string; value: number; sublabel: string };
+type ChartItem = { label: string; value: number };
 
-export function NationalDashboard({ stats, breakdown, activite }: {
+export function NationalDashboard({ stats, breakdown, chartData, activite }: {
   stats: Stats;
   breakdown: BreakdownItem[];
+  chartData: ChartItem[];
   activite: string[];
 }) {
   const fmt = (n: number) => n.toLocaleString('fr-FR');
@@ -43,6 +46,29 @@ export function NationalDashboard({ stats, breakdown, activite }: {
         <StatCard label="Classes" value={fmt(stats.totalClasses)} hint="Tous niveaux" icon="notebook" color="amber" delay={0.3} />
         <StatCard label="Dossiers" value={fmt(stats.totalDossiers)} hint="Traités / en cours" icon="folder" color="rose" delay={0.36} />
         <StatCard label="Visites" value={fmt(stats.totalVisites)} hint="Contrôles numériques" icon="visit" color="violet" delay={0.42} />
+      </div>
+
+      {/* ── Graphiques récapitulatifs ── */}
+      <div className="mt-8 grid gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Effectifs d'élèves par province</h2>
+          <div className="mt-5">
+            <DonutChart data={chartData} centerValue={fmt(stats.totalEleves)} centerLabel="élèves" />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Élèves vs Enseignants</h2>
+          <div className="mt-5">
+            <BarCompare
+              items={[
+                { label: 'Élèves', value: stats.totalEleves, color: '#3b82f6' },
+                { label: 'Enseignants', value: stats.totalEnseignants, color: '#10b981' },
+                { label: 'Établis.', value: stats.totalEtablissements, color: '#8b5cf6' },
+                { label: 'Classes', value: stats.totalClasses, color: '#f59e0b' },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-5 lg:grid-cols-2">

@@ -45,51 +45,46 @@ export async function GET(request: NextRequest) {
 
   const totalClasses = totalClassesAgg.length;
 
-  // ── Breakdown spécifique au niveau ──
+  // ── Breakdown + chartData spécifiques au niveau ──
   let breakdown: { label: string; value: number; sublabel: string }[] = [];
+  let chartData: { label: string; value: number }[] = [];
 
   if (scope === 'national') {
-    // Répartition par province
     const provinces = await prisma.province.findMany({ select: { nom: true, etablissements: true, eleves: true }, orderBy: { nom: 'asc' } });
-    breakdown = provinces.map((p) => ({
-      label: p.nom,
-      value: p.etablissements,
-      sublabel: `${p.eleves} élèves`,
-    }));
+    breakdown = provinces.map((p) => ({ label: p.nom, value: p.etablissements, sublabel: `${p.eleves} élèves` }));
+    chartData = provinces.map((p) => ({ label: p.nom, value: p.eleves }));
   } else if (scope === 'provincial' && prov) {
-    // Répartition par sous-division de la province
     const sousProvs = await prisma.coordSousProvinciale.findMany({
       where: { province: prov },
-      select: { id: true, nom: true, bureaux: true, agents: true },
+      select: { id: true, nom: true },
       orderBy: { nom: 'asc' },
     });
-    breakdown = await Promise.all(
+    const results = await Promise.all(
       sousProvs.map(async (sp) => {
         const nbEtab = await prisma.etablissement.count({ where: { coordSousProvincialeId: sp.id } });
         const nbEleves = await prisma.eleve.count({ where: { etablissement: { coordSousProvincialeId: sp.id } } });
-        return { label: sp.nom, value: nbEtab, sublabel: `${nbEleves} élèves` };
+        return { label: sp.nom, nbEtab, nbEleves };
       }),
     );
+    breakdown = results.map((r) => ({ label: r.label, value: r.nbEtab, sublabel: `${r.nbEleves} élèves` }));
+    chartData = results.map((r) => ({ label: r.label, value: r.nbEleves }));
   } else if (scope === 'sousProvincial' && sousProvId) {
-    // Répartition par établissement de la sous-division
     const etabs = await prisma.etablissement.findMany({
       where: { coordSousProvincialeId: sousProvId },
-      select: { id: true, nom: true, type: true, effectif: true },
+      select: { id: true, nom: true, type: true },
       orderBy: { nom: 'asc' },
     });
-    breakdown = await Promise.all(
+    const results = await Promise.all(
       etabs.map(async (e) => {
         const nbEleves = await prisma.eleve.count({ where: { etablissementId: e.id } });
-        return { label: e.nom, value: nbEleves, sublabel: e.type || 'Établissement' };
+        return { label: e.nom, nbEleves, type: e.type || 'Établissement' };
       }),
     );
+    breakdown = results.map((r) => ({ label: r.label, value: r.nbEleves, sublabel: r.type }));
+    chartData = results.map((r) => ({ label: r.label, value: r.nbEleves }));
   } else if (scope === 'school' && etabId) {
-    // Répartition par classe de l'établissement
-    breakdown = totalClassesAgg.map((c) => ({
-      label: c.classe,
-      value: c._count,
-      sublabel: 'élèves',
-    }));
+    breakdown = totalClassesAgg.map((c) => ({ label: c.classe, value: c._count, sublabel: 'élèves' }));
+    chartData = totalClassesAgg.map((c) => ({ label: c.classe, value: c._count }));
   }
 
   // ── Activité récente ──
@@ -115,6 +110,7 @@ export async function GET(request: NextRequest) {
       totalSousProvinciales,
     },
     breakdown,
+    chartData,
     activite: activite.slice(0, 5),
     scope,
     provinceLabel: prov || null,
