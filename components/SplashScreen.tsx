@@ -28,8 +28,8 @@ export function SplashScreen() {
         <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500/15 blur-2xl splash-glow-delay" />
       </div>
 
-      <div className="relative splash-logo">
-        <img src="/logo.svg" alt="School Manager RDC" className="h-28 w-28 md:h-36 md:w-36" />
+      <div className="relative splash-logo overflow-hidden rounded-3xl bg-white p-3 shadow-2xl">
+        <img src="/logo.png" alt="School Manager RDC" className="h-28 w-28 object-contain md:h-36 md:w-36" />
       </div>
 
       <div className="relative mt-6 text-center splash-text">

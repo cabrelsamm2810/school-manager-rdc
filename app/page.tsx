@@ -20,7 +20,9 @@ export default function HomePage() {
         {/* Nav bar */}
         <nav className="relative z-10 flex items-center justify-between px-5 py-4 md:px-10">
           <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="School Manager RDC" className="h-9 w-9 md:h-11 md:w-11" />
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-white shadow-md md:h-12 md:w-12">
+              <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
+            </div>
             <span className="text-sm font-bold tracking-wide md:text-base">School Manager RDC</span>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
@@ -41,8 +43,8 @@ export default function HomePage() {
 
         {/* Hero */}
         <section className="relative z-10 flex flex-col items-center px-5 pt-10 pb-8 text-center md:pt-16 md:pb-12">
-          <div className="hero-logo mb-6">
-            <img src="/logo.svg" alt="School Manager RDC" className="h-20 w-20 md:h-28 md:w-28" />
+          <div className="hero-logo mb-6 overflow-hidden rounded-3xl bg-white p-2 shadow-2xl">
+            <img src="/logo.png" alt="School Manager RDC" className="h-24 w-24 object-contain md:h-36 md:w-36" />
           </div>
           <h1 className="hero-title text-3xl font-bold leading-tight md:text-5xl">
             School Manager <span className="text-blue-400">RDC</span>
@@ -129,7 +131,9 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="relative z-10 border-t border-slate-800 px-5 py-6 text-center md:px-10">
           <div className="flex items-center justify-center gap-2">
-            <img src="/logo.svg" alt="School Manager RDC" className="h-6 w-6" />
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-white">
+              <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
+            </div>
             <span className="text-xs text-slate-500 md:text-sm">
               School Manager RDC — République Démocratique du Congo
             </span>
