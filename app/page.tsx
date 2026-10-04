@@ -23,7 +23,7 @@ export default function HomePage() {
             <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-white shadow-md md:h-12 md:w-12">
               <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
             </div>
-            <span className="text-sm font-bold tracking-wide md:text-base">School Manager RDC</span>
+            <span className="nav-brand text-sm font-bold tracking-wide md:text-base">School Manager RDC</span>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
             <Link
@@ -43,11 +43,12 @@ export default function HomePage() {
 
         {/* Hero */}
         <section className="relative z-10 flex flex-col items-center px-5 pt-10 pb-8 text-center md:pt-16 md:pb-12">
-          <div className="hero-logo mb-6 overflow-hidden rounded-3xl bg-white p-2 shadow-2xl">
+          <div className="hero-logo mb-7 overflow-hidden rounded-3xl bg-white p-2 shadow-2xl ring-1 ring-white/20">
             <img src="/logo.png" alt="School Manager RDC" className="h-24 w-24 object-contain md:h-36 md:w-36" />
           </div>
-          <h1 className="hero-title text-3xl font-bold leading-tight md:text-5xl">
-            School Manager <span className="text-blue-400">RDC</span>
+          <h1 className="hero-title text-4xl font-extrabold leading-tight tracking-tight md:text-6xl md:tracking-tighter">
+            <span className="hero-name">School Manager</span>{' '}
+            <span className="hero-name-rdc">RDC</span>
           </h1>
           <p className="hero-sub mt-4 max-w-xl text-sm text-slate-300 md:text-lg">
             La plateforme nationale de gestion scolaire pour la République Démocratique du Congo.

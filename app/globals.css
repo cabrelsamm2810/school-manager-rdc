@@ -61,6 +61,11 @@ body {
   0% { opacity: 0; transform: translateY(24px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+@keyframes heroTitleIn {
+  0% { opacity: 0; transform: translateY(28px) scale(0.97); letter-spacing: 0.02em; }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 @keyframes statFadeUp {
   0% { opacity: 0; transform: translateY(16px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -70,11 +75,32 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 .hero-logo { animation: heroFadeUp 0.8s ease-out forwards; opacity: 0; }
-.hero-title { animation: heroFadeUp 0.8s ease-out 0.15s forwards; opacity: 0; }
-.hero-sub { animation: heroFadeUp 0.8s ease-out 0.3s forwards; opacity: 0; }
-.hero-cta { animation: heroFadeUp 0.8s ease-out 0.45s forwards; opacity: 0; }
+.hero-title { animation: heroTitleIn 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards; opacity: 0; }
+.hero-sub { animation: heroFadeUp 0.8s ease-out 0.35s forwards; opacity: 0; }
+.hero-cta { animation: heroFadeUp 0.8s ease-out 0.5s forwards; opacity: 0; }
 .hero-stat { animation: statFadeUp 0.6s ease-out forwards; opacity: 0; }
 .module-card { animation: moduleFadeUp 0.6s ease-out forwards; opacity: 0; }
+
+/* ── Brand name styling ── */
+.hero-name {
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 20px rgba(0, 40, 104, 0.5);
+}
+.hero-name-rdc {
+  background: linear-gradient(135deg, #60a5fa 0%, #0066FF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 24px rgba(0, 102, 255, 0.45);
+}
+.nav-brand {
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 8px rgba(0, 40, 104, 0.3);
+}
 
 /* ── Homepage buttons ── */
 .btn-primary {
