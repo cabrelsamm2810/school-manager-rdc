@@ -65,18 +65,29 @@ export default function HomePage() {
           <p className="hero-desc mt-2.5 max-w-xs text-xs leading-relaxed text-slate-400 md:max-w-lg md:text-sm">
             Centralisez la gestion des établissements, des élèves, des enseignants et des services éducatifs dans un espace numérique unique.
           </p>
-          <div className="hero-cta mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-center">
-            <Link
-              href="/register"
-              className="btn-primary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
-            >
-              Créer un compte
-            </Link>
+          <div className="hero-cta mt-8 grid w-full max-w-2xl gap-4 sm:grid-cols-2">
+            {/* Se connecter */}
             <Link
               href="/login"
-              className="btn-secondary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
+              className="access-card group flex flex-col items-center rounded-2xl border border-slate-700/40 bg-slate-900/40 p-6 text-center shadow-sm shadow-blue-950/20 backdrop-blur-sm transition duration-300 hover:border-blue-500/40 hover:bg-slate-800/50 hover:shadow-lg hover:shadow-blue-950/30 active:scale-[0.98]"
             >
-              Se connecter
+              <div className="mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white shadow-md transition duration-300 group-hover:scale-105">
+                <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
+              </div>
+              <h3 className="mb-1.5 text-base font-bold text-white md:text-lg">Se connecter</h3>
+              <p className="text-xs leading-relaxed text-slate-400">Accédez à votre espace School Manager RDC.</p>
+            </Link>
+
+            {/* Créer un compte — légèrement plus mis en avant */}
+            <Link
+              href="/register"
+              className="access-card group flex flex-col items-center rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/10 to-blue-900/10 p-6 text-center shadow-md shadow-blue-950/30 backdrop-blur-sm transition duration-300 hover:border-blue-500/60 hover:from-blue-600/15 hover:to-blue-900/15 hover:shadow-lg hover:shadow-blue-950/40 active:scale-[0.98]"
+            >
+              <div className="mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white shadow-md ring-2 ring-blue-500/20 transition duration-300 group-hover:scale-105">
+                <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
+              </div>
+              <h3 className="mb-1.5 text-base font-bold text-white md:text-lg">Créer un compte</h3>
+              <p className="text-xs leading-relaxed text-slate-400">Rejoignez School Manager RDC et créez votre espace.</p>
             </Link>
           </div>
         </section>

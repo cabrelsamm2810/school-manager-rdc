@@ -90,6 +90,14 @@ body {
 .feature-item { animation: featureFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
 
 /* ── Footer links ── */
+/* ── Access cards ── */
+@keyframes accessCardIn {
+  0% { opacity: 0; transform: translateY(16px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.access-card { animation: accessCardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+.access-card:nth-child(2) { animation-delay: 0.1s; }
+
 .footer-link {
   font-size: 0.875rem;
   color: #94a3b8;
