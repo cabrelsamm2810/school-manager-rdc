@@ -272,6 +272,13 @@ body {
   box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.15);
 }
 
+/* ── Dashboard cards ── */
+@keyframes dashCardIn {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.dash-card { animation: dashCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+
 .login-background {
   position: relative;
   background-image:

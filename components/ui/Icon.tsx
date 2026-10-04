@@ -28,6 +28,9 @@ const icons: Record<string, string> = {
   menu: 'M3 6h18M3 12h18M3 18h18',
   close: 'M6 6l12 12M18 6L6 18',
   logout: 'M9 21H5V3h4M16 17l5-5-5-5M21 12H9',
+  user: 'M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-8 3-8 8h16c0-5-3-8-8-8z',
+  'chevron-down': 'M6 9l6 6 6-6',
+  'chevron-right': 'M9 6l6 6-6 6',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {
