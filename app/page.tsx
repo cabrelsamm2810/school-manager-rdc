@@ -193,7 +193,7 @@ export default function HomePage() {
                 <Link href="/" className="footer-link">Accueil</Link>
                 <Link href="/login" className="footer-link">Se connecter</Link>
                 <Link href="/register" className="footer-link">Créer un compte</Link>
-                <span className="footer-link cursor-default">À propos</span>
+                <Link href="/about" className="footer-link">À propos</Link>
                 <span className="footer-link cursor-default">Contact</span>
               </nav>
 
