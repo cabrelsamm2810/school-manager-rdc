@@ -5,6 +5,15 @@ import { SplashScreen } from '@/components/SplashScreen';
 import { Icon } from '@/components/ui/Icon';
 import { navigationGroups } from '@/lib/navigation';
 
+const groupDescriptions: Record<string, string> = {
+  'Tableau de bord': "Vue d'ensemble et statistiques de la plateforme.",
+  'Gestion scolaire': 'Établissements, élèves, enseignants et outils pédagogiques.',
+  'Organisation territoriale': 'Structures administratives provinciales et nationales.',
+  'Administration': 'Utilisateurs, dossiers et services administratifs.',
+  'Communication': 'Notifications et messagerie interne.',
+  'Services': 'Paiements, géolocalisation et paramètres système.',
+};
+
 export default function HomePage() {
   return (
     <>
@@ -82,8 +91,8 @@ export default function HomePage() {
           ].map((s, i) => (
             <div
               key={s.label}
-              className="hero-stat rounded-2xl border border-slate-700/60 bg-slate-900/50 p-4 text-center backdrop-blur-sm"
-              style={{ animationDelay: `${0.15 * i}s` }}
+              className="hero-stat rounded-2xl border border-slate-700/40 bg-slate-900/40 p-4 text-center shadow-sm shadow-blue-950/20 backdrop-blur-sm transition duration-300 hover:border-blue-500/30 hover:bg-slate-800/40 active:scale-[0.97]"
+              style={{ animationDelay: `${0.12 * i}s` }}
             >
               <p className="text-2xl font-bold text-blue-400 md:text-3xl">{s.value}</p>
               <p className="mt-1 text-xs text-slate-400 md:text-sm">{s.label}</p>
@@ -93,34 +102,35 @@ export default function HomePage() {
 
         {/* Module access */}
         <section className="relative z-10 mx-auto max-w-5xl px-5 py-10 md:px-10 md:py-14">
-          <h2 className="mb-6 text-center text-lg font-bold md:text-2xl">
+          <h2 className="mb-6 text-center text-lg font-bold md:mb-8 md:text-2xl">
             Espaces de la plateforme
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {navigationGroups.map((group, gi) => (
               <Link
                 key={group.title}
                 href={group.items[0].href}
-                className="module-card group rounded-2xl border border-slate-700/60 bg-slate-900/50 p-5 backdrop-blur-sm transition hover:border-blue-500/50 hover:bg-slate-800/60"
-                style={{ animationDelay: `${0.1 * gi}s` }}
+                className="module-card group flex flex-col rounded-2xl border border-slate-700/40 bg-slate-900/40 p-5 shadow-sm shadow-blue-950/20 backdrop-blur-sm transition duration-300 hover:border-blue-500/40 hover:bg-slate-800/50 hover:shadow-lg hover:shadow-blue-950/30 active:scale-[0.98] md:p-6"
+                style={{ animationDelay: `${0.08 * gi}s` }}
               >
-                <div className="mb-3 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 transition group-hover:bg-blue-600/30">
-                    <Icon name={group.items[0].icon} className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-semibold text-sm md:text-base">{group.title}</h3>
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400 transition duration-300 group-hover:bg-blue-600/25 group-hover:scale-105 md:h-12 md:w-12">
+                  <Icon name={group.items[0].icon} className="h-5 w-5 md:h-6 md:w-6" />
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <h3 className="mb-1.5 text-sm font-semibold text-white md:text-base">{group.title}</h3>
+                <p className="mb-4 text-xs leading-relaxed text-slate-400">
+                  {groupDescriptions[group.title] ?? ''}
+                </p>
+                <div className="mt-auto flex flex-wrap gap-1.5">
                   {group.items.slice(0, 4).map((item) => (
                     <span
                       key={item.href}
-                      className="rounded-lg bg-slate-800/60 px-2.5 py-1 text-xs text-slate-400 transition group-hover:text-slate-300"
+                      className="rounded-lg bg-slate-800/50 px-2.5 py-1 text-xs text-slate-400 transition duration-300 group-hover:text-slate-300"
                     >
                       {item.label}
                     </span>
                   ))}
                   {group.items.length > 4 && (
-                    <span className="rounded-lg bg-slate-800/60 px-2.5 py-1 text-xs text-slate-500">
+                    <span className="rounded-lg bg-slate-800/50 px-2.5 py-1 text-xs text-slate-500">
                       +{group.items.length - 4}
                     </span>
                   )}
