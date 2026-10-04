@@ -42,11 +42,17 @@ model User {
   profilePhotoUrl       String?
   validationCode        String?
   isActive              Boolean  @default(false)
+  coordSousProvincialeId String?
+  coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
+  etablissementId       String?
+  etablissement         Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   @@index([role])
   @@index([isActive])
+  @@index([coordSousProvincialeId])
+  @@index([etablissementId])
   @@map("users")
 }
 
@@ -108,6 +114,7 @@ model Etablissement {
   ecErcId              String?
   ecErc                EcErc?   @relation(fields: [ecErcId], references: [id], onDelete: SetNull)
   eleves               Eleve[]
+  users                User[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -204,6 +211,7 @@ model CoordSousProvinciale {
   coordProvincialeId  String?
   coordProvinciale    CoordProvinciale? @relation(fields: [coordProvincialeId], references: [id], onDelete: SetNull)
   etablissements      Etablissement[]
+  users               User[]
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
-import { isNationalScope } from '@/lib/territory-filter';
+import { getScopeLevel } from '@/lib/territory-filter';
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -9,12 +9,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
   }
 
-  const national = isNationalScope(user.role);
+  const scope = getScopeLevel(user.role);
   const prov = (user as any).provinceAdministrative || '';
+  const sousProvId = (user as any).coordSousProvincialeId || '';
+  const etabId = (user as any).etablissementId || '';
 
-  // Filtre de périmètre
-  const etabWhere = national ? {} : (prov ? { province: prov } : {});
-  const eleveWhere = national ? {} : (prov ? { etablissement: { province: prov } } : {});
+  // Filtre de périmètre hiérarchique
+  let etabWhere: Record<string, unknown> = {};
+  let eleveWhere: Record<string, unknown> = {};
+
+  if (scope === 'national') {
+    // Pas de filtre — accès national
+  } else if (scope === 'sousProvincial' && sousProvId) {
+    etabWhere = { coordSousProvincialeId: sousProvId };
+    eleveWhere = { etablissement: { coordSousProvincialeId: sousProvId } };
+  } else if (scope === 'school' && etabId) {
+    etabWhere = { id: etabId };
+    eleveWhere = { etablissementId: etabId };
+  } else if (prov) {
+    etabWhere = { province: prov };
+    eleveWhere = { etablissement: { province: prov } };
+  }
 
   const [totalEleves, totalEtablissements, totalEnseignants, totalProvinces, totalClassesAgg, totalDossiers] = await Promise.all([
     prisma.eleve.count({ where: eleveWhere }),
@@ -48,6 +63,6 @@ export async function GET(request: NextRequest) {
       totalDossiers,
     },
     activite: activite.slice(0, 5),
-    scope: national ? 'national' : prov ? 'provincial' : 'global',
+    scope: scope === 'national' ? 'national' : scope === 'sousProvincial' ? 'sousProvincial' : scope === 'school' ? 'school' : prov ? 'provincial' : 'global',
   });
 }

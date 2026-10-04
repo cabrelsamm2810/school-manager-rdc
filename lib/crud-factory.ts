@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { mergeProvinceFilter, isNationalScope } from '@/lib/territory-filter';
+import { buildScopeWhere, type ScopeConfig } from '@/lib/territory-filter';
 
 export type CrudFieldDef = {
   name: string;
@@ -20,7 +20,9 @@ export type CrudModelConfig = {
   searchFields: string[];
   fields: CrudFieldDef[];
   defaultSort?: { field: string; order: 'asc' | 'desc' };
-  provinceField?: string; // champ utilisé pour le filtrage par périmètre (défaut: 'province')
+  provinceField?: string;
+  sousProvincialeField?: string;
+  etablissementField?: string;
 };
 
 function buildSchema(fields: CrudFieldDef[]) {
@@ -86,12 +88,17 @@ export function createCrudHandlers(config: CrudModelConfig) {
       }
     }
 
-    // Filtrage par périmètre territorial (province de l'utilisateur)
-    const provField = config.provinceField ?? 'province';
-    if (config.fields.some((f) => f.name === provField) && !isNationalScope(auth.user.role)) {
-      const userProv = (auth.user as any).provinceAdministrative;
-      if (userProv) {
-        where[provField] = userProv;
+    // Filtrage hiérarchique par périmètre territorial
+    const scopeConfig: ScopeConfig = {
+      provinceField: config.provinceField,
+      sousProvincialeField: config.sousProvincialeField,
+      etablissementField: config.etablissementField,
+    };
+    const scopeWhere = buildScopeWhere(auth.user, scopeConfig);
+    if (Object.keys(scopeWhere).length > 0) {
+      // La province peut déjà être positionnée par un filtre explicite — on la remplace
+      for (const key of Object.keys(scopeWhere)) {
+        where[key] = scopeWhere[key];
       }
     }
 
@@ -149,7 +156,13 @@ export function createCrudHandlers(config: CrudModelConfig) {
       );
     }
 
-    const existing = await config.delegate.findUnique({ where: { id: params.id } });
+    const scopeCfg: ScopeConfig = {
+      provinceField: config.provinceField,
+      sousProvincialeField: config.sousProvincialeField,
+      etablissementField: config.etablissementField,
+    };
+    const scopeW = buildScopeWhere(auth.user, scopeCfg);
+    const existing = await config.delegate.findFirst({ where: { id: params.id, ...scopeW } });
     if (!existing) {
       return NextResponse.json({ error: 'Enregistrement introuvable.' }, { status: 404 });
     }
@@ -179,7 +192,13 @@ export function createCrudHandlers(config: CrudModelConfig) {
       return NextResponse.json({ error: auth.error }, { status: 403 });
     }
 
-    const existing = await config.delegate.findUnique({ where: { id: params.id } });
+    const scopeCfg: ScopeConfig = {
+      provinceField: config.provinceField,
+      sousProvincialeField: config.sousProvincialeField,
+      etablissementField: config.etablissementField,
+    };
+    const scopeW = buildScopeWhere(auth.user, scopeCfg);
+    const existing = await config.delegate.findFirst({ where: { id: params.id, ...scopeW } });
     if (!existing) {
       return NextResponse.json({ error: 'Enregistrement introuvable.' }, { status: 404 });
     }

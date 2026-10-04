@@ -102,6 +102,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     searchFields: ['nom', 'province'],
     defaultSort: { field: 'nom', order: 'asc' },
     provinceField: 'province',
+    sousProvincialeField: 'id',
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'province', type: 'string' },

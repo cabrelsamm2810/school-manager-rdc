@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { isNationalScope } from '@/lib/territory-filter';
+import { getScopeLevel } from '@/lib/territory-filter';
 
 const createSchema = z.object({
   matricule: z.string().trim().min(1, 'Le matricule est obligatoire.'),
@@ -45,8 +45,13 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  // Filtrage par périmètre territorial (via l'établissement)
-  if (!isNationalScope(auth.user.role)) {
+  // Filtrage hiérarchique par périmètre territorial (via l'établissement)
+  const scope = getScopeLevel(auth.user.role);
+  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
+    where.etablissement = { coordSousProvincialeId: (auth.user as any).coordSousProvincialeId };
+  } else if (scope === 'school' && (auth.user as any).etablissementId) {
+    where.etablissementId = (auth.user as any).etablissementId;
+  } else if (scope !== 'national') {
     const userProv = (auth.user as any).provinceAdministrative;
     if (userProv) {
       where.etablissement = { province: userProv };

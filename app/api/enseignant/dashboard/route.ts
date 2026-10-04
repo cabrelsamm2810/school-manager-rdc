@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
+import { getScopeLevel } from '@/lib/territory-filter';
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -8,8 +9,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
   }
 
+  // Filtre hiérarchique : un enseignant ne voit que les élèves de son établissement
+  const scope = getScopeLevel(user.role);
+  const etabId = (user as any).etablissementId || '';
+  const sousProvId = (user as any).coordSousProvincialeId || '';
+  const prov = (user as any).provinceAdministrative || '';
+
+  let eleveWhere: Record<string, unknown> = {};
+  if (scope === 'school' && etabId) {
+    eleveWhere = { etablissementId: etabId };
+  } else if (scope === 'sousProvincial' && sousProvId) {
+    eleveWhere = { etablissement: { coordSousProvincialeId: sousProvId } };
+  } else if (scope !== 'national' && prov) {
+    eleveWhere = { etablissement: { province: prov } };
+  }
+
   // Compter les élèves par classe
   const eleves = await prisma.eleve.findMany({
+    where: eleveWhere,
     select: { id: true, classe: true },
   });
 
@@ -27,7 +44,7 @@ export async function GET(request: NextRequest) {
   trenteJours.setDate(trenteJours.getDate() - 30);
 
   const presences = await prisma.presence.findMany({
-    where: { date: { gte: trenteJours } },
+    where: { date: { gte: trenteJours }, eleve: eleveWhere },
     select: { classe: true, present: true },
   });
 

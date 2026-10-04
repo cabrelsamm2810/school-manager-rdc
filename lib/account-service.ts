@@ -33,6 +33,8 @@ const registerSchema = z.object({
   fonction: z.string().trim().optional().or(z.literal('')),
   grade: z.string().trim().optional().or(z.literal('')),
   dinacope: z.string().trim().optional().or(z.literal('')),
+  coordSousProvincialeId: z.string().trim().optional().or(z.literal('')),
+  etablissementId: z.string().trim().optional().or(z.literal('')),
 });
 
 const loginSchema = z.object({
@@ -72,6 +74,8 @@ export async function registerUser(payload: unknown) {
       fonction: data.fonction ?? '',
       grade: data.grade ?? '',
       dinacope: data.dinacope ?? '',
+      coordSousProvincialeId: data.coordSousProvincialeId || null,
+      etablissementId: data.etablissementId || null,
       validationCode,
       isActive: false,
     }

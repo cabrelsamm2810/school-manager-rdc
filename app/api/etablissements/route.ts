@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { isNationalScope } from '@/lib/territory-filter';
+import { buildScopeWhere, getScopeLevel } from '@/lib/territory-filter';
 
 const createSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom est obligatoire.'),
@@ -40,8 +40,13 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  // Filtrage par périmètre territorial
-  if (!isNationalScope(auth.user.role)) {
+  // Filtrage hiérarchique par périmètre territorial
+  const scope = getScopeLevel(auth.user.role);
+  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
+    where.coordSousProvincialeId = (auth.user as any).coordSousProvincialeId;
+  } else if (scope === 'school' && (auth.user as any).etablissementId) {
+    where.id = (auth.user as any).etablissementId;
+  } else if (scope !== 'national') {
     const userProv = (auth.user as any).provinceAdministrative;
     if (userProv) where.province = userProv;
   }
