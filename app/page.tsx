@@ -28,13 +28,13 @@ export default function HomePage() {
           <div className="flex items-center gap-2 md:gap-3">
             <Link
               href="/login"
-              className="rounded-xl border border-slate-600 px-4 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-800 md:text-sm"
+              className="btn-secondary px-4 py-2 text-xs md:px-5 md:py-2.5 md:text-sm"
             >
               Se connecter
             </Link>
             <Link
               href="/register"
-              className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 md:text-sm"
+              className="btn-primary px-5 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
             >
               Créer un compte
             </Link>
@@ -57,13 +57,13 @@ export default function HomePage() {
           <div className="hero-cta mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/register"
-              className="rounded-xl bg-blue-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 md:text-base"
+              className="btn-primary px-8 py-3.5 text-sm md:text-base"
             >
               Créer un compte
             </Link>
             <Link
               href="/login"
-              className="rounded-xl border border-slate-600 bg-slate-900/50 px-7 py-3 text-sm font-semibold text-slate-200 backdrop-blur-sm transition hover:bg-slate-800 md:text-base"
+              className="btn-secondary px-8 py-3.5 text-sm md:text-base"
             >
               Se connecter
             </Link>
