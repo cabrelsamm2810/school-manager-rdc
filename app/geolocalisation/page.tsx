@@ -1,23 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
-import { demoGeoloc } from '@/lib/demo-data';
+
+type Etablissement = {
+  id: string;
+  nom: string;
+  province: string;
+  ville: string;
+  effectif: number;
+};
 
 export default function GeolocalisationPage() {
+  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const data = demoGeoloc.filter((e) =>
+
+  useEffect(() => {
+    fetch('/api/etablissements')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.etablissements) setEtablissements(data.etablissements);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const data = etablissements.filter((e) =>
     e.nom.toLowerCase().includes(search.toLowerCase()) ||
-    e.province.toLowerCase().includes(search.toLowerCase())
+    (e.province || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  const provinces = new Set(etablissements.map((e) => e.province).filter(Boolean));
+  const totalEleves = etablissements.reduce((s, e) => s + (e.effectif || 0), 0);
 
   return (
     <ModulePage icon="location" eyebrow="Services" title="Géolocalisation" description="Localisation des établissements et des utilisateurs sur la carte.">
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Établissements localisés" value={String(demoGeoloc.length)} />
-        <StatCard label="Provinces couvertes" value={String(new Set(demoGeoloc.map((e) => e.province)).size)} />
-        <StatCard label="Élèves total" value={demoGeoloc.reduce((s, e) => s + e.eleves, 0).toLocaleString('fr-FR')} />
+        <StatCard label="Établissements localisés" value={loading ? '—' : String(etablissements.length)} />
+        <StatCard label="Provinces couvertes" value={loading ? '—' : String(provinces.size)} />
+        <StatCard label="Élèves total" value={loading ? '—' : totalEleves.toLocaleString('fr-FR')} />
         <StatCard label="Position moyenne" value="RDC" hint="Centre national" />
       </div>
 
@@ -29,9 +52,9 @@ export default function GeolocalisationPage() {
           </div>
           {data.map((e, i) => (
             <div
-              key={i}
+              key={e.id}
               className="absolute flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs text-white shadow-lg"
-              style={{ left: `${20 + i * 12}%`, top: `${25 + i * 12}%` }}
+              style={{ left: `${20 + (i % 5) * 12}%`, top: `${25 + Math.floor(i / 5) * 15}%` }}
               title={e.nom}
             >
               📍
@@ -42,22 +65,28 @@ export default function GeolocalisationPage() {
         {/* Liste des établissements */}
         <div>
           <input type="text" value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Rechercher un établissement…" className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
-          <div className="space-y-3">
-            {data.map((e, i) => (
-              <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-slate-900">{e.nom}</p>
-                  <span className="text-lg">📍</span>
+          {loading ? (
+            <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
+          ) : data.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+              <p className="text-sm text-slate-500">Aucun établissement trouvé.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {data.map((e) => (
+                <div key={e.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-slate-900">{e.nom}</p>
+                    <span className="text-lg">📍</span>
+                  </div>
+                  <p className="text-sm text-slate-500">{e.province || '—'}{e.ville ? ` · ${e.ville}` : ''}</p>
+                  <div className="mt-2 flex gap-4 text-xs text-slate-400">
+                    <span>{(e.effectif || 0).toLocaleString('fr-FR')} élèves</span>
+                  </div>
                 </div>
-                <p className="text-sm text-slate-500">{e.province}</p>
-                <div className="mt-2 flex gap-4 text-xs text-slate-400">
-                  <span>Lat: {e.latitude}</span>
-                  <span>Lng: {e.longitude}</span>
-                  <span>{e.eleves.toLocaleString('fr-FR')} élèves</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </ModulePage>

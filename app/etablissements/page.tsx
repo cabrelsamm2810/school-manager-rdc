@@ -5,7 +5,7 @@ import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ImportDialog } from '@/components/import/ImportDialog';
-import { statutBadge } from '@/lib/demo-data';
+import { StatutBadge } from '@/components/ui/StatutBadge';
 
 type Etablissement = {
   id: string;
@@ -284,7 +284,7 @@ export default function EtablissementsPage() {
                         <td className="px-4 py-3 text-slate-600">{et.province || '—'}</td>
                         <td className="px-4 py-3 text-slate-600">{et.ville || '—'}</td>
                         <td className="px-4 py-3 text-slate-600">{et.effectif.toLocaleString('fr-FR')}</td>
-                        <td className="px-4 py-3">{statutBadge(et.statut)}</td>
+                        <td className="px-4 py-3">{<StatutBadge statut={et.statut} />}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-1">
                             <button onClick={() => startEdit(et)}
@@ -309,7 +309,7 @@ export default function EtablissementsPage() {
                     <p className="font-semibold text-slate-900">{et.nom}</p>
                     <p className="mt-0.5 text-xs text-slate-500">{et.type || '—'} · {et.province || '—'}</p>
                     <div className="mt-1 flex items-center gap-2">
-                      {statutBadge(et.statut)}
+                      {<StatutBadge statut={et.statut} />}
                       <span className="text-xs text-slate-500">{et.effectif.toLocaleString('fr-FR')} élèves</span>
                     </div>
                     <div className="mt-3 flex gap-2">

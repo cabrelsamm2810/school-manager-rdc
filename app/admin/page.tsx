@@ -1,17 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
-import { demoUsers, demoEtablissements, demoProvinces, demoDossiers } from '@/lib/demo-data';
+
+type AdminStats = {
+  totalUsers: number;
+  totalEtablissements: number;
+  totalProvinces: number;
+  totalDossiers: number;
+};
 
 export default function AdminPage() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/dashboard/stats').then((r) => r.ok ? r.json() : null),
+      fetch('/api/users').then((r) => r.ok ? r.json() : null),
+      fetch('/api/dossiers').then((r) => r.ok ? r.json() : null),
+    ]).then(([dash, users, dossiers]) => {
+      setStats({
+        totalUsers: users?.users?.length ?? 0,
+        totalEtablissements: dash?.stats?.totalEtablissements ?? 0,
+        totalProvinces: dash?.stats?.totalProvinces ?? 0,
+        totalDossiers: dossiers?.dossiers?.length ?? 0,
+      });
+    }).catch(() => {});
+  }, []);
+
   return (
     <ModulePage icon="shield" eyebrow="Administration" title="Administration générale" description="Configuration globale, paramètres système et supervision de School Manager RDC.">
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Utilisateurs" value={String(demoUsers.length)} hint="Total comptes" />
-        <StatCard label="Établissements" value={String(demoEtablissements.length)} hint="Recensés" />
-        <StatCard label="Provinces" value={String(demoProvinces.length)} hint="Couvertes" />
-        <StatCard label="Dossiers" value={String(demoDossiers.length)} hint="Actifs" />
+        <StatCard label="Utilisateurs" value={stats ? String(stats.totalUsers) : '—'} hint="Total comptes" />
+        <StatCard label="Établissements" value={stats ? String(stats.totalEtablissements) : '—'} hint="Recensés" />
+        <StatCard label="Provinces" value={stats ? String(stats.totalProvinces) : '—'} hint="Couvertes" />
+        <StatCard label="Dossiers" value={stats ? String(stats.totalDossiers) : '—'} hint="Actifs" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -41,16 +66,17 @@ export default function AdminPage() {
           <h3 className="mb-4 font-bold text-slate-900">Actions rapides</h3>
           <div className="space-y-2">
             {[
-              'Gérer les utilisateurs',
-              'Configurer les rôles',
-              'Voir les logs système',
-              'Sauvegarde de la base',
-              'Paramètres généraux',
+              { label: 'Gérer les utilisateurs', href: '/admin/users' },
+              { label: 'Paramètres généraux', href: '/parametres' },
+              { label: 'Provinces & territoire', href: '/provinces' },
+              { label: 'Établissements', href: '/etablissements' },
+              { label: 'Dossiers administratifs', href: '/dossiers' },
             ].map((action) => (
-              <button key={action} className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                {action}
+              <Link key={action.label} href={action.href}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                {action.label}
                 <span className="text-slate-400">→</span>
-              </button>
+              </Link>
             ))}
           </div>
         </div>

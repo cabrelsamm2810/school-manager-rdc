@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
-import { statutBadge } from '@/lib/demo-data';
+import { StatutBadge } from '@/components/ui/StatutBadge';
 
 type Eleve = {
   id: string;
@@ -69,7 +69,7 @@ export default function CartesQrPage() {
                 </div>
                 <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-100 text-2xl">▣</div>
               </div>
-              <div className="border-t border-slate-100 px-4 py-2.5">{statutBadge('Générée')}</div>
+              <div className="border-t border-slate-100 px-4 py-2.5">{<StatutBadge statut="Générée" />}</div>
             </div>
           ))}
         </div>

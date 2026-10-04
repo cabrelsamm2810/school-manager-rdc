@@ -5,7 +5,7 @@ import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ROLE_LABELS, ALL_ROLES } from '@/lib/rbac';
-import { statutBadge } from '@/lib/demo-data';
+import { StatutBadge } from '@/components/ui/StatutBadge';
 
 type User = {
   id: string;
@@ -275,7 +275,7 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="px-4 py-3 text-slate-600">{u.email}</td>
                         <td className="px-4 py-3"><Badge color="blue">{ROLE_LABELS[u.role] ?? u.role}</Badge></td>
-                        <td className="px-4 py-3">{statutBadge(u.isActive ? 'Actif' : 'Inactif')}</td>
+                        <td className="px-4 py-3">{<StatutBadge statut={u.isActive ? 'Actif' : 'Inactif'} />}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-1">
                             <button onClick={() => startEdit(u)}
@@ -301,7 +301,7 @@ export default function AdminUsersPage() {
                     <p className="mt-0.5 text-xs text-slate-500">{u.email}</p>
                     <div className="mt-1 flex items-center gap-2">
                       <Badge color="blue">{ROLE_LABELS[u.role] ?? u.role}</Badge>
-                      {statutBadge(u.isActive ? 'Actif' : 'Inactif')}
+                      {<StatutBadge statut={u.isActive ? 'Actif' : 'Inactif'} />}
                     </div>
                     <div className="mt-3 flex gap-2">
                       <button onClick={() => startEdit(u)}

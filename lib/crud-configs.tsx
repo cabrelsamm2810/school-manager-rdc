@@ -1,5 +1,5 @@
 import type { CrudConfig } from '@/components/CrudManager';
-import { statutBadge } from '@/lib/demo-data';
+import { StatutBadge } from '@/components/ui/StatutBadge';
 
 /**
  * Configurations frontend pour le CrudManager de chaque module.
@@ -31,7 +31,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'matricule', label: 'Matricule' },
       { key: 'grade', label: 'Grade' },
       { key: 'etablissement', label: 'Établissement' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'etablissement', label: 'Tous les établissements' },
@@ -70,7 +70,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'chefLieu', label: 'Chef-lieu' },
       { key: 'etablissements', label: 'Établissements' },
       { key: 'eleves', label: 'Élèves' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'statut', label: 'Tous les statuts', options: [
@@ -110,7 +110,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'type', label: 'Type' },
       { key: 'province', label: 'Province' },
       { key: 'ecoles', label: 'Écoles' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'type', label: 'Tous les types', options: [
@@ -152,7 +152,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'coordonnateur', label: 'Coordonnateur' },
       { key: 'ecoles', label: 'Écoles' },
       { key: 'eleves', label: 'Élèves' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'statut', label: 'Tous les statuts', options: [
@@ -189,7 +189,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'bureaux', label: 'Bureaux' },
       { key: 'agents', label: 'Agents' },
       { key: 'dossiers', label: 'Dossiers' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'statut', label: 'Tous les statuts', options: [
@@ -226,7 +226,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'province', label: 'Province' },
       { key: 'bureaux', label: 'Bureaux' },
       { key: 'agents', label: 'Agents' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'province', label: 'Toutes les provinces' },
@@ -285,7 +285,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'grade', label: 'Grade', render: (e: any) => <span className="font-medium text-slate-900">{e.grade}</span> },
       { key: 'categorie', label: 'Catégorie' },
       { key: 'effectif', label: 'Effectif' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'statut', label: 'Tous les statuts', options: [
@@ -322,7 +322,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'reference', label: 'Référence', render: (e: any) => <span className="font-medium text-slate-900">{e.reference}</span> },
       { key: 'objet', label: 'Objet' },
       { key: 'demandeur', label: 'Demandeur' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
       { key: 'date', label: 'Date', render: (e: any) => e.date ? new Date(e.date).toLocaleDateString('fr-FR') : '—' },
     ],
     filters: [
@@ -363,7 +363,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'etablissement', label: 'Établissement', render: (e: any) => <span className="font-medium text-slate-900">{e.etablissement}</span> },
       { key: 'visiteur', label: 'Visiteur' },
       { key: 'objet', label: 'Objet' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'etablissement', label: 'Tous les établissements' },
@@ -399,7 +399,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'service', label: 'Service', render: (e: any) => <span className="font-medium text-slate-900">{e.service}</span> },
       { key: 'procedures', label: 'Procédures' },
       { key: 'dossiers', label: 'Dossiers' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'statut', label: 'Tous les statuts', options: [
@@ -478,7 +478,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'description', label: 'Description' },
       { key: 'montant', label: 'Montant' },
       { key: 'date', label: 'Date', render: (e: any) => e.date ? new Date(e.date).toLocaleDateString('fr-FR') : '—' },
-      { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
       { name: 'statut', label: 'Tous les statuts', options: [

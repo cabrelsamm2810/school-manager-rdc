@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
-import { statutBadge } from '@/lib/demo-data';
+import { StatutBadge } from '@/components/ui/StatutBadge';
 
 type Eleve = {
   id: string;
@@ -59,7 +59,7 @@ export default function PhotoPasseportPage() {
               </div>
               <p className="truncate text-sm font-medium text-slate-900">{e.nom} {e.prenom}</p>
               <p className="text-xs text-slate-500">{e.matricule}</p>
-              <div className="mt-2 flex justify-center">{statutBadge('En attente')}</div>
+              <div className="mt-2 flex justify-center">{<StatutBadge statut="En attente" />}</div>
             </div>
           ))}
         </div>
