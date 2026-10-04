@@ -1,60 +1,141 @@
+'use client';
+
 import Link from 'next/link';
+import { SplashScreen } from '@/components/SplashScreen';
+import { Icon } from '@/components/ui/Icon';
+import { navigationGroups } from '@/lib/navigation';
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto max-w-6xl px-6 py-16">
-        <nav className="mb-12 flex items-center justify-between gap-3">
-          <div className="text-2xl font-bold">School Manager RDC</div>
-          <div className="flex gap-3">
-            <Link href="/login" className="rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800">
-              Connexion
+    <>
+      <SplashScreen />
+      <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+        {/* Background */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-30"
+          style={{ backgroundImage: 'url(/school-background.svg)' }}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/70 to-slate-950/90" />
+
+        {/* Nav bar */}
+        <nav className="relative z-10 flex items-center justify-between px-5 py-4 md:px-10">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.svg" alt="School Manager RDC" className="h-9 w-9 md:h-11 md:w-11" />
+            <span className="text-sm font-bold tracking-wide md:text-base">School Manager RDC</span>
+          </div>
+          <div className="flex items-center gap-2 md:gap-3">
+            <Link
+              href="/login"
+              className="rounded-xl border border-slate-600 px-4 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-800 md:text-sm"
+            >
+              Se connecter
             </Link>
-            <Link href="/register" className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
+            <Link
+              href="/register"
+              className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 md:text-sm"
+            >
               Créer un compte
             </Link>
           </div>
         </nav>
 
-        <section className="grid items-center gap-10 lg:grid-cols-2">
-          <div>
-            <p className="mb-4 inline-flex rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-blue-200">
-              Plateforme scolaire
-            </p>
-            <h1 className="max-w-xl text-4xl font-bold leading-tight md:text-6xl">
-              Gestion scolaire moderne et sécurisée pour la RDC.
-            </h1>
-            <p className="mt-6 max-w-lg text-lg text-slate-300">
-              La base de données PostgreSQL, les comptes utilisateurs, les rôles RBAC, les profils et les sessions sont maintenant préparés.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link href="/register" className="rounded-xl bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-500">
-                S’inscrire
-              </Link>
-              <Link href="/dashboard" className="rounded-xl border border-slate-700 px-6 py-3 font-medium text-slate-200 hover:bg-slate-900">
-                Tableau de bord
-              </Link>
-            </div>
+        {/* Hero */}
+        <section className="relative z-10 flex flex-col items-center px-5 pt-10 pb-8 text-center md:pt-16 md:pb-12">
+          <div className="hero-logo mb-6">
+            <img src="/logo.svg" alt="School Manager RDC" className="h-20 w-20 md:h-28 md:w-28" />
           </div>
-
-          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-soft">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl bg-slate-800 p-5">
-                <p className="text-sm text-slate-400">Rôles</p>
-                <p className="mt-2 text-3xl font-bold">10</p>
-              </div>
-              <div className="rounded-2xl bg-slate-800 p-5">
-                <p className="text-sm text-slate-400">Auth</p>
-                <p className="mt-2 text-3xl font-bold">Secure</p>
-              </div>
-              <div className="rounded-2xl bg-slate-800 p-5 md:col-span-2">
-                <p className="text-sm text-slate-400">Base</p>
-                <p className="mt-2 text-lg font-semibold">Next.js + Prisma + PostgreSQL + RBAC</p>
-              </div>
-            </div>
+          <h1 className="hero-title text-3xl font-bold leading-tight md:text-5xl">
+            School Manager <span className="text-blue-400">RDC</span>
+          </h1>
+          <p className="hero-sub mt-4 max-w-xl text-sm text-slate-300 md:text-lg">
+            La plateforme nationale de gestion scolaire pour la République Démocratique du Congo.
+            Gérez les élèves, les établissements, le personnel et l'administration territoriale
+            dans un environnement moderne, sécurisé et centralisé.
+          </p>
+          <div className="hero-cta mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/register"
+              className="rounded-xl bg-blue-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 md:text-base"
+            >
+              Créer un compte
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-xl border border-slate-600 bg-slate-900/50 px-7 py-3 text-sm font-semibold text-slate-200 backdrop-blur-sm transition hover:bg-slate-800 md:text-base"
+            >
+              Se connecter
+            </Link>
           </div>
         </section>
-      </div>
-    </main>
+
+        {/* Stats */}
+        <section className="relative z-10 mx-auto grid max-w-4xl grid-cols-2 gap-3 px-5 md:grid-cols-4 md:gap-4 md:px-10">
+          {[
+            { value: '30', label: 'Modules' },
+            { value: '10', label: 'Rôles RBAC' },
+            { value: '26', label: 'Provinces' },
+            { value: '∞', label: 'Établissements' },
+          ].map((s, i) => (
+            <div
+              key={s.label}
+              className="hero-stat rounded-2xl border border-slate-700/60 bg-slate-900/50 p-4 text-center backdrop-blur-sm"
+              style={{ animationDelay: `${0.15 * i}s` }}
+            >
+              <p className="text-2xl font-bold text-blue-400 md:text-3xl">{s.value}</p>
+              <p className="mt-1 text-xs text-slate-400 md:text-sm">{s.label}</p>
+            </div>
+          ))}
+        </section>
+
+        {/* Module access */}
+        <section className="relative z-10 mx-auto max-w-5xl px-5 py-10 md:px-10 md:py-14">
+          <h2 className="mb-6 text-center text-lg font-bold md:text-2xl">
+            Espaces de la plateforme
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {navigationGroups.map((group, gi) => (
+              <Link
+                key={group.title}
+                href={group.items[0].href}
+                className="module-card group rounded-2xl border border-slate-700/60 bg-slate-900/50 p-5 backdrop-blur-sm transition hover:border-blue-500/50 hover:bg-slate-800/60"
+                style={{ animationDelay: `${0.1 * gi}s` }}
+              >
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 transition group-hover:bg-blue-600/30">
+                    <Icon name={group.items[0].icon} className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-semibold text-sm md:text-base">{group.title}</h3>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.items.slice(0, 4).map((item) => (
+                    <span
+                      key={item.href}
+                      className="rounded-lg bg-slate-800/60 px-2.5 py-1 text-xs text-slate-400 transition group-hover:text-slate-300"
+                    >
+                      {item.label}
+                    </span>
+                  ))}
+                  {group.items.length > 4 && (
+                    <span className="rounded-lg bg-slate-800/60 px-2.5 py-1 text-xs text-slate-500">
+                      +{group.items.length - 4}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="relative z-10 border-t border-slate-800 px-5 py-6 text-center md:px-10">
+          <div className="flex items-center justify-center gap-2">
+            <img src="/logo.svg" alt="School Manager RDC" className="h-6 w-6" />
+            <span className="text-xs text-slate-500 md:text-sm">
+              School Manager RDC — République Démocratique du Congo
+            </span>
+          </div>
+        </footer>
+      </main>
+    </>
   );
 }
