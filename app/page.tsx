@@ -50,10 +50,11 @@ export default function HomePage() {
             <span className="hero-name">School Manager</span>{' '}
             <span className="hero-name-rdc">RDC</span>
           </h1>
-          <p className="hero-sub mt-4 max-w-xl text-sm text-slate-300 md:text-lg">
-            La plateforme nationale de gestion scolaire pour la République Démocratique du Congo.
-            Gérez les élèves, les établissements, le personnel et l'administration territoriale
-            dans un environnement moderne, sécurisé et centralisé.
+          <p className="hero-tagline mt-5 max-w-xs text-base font-medium leading-relaxed text-slate-100 md:max-w-md md:text-xl">
+            La plateforme numérique pour une gestion scolaire moderne en RDC.
+          </p>
+          <p className="hero-desc mt-2.5 max-w-xs text-xs leading-relaxed text-slate-400 md:max-w-lg md:text-sm">
+            Centralisez la gestion des établissements, des élèves, des enseignants et des services éducatifs dans un espace numérique unique.
           </p>
           <div className="hero-cta mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
