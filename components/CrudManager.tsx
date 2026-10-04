@@ -25,6 +25,12 @@ export type StatConfig = {
   hint?: string;
 };
 
+export type FilterConfig = {
+  name: string;          // field name to filter on
+  label: string;         // dropdown label
+  options?: { value: string; label: string }[]; // static options; if omitted, derived from data
+};
+
 export type CrudConfig = {
   apiPath: string;        // e.g. '/api/enseignants'
   entityName: string;     // e.g. 'enseignant' (singular, for UI labels)
@@ -35,6 +41,7 @@ export type CrudConfig = {
   columns: Column<Record<string, any>>[];
   statCards?: StatConfig[];
   defaultSort?: string; // field name to sort by
+  filters?: FilterConfig[]; // dropdown filters
 };
 
 /* ── Helpers ── */
@@ -85,6 +92,7 @@ export function CrudManager({ config }: { config: CrudConfig }) {
   const [items, setItems] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Record<string, any>>(() => emptyForm(config));
   const [formError, setFormError] = useState('');
@@ -97,6 +105,9 @@ export function CrudManager({ config }: { config: CrudConfig }) {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
+      for (const [key, val] of Object.entries(filters)) {
+        if (val) params.set(key, val);
+      }
       const res = await fetch(`${config.apiPath}?${params.toString()}`);
       const data = await res.json();
       const key = config.entityNamePlural;
@@ -112,7 +123,7 @@ export function CrudManager({ config }: { config: CrudConfig }) {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, filters]);
 
   function startCreate() {
     setEditingId(null);
@@ -288,13 +299,31 @@ export function CrudManager({ config }: { config: CrudConfig }) {
         </div>
       ) : (
         <>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher…"
-            className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-          />
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher…"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            />
+            {config.filters?.map((f) => {
+              const options = f.options ?? [...new Set(items.map((i) => i[f.name]).filter(Boolean))].sort().map((v) => ({ value: String(v), label: String(v) }));
+              return (
+                <select
+                  key={f.name}
+                  value={filters[f.name] ?? ''}
+                  onChange={(e) => setFilters({ ...filters, [f.name]: e.target.value })}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-52"
+                >
+                  <option value="">{f.label}</option>
+                  {options.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              );
+            })}
+          </div>
           {loading ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
               Chargement…

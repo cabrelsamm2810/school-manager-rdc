@@ -32,6 +32,8 @@ export default function EtablissementsPage() {
   const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [provinceFilter, setProvinceFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -45,6 +47,8 @@ export default function EtablissementsPage() {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
+      if (typeFilter) params.set('type', typeFilter);
+      if (provinceFilter) params.set('province', provinceFilter);
       const res = await fetch(`/api/etablissements?${params.toString()}`);
       const data = await res.json();
       if (res.ok) setEtablissements(data.etablissements ?? []);
@@ -59,7 +63,7 @@ export default function EtablissementsPage() {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, typeFilter, provinceFilter]);
 
   function startEdit(et: Etablissement) {
     setEditingId(et.id);
@@ -230,9 +234,26 @@ export default function EtablissementsPage() {
         </div>
       ) : (
         <>
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un établissement…"
-            className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un établissement…"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-48">
+              <option value="">Tous les types</option>
+              <option value="Primaire">Primaire</option>
+              <option value="Secondaire">Secondaire</option>
+              <option value="Supérieur">Supérieur</option>
+              <option value="Professionnel">Professionnel</option>
+            </select>
+            <select value={provinceFilter} onChange={(e) => setProvinceFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-48">
+              <option value="">Toutes les provinces</option>
+              {[...new Set(etablissements.map((e) => e.province).filter(Boolean))].sort().map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
           {loading ? (
             <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
           ) : etablissements.length === 0 ? (

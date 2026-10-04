@@ -26,8 +26,11 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') || undefined;
   const province = searchParams.get('province') || undefined;
 
+  const type = searchParams.get('type') || undefined;
+
   const where: Record<string, unknown> = {};
   if (province) where.province = province;
+  if (type) where.type = type;
   if (search) {
     where.OR = [
       { nom: { contains: search, mode: 'insensitive' } },

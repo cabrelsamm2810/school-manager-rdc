@@ -76,6 +76,14 @@ export function createCrudHandlers(config: CrudModelConfig) {
       }));
     }
 
+    // Apply exact-match filters for any field name present as a query param
+    for (const f of config.fields) {
+      const val = searchParams.get(f.name);
+      if (val) {
+        where[f.name] = val;
+      }
+    }
+
     const orderBy = config.defaultSort
       ? { [config.defaultSort.field]: config.defaultSort.order }
       : { createdAt: 'desc' as const };

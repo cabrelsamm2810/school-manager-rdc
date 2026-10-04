@@ -33,6 +33,14 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'etablissement', label: 'Établissement' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
     ],
+    filters: [
+      { name: 'etablissement', label: 'Tous les établissements' },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Congé', label: 'En congé' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
     statCards: [
       { label: 'Enseignants', value: (items: any[]) => String(items.length), hint: 'Total recensés' },
       { label: 'Actifs', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
@@ -63,6 +71,12 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'etablissements', label: 'Établissements' },
       { key: 'eleves', label: 'Élèves' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+    ],
+    filters: [
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En setup', label: 'En setup' },
+      ] },
     ],
     statCards: [
       { label: 'Provinces', value: (items: any[]) => String(items.length), hint: 'Total' },
@@ -98,6 +112,17 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'ecoles', label: 'Écoles' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
     ],
+    filters: [
+      { name: 'type', label: 'Tous les types', options: [
+        { value: 'Entité EC', label: 'Entité EC' },
+        { value: 'Entité ERC', label: 'Entité ERC' },
+      ] },
+      { name: 'province', label: 'Toutes les provinces' },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En setup', label: 'En setup' },
+      ] },
+    ],
     statCards: [
       { label: 'Entités', value: (items: any[]) => String(items.length) },
       { label: 'EC', value: (items: any[]) => String(items.filter((e) => e.type === 'Entité EC').length) },
@@ -128,6 +153,12 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'ecoles', label: 'Écoles' },
       { key: 'eleves', label: 'Élèves' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+    ],
+    filters: [
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Vacant', label: 'Vacant' },
+      ] },
     ],
     statCards: [
       { label: 'Provinces', value: (items: any[]) => String(items.length) },
@@ -160,6 +191,12 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'dossiers', label: 'Dossiers' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
     ],
+    filters: [
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
     statCards: [
       { label: 'Provinces', value: (items: any[]) => String(items.length) },
       { label: 'Bureaux', value: (items: any[]) => String(items.reduce((s, e) => s + (e.bureaux || 0), 0)) },
@@ -190,6 +227,13 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'bureaux', label: 'Bureaux' },
       { key: 'agents', label: 'Agents' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+    ],
+    filters: [
+      { name: 'province', label: 'Toutes les provinces' },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En setup', label: 'En setup' },
+      ] },
     ],
     statCards: [
       { label: 'Sous-divisions', value: (items: any[]) => String(items.length) },
@@ -243,6 +287,12 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'effectif', label: 'Effectif' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
     ],
+    filters: [
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
     statCards: [
       { label: 'Grades', value: (items: any[]) => String(items.length) },
       { label: 'Actifs', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
@@ -274,6 +324,14 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'demandeur', label: 'Demandeur' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
       { key: 'date', label: 'Date', render: (e: any) => e.date ? new Date(e.date).toLocaleDateString('fr-FR') : '—' },
+    ],
+    filters: [
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'En attente', label: 'En attente' },
+        { value: 'En cours', label: 'En cours' },
+        { value: 'Traité', label: 'Traité' },
+        { value: 'Rejeté', label: 'Rejeté' },
+      ] },
     ],
     statCards: [
       { label: 'Dossiers', value: (items: any[]) => String(items.length), hint: 'Total' },
@@ -307,6 +365,14 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'objet', label: 'Objet' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
     ],
+    filters: [
+      { name: 'etablissement', label: 'Tous les établissements' },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Planifiée', label: 'Planifiée' },
+        { value: 'Terminée', label: 'Terminée' },
+        { value: 'Annulée', label: 'Annulée' },
+      ] },
+    ],
     statCards: [
       { label: 'Visites', value: (items: any[]) => String(items.length) },
       { label: 'Planifiées', value: (items: any[]) => String(items.filter((e) => e.statut === 'Planifiée').length) },
@@ -334,6 +400,12 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'procedures', label: 'Procédures' },
       { key: 'dossiers', label: 'Dossiers' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+    ],
+    filters: [
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En pause', label: 'En pause' },
+      ] },
     ],
     statCards: [
       { label: 'Services', value: (items: any[]) => String(items.length) },
@@ -368,6 +440,15 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'lu', label: 'Lu', render: (e: any) => e.lu ? '✓ Oui' : '✗ Non' },
       { key: 'createdAt', label: 'Date', render: (e: any) => e.createdAt ? new Date(e.createdAt).toLocaleString('fr-FR') : '—' },
     ],
+    filters: [
+      { name: 'type', label: 'Tous les types', options: [
+        { value: 'Inscription', label: 'Inscription' },
+        { value: 'Visite', label: 'Visite' },
+        { value: 'Évaluation', label: 'Évaluation' },
+        { value: 'Dossier', label: 'Dossier' },
+        { value: 'Personnel', label: 'Personnel' },
+      ] },
+    ],
     statCards: [
       { label: 'Notifications', value: (items: any[]) => String(items.length) },
       { label: 'Non lues', value: (items: any[]) => String(items.filter((e) => !e.lu).length) },
@@ -398,6 +479,13 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'montant', label: 'Montant' },
       { key: 'date', label: 'Date', render: (e: any) => e.date ? new Date(e.date).toLocaleDateString('fr-FR') : '—' },
       { key: 'statut', label: 'Statut', render: (e: any) => statutBadge(e.statut) },
+    ],
+    filters: [
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Payé', label: 'Payé' },
+        { value: 'En attente', label: 'En attente' },
+        { value: 'Rejeté', label: 'Rejeté' },
+      ] },
     ],
     statCards: [
       { label: 'Paiements', value: (items: any[]) => String(items.length) },
@@ -430,6 +518,9 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'examen', label: 'Examen' },
       { key: 'moyenne', label: 'Moyenne' },
       { key: 'mention', label: 'Mention' },
+    ],
+    filters: [
+      { name: 'classe', label: 'Toutes les classes' },
     ],
     statCards: [
       { label: 'Notes', value: (items: any[]) => String(items.length), hint: 'Total' },
