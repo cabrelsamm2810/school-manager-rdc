@@ -39,3 +39,26 @@ model User {
   @@index([isActive])
   @@map("users")
 }
+
+model Eleve {
+  id              String    @id @default(cuid())
+  matricule       String    @unique
+  nom             String
+  postNom         String    @default("")
+  prenom          String
+  sexe            String    @default("")
+  dateNaissance   DateTime?
+  lieuNaissance   String    @default("")
+  classe          String
+  telephone       String    @default("")
+  email           String    @default("")
+  adresse         String    @default("")
+  nomTuteur       String    @default("")
+  telephoneTuteur String    @default("")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([classe])
+  @@index([nom])
+  @@map("eleves")
+}
