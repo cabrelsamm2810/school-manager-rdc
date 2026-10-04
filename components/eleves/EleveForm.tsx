@@ -3,7 +3,25 @@
 import { FormEvent, useEffect, useState } from 'react';
 
 type EleveFormProps = {
-  onCreated: () => void;
+  onCreated?: () => void;
+  eleve?: {
+    id: string;
+    matricule: string;
+    nom: string;
+    postNom: string;
+    prenom: string;
+    sexe: string;
+    dateNaissance: string | null;
+    lieuNaissance: string;
+    classe: string;
+    telephone: string;
+    email: string;
+    adresse: string;
+    nomTuteur: string;
+    telephoneTuteur: string;
+    etablissementId: string | null;
+  };
+  onUpdated?: () => void;
 };
 
 type Etablissement = {
@@ -32,7 +50,8 @@ const inputClass =
   'w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
 
-export function EleveForm({ onCreated }: EleveFormProps) {
+export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
+  const isEdit = !!eleve;
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,6 +67,28 @@ export function EleveForm({ onCreated }: EleveFormProps) {
       .catch(() => {});
   }, []);
 
+  // Pré-remplir le formulaire en mode édition
+  useEffect(() => {
+    if (eleve) {
+      setForm({
+        matricule: eleve.matricule,
+        nom: eleve.nom,
+        postNom: eleve.postNom,
+        prenom: eleve.prenom,
+        sexe: eleve.sexe,
+        dateNaissance: eleve.dateNaissance ? new Date(eleve.dateNaissance).toISOString().split('T')[0] : '',
+        lieuNaissance: eleve.lieuNaissance,
+        classe: eleve.classe,
+        telephone: eleve.telephone,
+        email: eleve.email,
+        adresse: eleve.adresse,
+        nomTuteur: eleve.nomTuteur,
+        telephoneTuteur: eleve.telephoneTuteur,
+        etablissementId: eleve.etablissementId ?? '',
+      });
+    }
+  }, [eleve]);
+
   function updateField<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -59,8 +100,10 @@ export function EleveForm({ onCreated }: EleveFormProps) {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/eleves', {
-        method: 'POST',
+      const url = isEdit ? `/api/eleves/${eleve!.id}` : '/api/eleves';
+      const method = isEdit ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       });
@@ -72,8 +115,12 @@ export function EleveForm({ onCreated }: EleveFormProps) {
       }
 
       setSuccess(true);
-      setForm(emptyForm);
-      onCreated();
+      if (isEdit) {
+        onUpdated?.();
+      } else {
+        setForm(emptyForm);
+        onCreated?.();
+      }
     } catch {
       setError('Impossible de joindre le serveur.');
     } finally {
@@ -264,7 +311,7 @@ export function EleveForm({ onCreated }: EleveFormProps) {
       )}
       {success && (
         <p className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-          Élève enregistré avec succès.
+          {isEdit ? 'Élève modifié avec succès.' : 'Élève enregistré avec succès.'}
         </p>
       )}
 
@@ -273,7 +320,7 @@ export function EleveForm({ onCreated }: EleveFormProps) {
         disabled={loading}
         className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 sm:w-auto sm:px-8"
       >
-        {loading ? 'Enregistrement…' : "Enregistrer l'élève"}
+        {loading ? 'Enregistrement…' : isEdit ? 'Modifier l\'élève' : "Enregistrer l'élève"}
       </button>
     </form>
   );
