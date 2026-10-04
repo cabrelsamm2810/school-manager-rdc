@@ -65,16 +65,16 @@ export default function HomePage() {
           <p className="hero-desc mt-2.5 max-w-xs text-xs leading-relaxed text-slate-400 md:max-w-lg md:text-sm">
             Centralisez la gestion des établissements, des élèves, des enseignants et des services éducatifs dans un espace numérique unique.
           </p>
-          <div className="hero-cta mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="hero-cta mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-center">
             <Link
               href="/register"
-              className="btn-primary px-8 py-3.5 text-sm md:text-base"
+              className="btn-primary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
             >
               Créer un compte
             </Link>
             <Link
               href="/login"
-              className="btn-secondary px-8 py-3.5 text-sm md:text-base"
+              className="btn-secondary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
             >
               Se connecter
             </Link>
