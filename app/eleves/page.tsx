@@ -46,7 +46,7 @@ export default function ElevesPage() {
         <ImportDialog
           endpoint="/api/import/eleves"
           moduleName="Élèves"
-          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur']}
+          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowImport(false)}
         />

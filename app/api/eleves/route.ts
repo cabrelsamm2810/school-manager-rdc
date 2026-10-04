@@ -16,7 +16,8 @@ const createSchema = z.object({
   email: z.string().trim().email('L’email est invalide.').optional().or(z.literal('')),
   adresse: z.string().trim().optional().or(z.literal('')),
   nomTuteur: z.string().trim().optional().or(z.literal('')),
-  telephoneTuteur: z.string().trim().optional().or(z.literal(''))
+  telephoneTuteur: z.string().trim().optional().or(z.literal('')),
+  etablissementId: z.string().trim().optional().or(z.literal(''))
 });
 
 /** GET /api/eleves — liste des élèves (filtrable par classe et recherche). */
@@ -28,10 +29,12 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const classe = searchParams.get('classe') || undefined;
+  const etablissementId = searchParams.get('etablissementId') || undefined;
   const search = searchParams.get('search') || undefined;
 
   const where: Record<string, unknown> = {};
   if (classe) where.classe = classe;
+  if (etablissementId) where.etablissementId = etablissementId;
   if (search) {
     where.OR = [
       { nom: { contains: search, mode: 'insensitive' } },
@@ -43,6 +46,7 @@ export async function GET(request: NextRequest) {
 
   const eleves = await prisma.eleve.findMany({
     where,
+    include: { etablissement: { select: { id: true, nom: true } } },
     orderBy: [{ classe: 'asc' }, { nom: 'asc' }]
   });
 
@@ -85,7 +89,10 @@ export async function POST(request: NextRequest) {
       email: data.email ?? '',
       adresse: data.adresse ?? '',
       nomTuteur: data.nomTuteur ?? '',
-      telephoneTuteur: data.telephoneTuteur ?? ''
+      telephoneTuteur: data.telephoneTuteur ?? '',
+      etablissement: data.etablissementId
+        ? { connect: { id: data.etablissementId } }
+        : undefined
     }
   });
 

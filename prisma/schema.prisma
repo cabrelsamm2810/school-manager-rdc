@@ -55,11 +55,14 @@ model Eleve {
   adresse         String    @default("")
   nomTuteur       String    @default("")
   telephoneTuteur String    @default("")
+  etablissementId String?
+  etablissement   Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([classe])
   @@index([nom])
+  @@index([etablissementId])
   @@map("eleves")
 }
 
@@ -74,6 +77,7 @@ model Etablissement {
   email       String   @default("")
   effectif   Int      @default(0)
   statut      String   @default("Actif")
+  eleves      Eleve[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

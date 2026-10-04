@@ -1,9 +1,14 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
 type EleveFormProps = {
   onCreated: () => void;
+};
+
+type Etablissement = {
+  id: string;
+  nom: string;
 };
 
 const emptyForm = {
@@ -19,7 +24,8 @@ const emptyForm = {
   email: '',
   adresse: '',
   nomTuteur: '',
-  telephoneTuteur: ''
+  telephoneTuteur: '',
+  etablissementId: ''
 };
 
 const inputClass =
@@ -31,6 +37,16 @@ export function EleveForm({ onCreated }: EleveFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
+
+  useEffect(() => {
+    fetch('/api/etablissements')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.etablissements) setEtablissements(data.etablissements);
+      })
+      .catch(() => {});
+  }, []);
 
   function updateField<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -51,7 +67,7 @@ export function EleveForm({ onCreated }: EleveFormProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error ?? 'Impossible d’enregistrer l’élève.');
+        setError(result.error ?? "Impossible d'enregistrer l'élève.");
         return;
       }
 
@@ -83,6 +99,20 @@ export function EleveForm({ onCreated }: EleveFormProps) {
             placeholder="Ex. ELV-2026-001"
             required
           />
+        </div>
+        <div>
+          <label htmlFor="etablissementId" className={labelClass}>Établissement</label>
+          <select
+            id="etablissementId"
+            value={form.etablissementId}
+            onChange={(e) => updateField('etablissementId', e.target.value)}
+            className={inputClass}
+          >
+            <option value="">— Non assigné —</option>
+            {etablissements.map((et) => (
+              <option key={et.id} value={et.id}>{et.nom}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label htmlFor="classe" className={labelClass}>Classe *</label>
@@ -243,7 +273,7 @@ export function EleveForm({ onCreated }: EleveFormProps) {
         disabled={loading}
         className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 sm:w-auto sm:px-8"
       >
-        {loading ? 'Enregistrement…' : 'Enregistrer l’élève'}
+        {loading ? 'Enregistrement…' : "Enregistrer l'élève"}
       </button>
     </form>
   );

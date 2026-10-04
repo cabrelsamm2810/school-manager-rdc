@@ -17,6 +17,7 @@ interface ParsedRow {
   adresse?: string;
   nomTuteur?: string;
   telephoneTuteur?: string;
+  etablissementId?: string;
 }
 
 /** POST /api/import/eleves — import en masse depuis un fichier Excel/CSV */
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
           adresse: String(row.adresse ?? '').trim(),
           nomTuteur: String(row.nomTuteur ?? '').trim(),
           telephoneTuteur: String(row.telephoneTuteur ?? '').trim(),
+          etablissementId: String(row.etablissementId ?? '').trim() || null,
         },
       });
       existingMatricules.add(matricule);
