@@ -140,6 +140,37 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Presentation */}
+        <section className="relative z-10 mx-auto max-w-5xl px-5 pb-10 md:px-10 md:pb-14">
+          <div className="rounded-3xl border border-slate-700/30 bg-slate-900/30 p-6 backdrop-blur-sm md:p-10">
+            <h2 className="mb-3 text-center text-lg font-bold md:text-2xl">
+              Une gestion scolaire pensée pour la RDC
+            </h2>
+            <p className="mx-auto mb-8 max-w-2xl text-center text-xs leading-relaxed text-slate-400 md:text-sm">
+              School Manager RDC centralise les outils essentiels à la gestion des établissements, des élèves, des enseignants et des services éducatifs dans une plateforme numérique moderne, simple et sécurisée.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                { icon: 'organization', title: 'Gestion centralisée', desc: 'Une gestion organisée des informations scolaires.' },
+                { icon: 'shield', title: 'Accès sécurisé', desc: 'Des espaces adaptés à chaque utilisateur et à son rôle.' },
+                { icon: 'globe', title: 'Solution numérique', desc: 'Des outils modernes accessibles sur téléphone, tablette et ordinateur.' },
+              ].map((item, i) => (
+                <div
+                  key={item.title}
+                  className="feature-item flex flex-col items-center rounded-2xl border border-slate-700/30 bg-slate-800/30 p-5 text-center transition duration-300 hover:border-blue-500/30 hover:bg-slate-800/50"
+                  style={{ animationDelay: `${0.1 * i}s` }}
+                >
+                  <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400">
+                    <Icon name={item.icon} className="h-5 w-5 md:h-6 md:w-6" />
+                  </div>
+                  <h3 className="mb-1.5 text-sm font-semibold text-white md:text-base">{item.title}</h3>
+                  <p className="text-xs leading-relaxed text-slate-400">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="relative z-10 border-t border-slate-800 px-5 py-6 text-center md:px-10">
           <div className="flex items-center justify-center gap-2">

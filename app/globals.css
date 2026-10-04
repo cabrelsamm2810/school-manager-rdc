@@ -82,6 +82,13 @@ body {
 .hero-stat { animation: statFadeUp 0.6s ease-out forwards; opacity: 0; }
 .module-card { animation: moduleFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
 
+/* ── Presentation feature items ── */
+@keyframes featureFadeUp {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.feature-item { animation: featureFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+
 /* ── Brand name styling ── */
 .hero-name {
   background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
