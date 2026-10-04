@@ -142,6 +142,53 @@ export const demoServices = [
   { service: 'Bourses & aides', procedures: 4, dossiers: 65, statut: 'En pause' },
 ];
 
+/* ── Communication & Services ── */
+
+export const demoNotifications = [
+  { titre: 'Nouvel élève inscrit', message: 'Kabongo Mukendi Jean a été inscrit en 6ème primaire.', type: 'Inscription', date: '2026-10-04 10:30', lu: false },
+  { titre: 'Visite planifiée', message: 'Inspection pédagogique à l\'Institut Tuendelee le 05/10.', type: 'Visite', date: '2026-10-03 16:00', lu: false },
+  { titre: 'Notes publiées', message: 'Les notes du 1er trimestre de 4ème secondaire sont disponibles.', type: 'Évaluation', date: '2026-10-03 14:20', lu: true },
+  { titre: 'Dossier traité', message: 'Le dossier DOS-2026-002 a été traité.', type: 'Dossier', date: '2026-10-02 09:15', lu: true },
+  { titre: 'Nouvel enseignant', message: 'Kasongo Mbuyi a rejoint l\'École Maman Mobali.', type: 'Personnel', date: '2026-10-01 11:00', lu: true },
+];
+
+export const demoConversations = [
+  { nom: 'Dr. Mukendi Kalonji', role: 'Coord. nationale', dernier: 'Réunion demain à 10h ?', date: '10:32', nonLus: 2 },
+  { nom: 'Prof. Kabeya', role: 'Enseignant', dernier: 'Voici les notes du devoir', date: '09:15', nonLus: 0 },
+  { nom: 'Mme. Mujinga', role: 'Parent', dernier: 'Merci pour l\'information', date: 'Hier', nonLus: 0 },
+  { nom: 'Direction Boboto', role: 'Direction', dernier: 'Planning validé ✓', date: 'Hier', nonLus: 1 },
+  { nom: 'M. Mwamba', role: 'Agent provincial', dernier: 'Rapport de visite envoyé', date: '01/10', nonLus: 0 },
+];
+
+export const demoMessages = [
+  { auteur: 'Dr. Mukendi Kalonji', contenu: 'Bonjour, avez-vous reçu le rapport mensuel ?', date: '10:20', moi: false },
+  { auteur: 'Moi', contenu: 'Oui, je l\'ai consulté ce matin. Tout est en ordre.', date: '10:25', moi: true },
+  { auteur: 'Dr. Mukendi Kalonji', contenu: 'Parfait. Réunion demain à 10h ?', date: '10:32', moi: false },
+];
+
+export const demoPaiements = [
+  { reference: 'PAY-2026-001', description: 'Abonnement Premium — École', montant: '25 000 FC', date: '2026-10-01', statut: 'Payé' },
+  { reference: 'PAY-2026-002', description: 'Frais de scolarité — 6ème primaire', montant: '45 000 FC', date: '2026-09-28', statut: 'Payé' },
+  { reference: 'PAY-2026-003', description: 'Cartes scolaires (lot 50)', montant: '15 000 FC', date: '2026-09-25', statut: 'Payé' },
+  { reference: 'PAY-2026-004', description: 'Abonnement Premium — École', montant: '25 000 FC', date: '2026-09-01', statut: 'En attente' },
+  { reference: 'PAY-2026-005', description: 'Frais d\'examen — 3ème secondaire', montant: '30 000 FC', date: '2026-08-28', statut: 'Rejeté' },
+];
+
+export const demoPlans = [
+  { nom: 'Gratuit', prix: '0 FC', fonctionnalites: ['1 établissement', '100 élèves max', 'Recherche d\'élèves'], actuel: false },
+  { nom: 'Standard', prix: '15 000 FC/mois', fonctionnalites: ['3 établissements', '1 000 élèves', 'Cahier de notes', 'Notifications'], actuel: false },
+  { nom: 'Premium', prix: '25 000 FC/mois', fonctionnalites: ['Établissements illimités', 'Élèves illimités', 'Tous les modules', 'Support prioritaire'], actuel: true },
+];
+
+export const demoGeoloc = [
+  { nom: 'Institut Tuendelee', province: 'Kinshasa', latitude: '-4.3250', longitude: '15.3222', eleves: 1240 },
+  { nom: 'Collège Boboto', province: 'Kinshasa', latitude: '-4.3389', longitude: '15.3131', eleves: 980 },
+  { nom: 'Lycée Sainte-Germaine', province: 'Haut-Katanga', latitude: '-11.6644', longitude: '27.4794', eleves: 760 },
+  { nom: 'École Primaire Bambelo', province: 'Kongo Central', latitude: '-5.8250', longitude: '13.4622', eleves: 450 },
+  { nom: 'École Maman Mobali', province: 'Nord-Kivu', latitude: '-1.6788', longitude: '29.2228', eleves: 320 },
+  { nom: 'Institut Tala Na Sala', province: 'Kwilu', latitude: '-3.3167', longitude: '18.8167', eleves: 540 },
+];
+
 /* ── Helpers ── */
 
 export function statutBadge(statut: string) {
