@@ -4,14 +4,189 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Les rôles sont un enum Prisma : aucun compte ni secret n'est créé par défaut.
-  // Le SUPER_ADMIN doit être créé via une procédure contrôlée hors inscription publique.
   const roleCounts = await Promise.all(
-    Object.values(Role).map((role) =>
-      prisma.user.count({ where: { role } })
-    )
+    Object.values(Role).map((role) => prisma.user.count({ where: { role } }))
   );
-
   console.log(`Seed vérifié : ${roleCounts.length} rôles disponibles.`);
+
+  // ── Enseignants ──
+  const enseignants = [
+    { nom: 'Mukendi Kalonji', matricule: 'ENS-001', grade: 'Chef de travaux', etablissement: 'Institut Tuendelee', specialite: 'Mathématiques', telephone: '', email: '', statut: 'Actif' },
+    { nom: 'Kabeya Tshibangu', matricule: 'ENS-002', grade: 'Professeur', etablissement: 'Collège Boboto', specialite: 'Sciences', telephone: '', email: '', statut: 'Actif' },
+    { nom: 'Mwamba Ilunga', matricule: 'ENS-003', grade: 'Instituteur', etablissement: 'École Primaire Bambelo', specialite: 'Primaire', telephone: '', email: '', statut: 'Actif' },
+    { nom: 'Tshisekedi Mujinga', matricule: 'ENS-004', grade: 'Professeur', etablissement: 'Lycée Sainte-Germaine', specialite: 'Français', telephone: '', email: '', statut: 'Congé' },
+    { nom: 'Kasongo Mbuyi', matricule: 'ENS-005', grade: 'Instituteur principal', etablissement: 'École Maman Mobali', specialite: 'Primaire', telephone: '', email: '', statut: 'Actif' },
+  ];
+  for (const e of enseignants) {
+    await prisma.enseignant.upsert({ where: { matricule: e.matricule }, create: e, update: {} });
+  }
+
+  // ── Provinces ──
+  const provinces = [
+    { nom: 'Kinshasa', chefLieu: 'Kinshasa', etablissements: 320, eleves: 485000, statut: 'Actif' },
+    { nom: 'Kongo Central', chefLieu: 'Matadi', etablissements: 180, eleves: 210000, statut: 'Actif' },
+    { nom: 'Haut-Katanga', chefLieu: 'Lubumbashi', etablissements: 240, eleves: 320000, statut: 'Actif' },
+    { nom: 'Nord-Kivu', chefLieu: 'Goma', etablissements: 150, eleves: 180000, statut: 'Actif' },
+    { nom: 'Kwilu', chefLieu: 'Bandundu', etablissements: 95, eleves: 120000, statut: 'En setup' },
+    { nom: 'Tshopo', chefLieu: 'Kisangani', etablissements: 110, eleves: 140000, statut: 'Actif' },
+  ];
+  for (const p of provinces) {
+    await prisma.province.upsert({ where: { nom: p.nom }, create: p, update: {} });
+  }
+
+  // ── EC-ERC ──
+  const ecErc = [
+    { nom: 'EC Kinshasa-Est', type: 'Entité EC', province: 'Kinshasa', ecoles: 160, statut: 'Actif' },
+    { nom: 'ERC Kinshasa-Ouest', type: 'Entité ERC', province: 'Kinshasa', ecoles: 160, statut: 'Actif' },
+    { nom: 'EC Lubumbashi', type: 'Entité EC', province: 'Haut-Katanga', ecoles: 120, statut: 'Actif' },
+    { nom: 'ERC Goma', type: 'Entité ERC', province: 'Nord-Kivu', ecoles: 75, statut: 'Actif' },
+    { nom: 'EC Matadi', type: 'Entité EC', province: 'Kongo Central', ecoles: 90, statut: 'En setup' },
+  ];
+  for (const e of ecErc) {
+    const existing = await prisma.ecErc.findFirst({ where: { nom: e.nom } });
+    if (!existing) await prisma.ecErc.create({ data: e });
+  }
+
+  // ── Coordination nationale ──
+  const coordNat = [
+    { province: 'Kinshasa', coordonnateur: 'Dr. Mukendi Kalonji', ecoles: 320, eleves: 485000, statut: 'Actif' },
+    { province: 'Haut-Katanga', coordonnateur: 'Prof. Kabeya Tshibangu', ecoles: 240, eleves: 320000, statut: 'Actif' },
+    { province: 'Nord-Kivu', coordonnateur: 'M. Mwamba Ilunga', ecoles: 150, eleves: 180000, statut: 'Actif' },
+    { province: 'Kongo Central', coordonnateur: 'Mme. Mujinga Tshisekedi', ecoles: 180, eleves: 210000, statut: 'Actif' },
+    { province: 'Kwilu', coordonnateur: '', ecoles: 95, eleves: 120000, statut: 'Vacant' },
+  ];
+  for (const c of coordNat) {
+    const existing = await prisma.coordNationale.findFirst({ where: { province: c.province } });
+    if (!existing) await prisma.coordNationale.create({ data: c });
+  }
+
+  // ── Coordination provinciale ──
+  const coordProv = [
+    { province: 'Kinshasa', bureaux: 4, agents: 28, dossiers: 1450, statut: 'Actif' },
+    { province: 'Haut-Katanga', bureaux: 3, agents: 18, dossiers: 820, statut: 'Actif' },
+    { province: 'Nord-Kivu', bureaux: 2, agents: 12, dossiers: 540, statut: 'Actif' },
+    { province: 'Kongo Central', bureaux: 2, agents: 10, dossiers: 430, statut: 'Actif' },
+  ];
+  for (const c of coordProv) {
+    const existing = await prisma.coordProvinciale.findFirst({ where: { province: c.province } });
+    if (!existing) await prisma.coordProvinciale.create({ data: c });
+  }
+
+  // ── Coordination sous-provinciale ──
+  const coordSous = [
+    { nom: 'Sous-division Lukunga', province: 'Kinshasa', bureaux: 2, agents: 8, statut: 'Actif' },
+    { nom: 'Sous-division Tshangu', province: 'Kinshasa', bureaux: 2, agents: 7, statut: 'Actif' },
+    { nom: 'Sous-division Likasi', province: 'Haut-Katanga', bureaux: 1, agents: 5, statut: 'Actif' },
+    { nom: 'Sous-division Beni', province: 'Nord-Kivu', bureaux: 1, agents: 4, statut: 'En setup' },
+  ];
+  for (const c of coordSous) {
+    const existing = await prisma.coordSousProvinciale.findFirst({ where: { nom: c.nom } });
+    if (!existing) await prisma.coordSousProvinciale.create({ data: c });
+  }
+
+  // ── Bureaux ──
+  const bureaux = [
+    { bureau: 'Bureau provincial Kinshasa', fonction: 'Coordination provinciale', titulaire: 'Dr. Mukendi Kalonji', localisation: 'Kinshasa' },
+    { bureau: 'Bureau sous-provincial Lukunga', fonction: 'Coordination sous-provinciale', titulaire: 'M. Kabeya', localisation: 'Kinshasa' },
+    { bureau: 'Bureau provincial Haut-Katanga', fonction: 'Coordination provinciale', titulaire: 'Prof. Kabeya Tshibangu', localisation: 'Lubumbashi' },
+    { bureau: 'Inspection Nord-Kivu', fonction: 'Inspection éducative', titulaire: 'M. Mwamba Ilunga', localisation: 'Goma' },
+    { bureau: 'Secrétariat Kongo Central', fonction: 'Secrétariat', titulaire: 'Mme. Mujinga', localisation: 'Matadi' },
+  ];
+  for (const b of bureaux) {
+    const existing = await prisma.bureau.findFirst({ where: { bureau: b.bureau } });
+    if (!existing) await prisma.bureau.create({ data: b });
+  }
+
+  // ── Grades ──
+  const grades = [
+    { grade: 'Chef de travaux', categorie: 'Enseignement secondaire', effectif: 120, statut: 'Actif' },
+    { grade: 'Professeur', categorie: 'Enseignement secondaire', effectif: 340, statut: 'Actif' },
+    { grade: 'Instituteur principal', categorie: 'Enseignement primaire', effectif: 210, statut: 'Actif' },
+    { grade: 'Instituteur', categorie: 'Enseignement primaire', effectif: 450, statut: 'Actif' },
+    { grade: 'Directeur', categorie: 'Direction', effectif: 85, statut: 'Actif' },
+    { grade: 'Inspecteur', categorie: 'Inspection', effectif: 32, statut: 'Actif' },
+  ];
+  for (const g of grades) {
+    const existing = await prisma.grade.findFirst({ where: { grade: g.grade } });
+    if (!existing) await prisma.grade.create({ data: g });
+  }
+
+  // ── Dossiers ──
+  const dossiers = [
+    { reference: 'DOS-2026-001', objet: 'Demande de transfert', demandeur: 'Kabongo Mukendi', statut: 'En cours', date: new Date('2026-09-28') },
+    { reference: 'DOS-2026-002', objet: 'Certificat de scolarité', demandeur: 'Kasongo Mbuyi', statut: 'Traité', date: new Date('2026-09-25') },
+    { reference: 'DOS-2026-003', objet: 'Réclamation de notes', demandeur: 'Tshibangu Kalonji', statut: 'En attente', date: new Date('2026-10-01') },
+    { reference: 'DOS-2026-004', objet: 'Inscription tardive', demandeur: 'Mujinga Ilunga', statut: 'En cours', date: new Date('2026-10-02') },
+    { reference: 'DOS-2026-005', objet: 'Demande de bourse', demandeur: 'Mbuyi Tshisekedi', statut: 'Rejeté', date: new Date('2026-09-20') },
+  ];
+  for (const d of dossiers) {
+    await prisma.dossier.upsert({ where: { reference: d.reference }, create: d, update: {} });
+  }
+
+  // ── Visites ──
+  const visites = [
+    { date: new Date('2026-10-05'), etablissement: 'Institut Tuendelee', visiteur: 'Dr. Mukendi', objet: 'Inspection pédagogique', statut: 'Planifiée' },
+    { date: new Date('2026-10-07'), etablissement: 'Collège Boboto', visiteur: 'M. Kabeya', objet: 'Suivi administratif', statut: 'Planifiée' },
+    { date: new Date('2026-09-30'), etablissement: 'École Primaire Bambelo', visiteur: 'Mme. Mujinga', objet: 'Évaluation continue', statut: 'Terminée' },
+    { date: new Date('2026-10-10'), etablissement: 'Lycée Sainte-Germaine', visiteur: 'M. Mwamba', objet: 'Audit financier', statut: 'Planifiée' },
+  ];
+  for (const v of visites) {
+    const existing = await prisma.visite.findFirst({ where: { etablissement: v.etablissement, date: v.date } });
+    if (!existing) await prisma.visite.create({ data: v });
+  }
+
+  // ── Services admin ──
+  const services = [
+    { service: 'Inscriptions', procedures: 12, dossiers: 340, statut: 'Actif' },
+    { service: 'Examens & évaluations', procedures: 8, dossiers: 210, statut: 'Actif' },
+    { service: 'Transferts', procedures: 5, dossiers: 85, statut: 'Actif' },
+    { service: 'Certifications', procedures: 6, dossiers: 120, statut: 'Actif' },
+    { service: 'Bourses & aides', procedures: 4, dossiers: 65, statut: 'En pause' },
+  ];
+  for (const s of services) {
+    const existing = await prisma.serviceAdmin.findFirst({ where: { service: s.service } });
+    if (!existing) await prisma.serviceAdmin.create({ data: s });
+  }
+
+  // ── Notifications ──
+  const notifications = [
+    { titre: 'Nouvel élève inscrit', message: 'Kabongo Mukendi Jean a été inscrit en 6ème primaire.', type: 'Inscription', lu: false },
+    { titre: 'Visite planifiée', message: "Inspection pédagogique à l'Institut Tuendelee le 05/10.", type: 'Visite', lu: false },
+    { titre: 'Notes publiées', message: 'Les notes du 1er trimestre de 4ème secondaire sont disponibles.', type: 'Évaluation', lu: true },
+    { titre: 'Dossier traité', message: 'Le dossier DOS-2026-002 a été traité.', type: 'Dossier', lu: true },
+    { titre: 'Nouvel enseignant', message: "Kasongo Mbuyi a rejoint l'École Maman Mobali.", type: 'Personnel', lu: true },
+  ];
+  for (const n of notifications) {
+    const existing = await prisma.notification.findFirst({ where: { titre: n.titre } });
+    if (!existing) await prisma.notification.create({ data: n });
+  }
+
+  // ── Paiements ──
+  const paiements = [
+    { reference: 'PAY-2026-001', description: 'Abonnement Premium — École', montant: '25 000 FC', date: new Date('2026-10-01'), statut: 'Payé' },
+    { reference: 'PAY-2026-002', description: 'Frais de scolarité — 6ème primaire', montant: '45 000 FC', date: new Date('2026-09-28'), statut: 'Payé' },
+    { reference: 'PAY-2026-003', description: 'Cartes scolaires (lot 50)', montant: '15 000 FC', date: new Date('2026-09-25'), statut: 'Payé' },
+    { reference: 'PAY-2026-004', description: 'Abonnement Premium — École', montant: '25 000 FC', date: new Date('2026-09-01'), statut: 'En attente' },
+    { reference: 'PAY-2026-005', description: "Frais d'examen — 3ème secondaire", montant: '30 000 FC', date: new Date('2026-08-28'), statut: 'Rejeté' },
+  ];
+  for (const p of paiements) {
+    await prisma.paiement.upsert({ where: { reference: p.reference }, create: p, update: {} });
+  }
+
+  // ── Notes ──
+  const notes = [
+    { eleve: 'Kabongo Mukendi Jean', classe: '6ème primaire', devoir1: '14/20', devoir2: '16/20', examen: '15/20', moyenne: '15.0/20', mention: 'Distinction' },
+    { eleve: 'Kasongo Mbuyi Sarah', classe: '4ème secondaire', devoir1: '12/20', devoir2: '10/20', examen: '13/20', moyenne: '11.7/20', mention: 'Satisfaction' },
+    { eleve: 'Tshibangu Kalonji Paul', classe: '3ème secondaire', devoir1: '8/20', devoir2: '11/20', examen: '9/20', moyenne: '9.3/20', mention: 'Insuffisant' },
+    { eleve: 'Mujinga Ilunga Grace', classe: '5ème primaire', devoir1: '18/20', devoir2: '17/20', examen: '19/20', moyenne: '18.0/20', mention: 'Grande distinction' },
+    { eleve: 'Mbuyi Tshisekedi Eric', classe: '6ème secondaire', devoir1: '15/20', devoir2: '13/20', examen: '14/20', moyenne: '14.0/20', mention: 'Distinction' },
+  ];
+  for (const n of notes) {
+    const existing = await prisma.note.findFirst({ where: { eleve: n.eleve } });
+    if (!existing) await prisma.note.create({ data: n });
+  }
+
+  console.log('Seed terminé : données de démonstration insérées pour tous les modules.');
 }
 
 main()

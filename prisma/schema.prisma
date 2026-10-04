@@ -111,3 +111,205 @@ model Etablissement {
   @@index([type])
   @@map("etablissements")
 }
+
+model Enseignant {
+  id            String   @id @default(cuid())
+  nom           String
+  matricule     String   @unique
+  grade         String   @default("")
+  etablissement String   @default("")
+  specialite    String   @default("")
+  telephone     String   @default("")
+  email         String   @default("")
+  statut        String   @default("Actif")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([nom])
+  @@index([etablissement])
+  @@map("enseignants")
+}
+
+model Province {
+  id            String   @id @default(cuid())
+  nom           String   @unique
+  chefLieu      String   @default("")
+  etablissements Int     @default(0)
+  eleves        Int      @default(0)
+  statut        String   @default("Actif")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([nom])
+  @@map("provinces")
+}
+
+model EcErc {
+  id        String   @id @default(cuid())
+  nom       String
+  type      String   @default("")
+  province  String   @default("")
+  ecoles    Int      @default(0)
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([province])
+  @@map("ec_erc")
+}
+
+model CoordNationale {
+  id            String   @id @default(cuid())
+  province      String
+  coordonnateur String   @default("")
+  ecoles        Int      @default(0)
+  eleves        Int      @default(0)
+  statut        String   @default("Actif")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([province])
+  @@map("coord_nationale")
+}
+
+model CoordProvinciale {
+  id        String   @id @default(cuid())
+  province  String
+  bureaux   Int      @default(0)
+  agents    Int      @default(0)
+  dossiers  Int      @default(0)
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([province])
+  @@map("coord_provinciale")
+}
+
+model CoordSousProvinciale {
+  id        String   @id @default(cuid())
+  nom       String
+  province  String   @default("")
+  bureaux   Int      @default(0)
+  agents    Int      @default(0)
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([province])
+  @@map("coord_sous_provinciale")
+}
+
+model Bureau {
+  id           String   @id @default(cuid())
+  bureau       String
+  fonction     String   @default("")
+  titulaire    String   @default("")
+  localisation String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([bureau])
+  @@map("bureaux")
+}
+
+model Grade {
+  id        String   @id @default(cuid())
+  grade     String
+  categorie String   @default("")
+  effectif  Int      @default(0)
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([grade])
+  @@map("grades")
+}
+
+model Dossier {
+  id        String   @id @default(cuid())
+  reference String   @unique
+  objet     String
+  demandeur String   @default("")
+  statut    String   @default("En attente")
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reference])
+  @@index([statut])
+  @@map("dossiers")
+}
+
+model Visite {
+  id           String   @id @default(cuid())
+  date         DateTime @default(now())
+  etablissement String
+  visiteur     String   @default("")
+  objet        String   @default("")
+  statut       String   @default("Planifiée")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([etablissement])
+  @@index([date])
+  @@map("visites")
+}
+
+model ServiceAdmin {
+  id         String   @id @default(cuid())
+  service    String
+  procedures Int      @default(0)
+  dossiers   Int      @default(0)
+  statut     String   @default("Actif")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([service])
+  @@map("services_admin")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  titre     String
+  message   String   @default("")
+  type      String   @default("")
+  lu        Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([lu])
+  @@index([type])
+  @@map("notifications")
+}
+
+model Paiement {
+  id          String   @id @default(cuid())
+  reference   String   @unique
+  description String
+  montant     String   @default("")
+  date        DateTime @default(now())
+  statut      String   @default("En attente")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([reference])
+  @@index([statut])
+  @@map("paiements")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  eleve     String
+  classe    String   @default("")
+  devoir1   String   @default("")
+  devoir2   String   @default("")
+  examen    String   @default("")
+  moyenne   String   @default("")
+  mention   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eleve])
+  @@index([classe])
+  @@map("notes")
+}
