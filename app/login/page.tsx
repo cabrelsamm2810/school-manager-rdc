@@ -11,10 +11,12 @@ export default function LoginPage() {
 
         <LoginForm />
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Vous n’avez pas de compte ?{' '}
-          <a href="/register" className="font-medium text-blue-600 hover:underline">Créer un compte</a>
-        </p>
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <p className="text-sm text-slate-600">Vous n'avez pas de compte ?</p>
+          <a href="/register" className="btn-secondary-light w-full px-4 py-2.5 text-sm">
+            Créer un compte
+          </a>
+        </div>
       </div>
     </main>
   );

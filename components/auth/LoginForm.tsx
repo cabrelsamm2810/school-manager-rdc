@@ -70,9 +70,9 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className={`btn-primary w-full px-4 py-3 text-sm ${loading ? 'btn-loading' : ''}`}
       >
-        {loading ? 'Connexion…' : 'Se connecter'}
+        {loading ? (<><span className="btn-spinner" /> Connexion…</>) : 'Se connecter'}
       </button>
     </form>
   );
