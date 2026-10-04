@@ -69,10 +69,26 @@ model Eleve {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  presences  Presence[]
+
   @@index([classe])
   @@index([nom])
   @@index([etablissementId])
   @@map("eleves")
+}
+
+model Presence {
+  id        String   @id @default(cuid())
+  eleveId   String
+  eleve     Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  present   Boolean  @default(true)
+  classe    String
+
+  @@index([eleveId])
+  @@index([date])
+  @@index([classe])
+  @@map("presences")
 }
 
 model Etablissement {
