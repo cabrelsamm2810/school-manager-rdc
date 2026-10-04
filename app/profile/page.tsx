@@ -1,46 +1,158 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/ui/Card';
+import { ROLE_LABELS } from '@/lib/rbac';
+
+type Profile = {
+  id: string;
+  nom: string;
+  postNom?: string | null;
+  prenom: string;
+  email: string;
+  telephone: string;
+  role: string;
+  profilePhotoUrl?: string | null;
+};
+
 export default function ProfilePage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    fetch('/api/users/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user) setProfile(data.user);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!profile) return;
+    setSaving(true);
+    setMessage('');
+    const formData = new FormData(event.currentTarget);
+    const body = Object.fromEntries(formData.entries());
+    try {
+      const res = await fetch('/api/profile/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        setProfile({ ...profile, ...data.user });
+        setMessage('Profil mis à jour avec succès.');
+      } else {
+        setMessage(data.error ?? 'Erreur lors de la mise à jour.');
+      }
+    } catch {
+      setMessage('Impossible de joindre le serveur.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const initials = profile
+    ? `${profile.prenom?.[0] ?? ''}${profile.nom?.[0] ?? ''}`.toUpperCase()
+    : 'SM';
+
   return (
-    <main className="min-h-screen bg-slate-100 p-6">
-      <div className="mx-auto max-w-5xl rounded-3xl bg-white p-8 shadow-soft">
-        <p className="text-sm uppercase tracking-[0.2em] text-blue-600">Profil</p>
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">Informations du profil</h1>
+    <AppShell>
+      <div className="p-4 md:p-6">
+        <div className="mx-auto max-w-4xl">
+          <PageHeader
+            eyebrow="Profil"
+            title="Informations du profil"
+            description="Gérez vos informations personnelles et votre photo de profil."
+          />
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm text-slate-500">Photo de profil</p>
-            <div className="mt-4 flex h-32 w-32 items-center justify-center rounded-full bg-slate-200 text-3xl font-bold text-slate-700">
-              SM
-            </div>
-          </div>
+          {loading ? (
+            <div className="rounded-2xl bg-white p-12 text-center text-slate-500 shadow-soft">Chargement…</div>
+          ) : profile ? (
+            <form onSubmit={handleSave} className="rounded-3xl bg-white p-6 shadow-soft md:p-8">
+              <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-sm text-slate-500">Photo de profil</p>
+                  <div className="mt-4 flex h-32 w-32 items-center justify-center rounded-full bg-blue-600 text-3xl font-bold text-white">
+                    {initials}
+                  </div>
+                  <p className="mt-3 text-xs text-slate-400">Photo passeport numérique à venir</p>
+                </div>
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Nom</label>
-              <input className="w-full rounded-xl border border-slate-300 px-3 py-2.5" defaultValue="School" />
+                <div className="grid gap-5 md:grid-cols-2">
+                  <Field label="Nom" name="nom" defaultValue={profile.nom} />
+                  <Field label="Post-nom" name="postNom" defaultValue={profile.postNom ?? ''} />
+                  <Field label="Prénom" name="prenom" defaultValue={profile.prenom} />
+                  <Field label="Téléphone" name="telephone" defaultValue={profile.telephone} />
+                  <div className="md:col-span-2">
+                    <Field label="Email" name="email" type="email" defaultValue={profile.email} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">Rôle</label>
+                    <input
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-600"
+                      defaultValue={ROLE_LABELS[profile.role] ?? profile.role}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {message && (
+                <p className={`mt-6 rounded-xl px-3 py-2 text-sm ${message.includes('succès') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                  {message}
+                </p>
+              )}
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-xl bg-blue-600 px-6 py-2.5 font-medium text-white transition hover:bg-blue-500 disabled:opacity-60"
+                >
+                  {saving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="rounded-2xl bg-white p-12 text-center text-slate-500 shadow-soft">
+              Impossible de charger le profil. <a href="/login" className="text-blue-600 hover:underline">Se connecter</a>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Post-nom</label>
-              <input className="w-full rounded-xl border border-slate-300 px-3 py-2.5" defaultValue="Manager" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Prénom</label>
-              <input className="w-full rounded-xl border border-slate-300 px-3 py-2.5" defaultValue="School" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Téléphone</label>
-              <input className="w-full rounded-xl border border-slate-300 px-3 py-2.5" defaultValue="+243 000 000 000" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-              <input className="w-full rounded-xl border border-slate-300 px-3 py-2.5" defaultValue="schoolmanager@ecole.cd" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-slate-700">Rôle</label>
-              <input className="w-full rounded-xl border border-slate-300 px-3 py-2.5" defaultValue="DIRECTION_ECOLE" />
-            </div>
-          </div>
+          )}
         </div>
       </div>
-    </main>
+    </AppShell>
+  );
+}
+
+function Field({
+  label,
+  name,
+  type = 'text',
+  defaultValue
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  defaultValue: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={name} className="mb-2 block text-sm font-medium text-slate-700">{label}</label>
+      <input
+        id={name}
+        name={name}
+        type={type}
+        defaultValue={defaultValue}
+        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+      />
+    </div>
   );
 }

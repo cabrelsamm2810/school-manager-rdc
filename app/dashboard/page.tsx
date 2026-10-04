@@ -1,35 +1,68 @@
 import { AppShell } from '@/components/AppShell';
+import { PageHeader, StatCard } from '@/components/ui/Card';
 
 export default function DashboardPage() {
   return (
     <AppShell>
-      <main className="min-h-screen bg-slate-100 p-4 md:p-6">
+      <div className="p-4 md:p-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-blue-600">Tableau de bord</p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Vue d’ensemble</h1>
-            </div>
-            <button className="rounded-xl bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-500">
-              Nouveau rapport
-            </button>
+          <PageHeader
+            eyebrow="Tableau de bord"
+            title="Vue d’ensemble"
+            description="Synthèse de l’activité scolaire — élèves, enseignants, établissements et documents."
+            action={
+              <button className="rounded-xl bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-500">
+                Nouveau rapport
+              </button>
+            }
+          />
+
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Élèves" value="2 640" hint="Inscrits cette année" />
+            <StatCard label="Enseignants" value="184" hint="Actifs" />
+            <StatCard label="Classes" value="48" hint="Tous niveaux" />
+            <StatCard label="Documents" value="1 289" hint="Dossiers numériques" />
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: 'Élèves', value: '2,640' },
-              { label: 'Enseignants', value: '184' },
-              { label: 'Classes', value: '48' },
-              { label: 'Documents', value: '1,289' }
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl bg-white p-5 shadow-soft">
-                <p className="text-sm text-slate-500">{item.label}</p>
-                <p className="mt-3 text-3xl font-bold text-slate-900">{item.value}</p>
+          <div className="mt-6 grid gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl bg-white p-6 shadow-soft">
+              <h2 className="text-lg font-semibold text-slate-900">Activité récente</h2>
+              <ul className="mt-4 space-y-3">
+                {[
+                  'Nouvelle inscription — École Lumumba',
+                  'Cahier de notes mis à jour — 6e année',
+                  'Visite numérique planifiée — Kongo-Central',
+                  'Carte scolaire générée — 12 élèves',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-3 text-sm text-slate-600">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl bg-white p-6 shadow-soft">
+              <h2 className="text-lg font-semibold text-slate-900">Raccourcis</h2>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Élèves', href: '/eleves' },
+                  { label: 'Enseignants', href: '/enseignants' },
+                  { label: 'Cahier de notes', href: '/cahier-de-notes' },
+                  { label: 'Cartes QR', href: '/cartes-qr' },
+                ].map((shortcut) => (
+                  <a
+                    key={shortcut.href}
+                    href={shortcut.href}
+                    className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50"
+                  >
+                    {shortcut.label}
+                  </a>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </AppShell>
   );
 }
