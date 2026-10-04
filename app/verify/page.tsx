@@ -12,6 +12,30 @@ function VerifyForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+  const [resending, setResending] = useState(false);
+
+  async function handleResend() {
+    setResendMsg('');
+    setResending(true);
+    try {
+      const response = await fetch('/api/auth/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setResendMsg(result.error ?? 'Impossible de renvoyer le code.');
+      } else {
+        setResendMsg('Un nouveau code a été envoyé à votre adresse email.');
+      }
+    } catch {
+      setResendMsg('Impossible de joindre le serveur.');
+    } finally {
+      setResending(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -98,10 +122,24 @@ function VerifyForm() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-slate-600">
-              Vous n'avez pas reçu le code ?{' '}
-              <a href="/register" className="font-medium text-blue-600 hover:underline">Renvoyer</a>
-            </p>
+            <div className="mt-6 space-y-2 text-center">
+              {resendMsg && (
+                <p className={`text-sm ${resendMsg.includes('impossible') || resendMsg.includes('Impossible') ? 'text-red-600' : 'text-green-600'}`}>
+                  {resendMsg}
+                </p>
+              )}
+              <p className="text-sm text-slate-600">
+                Vous n'avez pas reçu le code ?{' '}
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="font-medium text-blue-600 hover:underline disabled:opacity-50"
+                >
+                  {resending ? 'Envoi en cours…' : 'Renvoyer le code'}
+                </button>
+              </p>
+            </div>
           </>
         )}
       </div>
