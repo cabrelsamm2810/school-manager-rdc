@@ -192,6 +192,33 @@ body {
   display: inline-block;
 }
 
+/* ── Registration step transitions ── */
+@keyframes stepEnter {
+  0% { opacity: 0; transform: translateX(16px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes stepEnterBack {
+  0% { opacity: 0; transform: translateX(-16px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.step-enter { animation: stepEnter 0.3s ease-out forwards; }
+.step-enter-back { animation: stepEnterBack 0.3s ease-out forwards; }
+
+/* ── Registration selection cards ── */
+.select-card {
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.select-card:hover {
+  border-color: rgba(0, 102, 255, 0.5);
+  box-shadow: 0 4px 14px rgba(0, 40, 104, 0.12);
+}
+.select-card.selected {
+  border-color: #0066FF;
+  background: rgba(0, 102, 255, 0.04);
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.15);
+}
+
 .login-background {
   position: relative;
   background-image:

@@ -22,18 +22,27 @@ enum Role {
 }
 
 model User {
-  id              String   @id @default(cuid())
-  nom             String
-  postNom        String   @default("")
-  prenom          String
-  email           String   @unique
-  telephone       String   @default("")
-  passwordHash    String
-  role            Role     @default(ELEVE)
-  profilePhotoUrl String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  nom                   String
+  postNom               String   @default("")
+  prenom                String
+  sexe                  String   @default("")
+  email                 String   @unique
+  telephone             String   @default("")
+  passwordHash          String
+  role                  Role     @default(ELEVE)
+  typeInstitution       String   @default("")
+  institutionName      String   @default("")
+  provinceAdministrative String  @default("")
+  provinceEducationnelle String  @default("")
+  bureauAffectation     String   @default("")
+  fonction              String   @default("")
+  grade                 String   @default("")
+  dinacope              String   @default("")
+  profilePhotoUrl       String?
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([role])
   @@index([isActive])

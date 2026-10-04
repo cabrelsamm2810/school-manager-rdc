@@ -3,45 +3,71 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
 
-const publicRole = z.literal('ELEVE');
+const validRoles = [
+  'ELEVE',
+  'PARENT',
+  'ENSEIGNANT',
+  'DIRECTION_ECOLE',
+  'AGENT_SOUS_PROVINCIAL',
+  'COORDINATION_SOUS_PROVINCIALE',
+  'AGENT_PROVINCIAL',
+  'COORDINATION_PROVINCIALE',
+  'COORDINATION_NATIONALE',
+] as const;
 
 const registerSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom est obligatoire.'),
   postNom: z.string().trim().optional().or(z.literal('')),
-  prenom: z.string().trim().min(2, 'Le prénom est obligatoire.'),
-  email: z.string().trim().email('L’email est invalide.'),
+  prenom: z.string().trim().min(2, 'Le pr\u00e9nom est obligatoire.'),
+  sexe: z.enum(['M', 'F']).optional().or(z.literal('')),
+  email: z.string().trim().email('L\u2019email est invalide.'),
   telephone: z.string().trim().optional().or(z.literal('')),
-  password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caractères.'),
-  // L’inscription publique ne peut créer que des comptes ELEVE.
-  // Les autres rôles doivent être attribués par une procédure contrôlée.
-  role: publicRole.optional().default('ELEVE')
+  password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caract\u00e8res.'),
+  role: z.enum(validRoles).default('ELEVE'),
+  typeInstitution: z.string().trim().optional().or(z.literal('')),
+  institutionName: z.string().trim().optional().or(z.literal('')),
+  provinceAdministrative: z.string().trim().optional().or(z.literal('')),
+  provinceEducationnelle: z.string().trim().optional().or(z.literal('')),
+  bureauAffectation: z.string().trim().optional().or(z.literal('')),
+  fonction: z.string().trim().optional().or(z.literal('')),
+  grade: z.string().trim().optional().or(z.literal('')),
+  dinacope: z.string().trim().optional().or(z.literal('')),
 });
 
 const loginSchema = z.object({
-  email: z.string().trim().email('L’email est invalide.'),
-  password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caractères.')
+  email: z.string().trim().email('L\u2019email est invalide.'),
+  password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caract\u00e8res.')
 });
 
 export async function registerUser(payload: unknown) {
   const parsed = registerSchema.safeParse(payload);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Données invalides.' };
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Donn\u00e9es invalides.' };
   }
 
-  const { nom, postNom, prenom, email, telephone, password } = parsed.data;
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return { ok: false, error: 'Un compte existe déjà avec cet email.' };
+  const data = parsed.data;
+  const existing = await prisma.user.findUnique({ where: { email: data.email } });
+  if (existing) return { ok: false, error: 'Un compte existe d\u00e9j\u00e0 avec cet email.' };
 
-  const passwordHash = await hashPassword(password);
+  const passwordHash = await hashPassword(data.password);
   const user = await prisma.user.create({
     data: {
-      nom,
-      postNom: postNom ?? '',
-      prenom,
-      email,
-      telephone: telephone ?? '',
+      nom: data.nom,
+      postNom: data.postNom ?? '',
+      prenom: data.prenom,
+      sexe: data.sexe ?? '',
+      email: data.email,
+      telephone: data.telephone ?? '',
       passwordHash,
-      role: 'ELEVE'
+      role: data.role,
+      typeInstitution: data.typeInstitution ?? '',
+      institutionName: data.institutionName ?? '',
+      provinceAdministrative: data.provinceAdministrative ?? '',
+      provinceEducationnelle: data.provinceEducationnelle ?? '',
+      bureauAffectation: data.bureauAffectation ?? '',
+      fonction: data.fonction ?? '',
+      grade: data.grade ?? '',
+      dinacope: data.dinacope ?? '',
     }
   });
 
