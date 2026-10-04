@@ -242,36 +242,38 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Progress bar */}
-      <div className="flex items-center gap-1">
-        {visibleStepIndices.map((i, displayIdx) => {
-          const label = STEP_LABELS[i];
-          const isActive = i === step;
-          const isPast = i < step;
-          return (
-            <div key={i} className="flex flex-1 flex-col items-center gap-1">
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : isPast
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-slate-100 text-slate-400'
-                }`}
-              >
-                {isPast ? '✓' : displayIdx + 1}
+      <div className="sticky top-0 z-10 -mx-6 bg-white/95 px-6 pb-3 pt-1 backdrop-blur-sm sm:-mx-8 sm:px-8">
+        <div className="flex items-center gap-1">
+          {visibleStepIndices.map((i, displayIdx) => {
+            const label = STEP_LABELS[i];
+            const isActive = i === step;
+            const isPast = i < step;
+            return (
+              <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
+                    isActive
+                      ? 'bg-blue-600 text-white'
+                      : isPast
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-slate-100 text-slate-400'
+                  }`}
+                >
+                  {isPast ? '✓' : displayIdx + 1}
+                </div>
+                <span className={`hidden text-[10px] font-medium sm:block ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                  {label}
+                </span>
               </div>
-              <span className={`hidden text-[10px] font-medium sm:block ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
-                {label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="h-1 w-full rounded-full bg-slate-100">
-        <div
-          className="h-1 rounded-full bg-blue-600 transition-all duration-300"
-          style={{ width: `${(currentVisiblePosition / visibleCount) * 100}%` }}
-        />
+            );
+          })}
+        </div>
+        <div className="mt-2 h-1 w-full rounded-full bg-slate-100">
+          <div
+            className="h-1 rounded-full bg-blue-600 transition-all duration-300"
+            style={{ width: `${(currentVisiblePosition / visibleCount) * 100}%` }}
+          />
+        </div>
       </div>
 
       {/* Step content */}

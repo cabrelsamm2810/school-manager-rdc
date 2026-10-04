@@ -2,7 +2,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 
 export default function RegisterPage() {
   return (
-    <main className="login-background flex min-h-screen items-center justify-center p-4 sm:p-6">
+    <main className="login-background flex min-h-screen items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6">
       <div className="w-full max-w-3xl rounded-3xl bg-white/95 p-6 shadow-soft backdrop-blur-sm sm:p-8">
         <div className="mb-6 text-center">
           <p className="text-sm uppercase tracking-[0.2em] text-blue-600">School Manager RDC</p>
