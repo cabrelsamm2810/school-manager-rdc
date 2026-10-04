@@ -62,3 +62,22 @@ model Eleve {
   @@index([nom])
   @@map("eleves")
 }
+
+model Etablissement {
+  id          String   @id @default(cuid())
+  nom         String
+  type        String   @default("")
+  province    String   @default("")
+  ville       String   @default("")
+  adresse     String   @default("")
+  telephone   String   @default("")
+  email       String   @default("")
+  effectif   Int      @default(0)
+  statut      String   @default("Actif")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([province])
+  @@index([type])
+  @@map("etablissements")
+}

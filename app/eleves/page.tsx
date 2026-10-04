@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
 import { EleveForm } from '@/components/eleves/EleveForm';
 import { EleveList } from '@/components/eleves/EleveList';
+import { ImportDialog } from '@/components/import/ImportDialog';
 
 export default function ElevesPage() {
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
@@ -16,10 +18,16 @@ export default function ElevesPage() {
       title="Gestion des élèves"
       description="Inscription, dossiers, affectation et suivi des élèves."
     >
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap justify-end gap-2">
+        <button
+          onClick={() => setShowImport(true)}
+          className="btn-secondary-light px-4 py-2.5 text-sm"
+        >
+          ⬆ Importer (Excel/CSV)
+        </button>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          className="btn-primary px-4 py-2.5 text-sm"
         >
           {showForm ? '← Retour à la liste' : '+ Nouvel élève'}
         </button>
@@ -32,6 +40,16 @@ export default function ElevesPage() {
         </div>
       ) : (
         <EleveList refreshKey={refreshKey} />
+      )}
+
+      {showImport && (
+        <ImportDialog
+          endpoint="/api/import/eleves"
+          moduleName="Élèves"
+          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur']}
+          onImported={() => setRefreshKey((k) => k + 1)}
+          onClose={() => setShowImport(false)}
+        />
       )}
     </ModulePage>
   );
