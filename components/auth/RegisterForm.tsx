@@ -229,6 +229,13 @@ export function RegisterForm() {
     updateField('provinceEducationnelle', '');
   }
 
+  // Compute visible steps based on the selected role
+  const visibleStepIndices = STEP_LABELS.map((_, i) => i).filter(
+    (i) => i === 0 || i === 6 || isStepNeeded(i, form.role)
+  );
+  const visibleCount = visibleStepIndices.length;
+  const currentVisiblePosition = visibleStepIndices.indexOf(step) + 1;
+
   const animClass = direction === 'forward' ? 'step-enter' : 'step-enter-back';
   const isLastStep = step === 6;
 
@@ -236,9 +243,8 @@ export function RegisterForm() {
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Progress bar */}
       <div className="flex items-center gap-1">
-        {STEP_LABELS.map((label, i) => {
-          const needed = isStepNeeded(i, form.role) || i === 0 || i === 6;
-          if (!needed) return null;
+        {visibleStepIndices.map((i, displayIdx) => {
+          const label = STEP_LABELS[i];
           const isActive = i === step;
           const isPast = i < step;
           return (
@@ -252,7 +258,7 @@ export function RegisterForm() {
                     : 'bg-slate-100 text-slate-400'
                 }`}
               >
-                {isPast ? '✓' : i + 1}
+                {isPast ? '✓' : displayIdx + 1}
               </div>
               <span className={`hidden text-[10px] font-medium sm:block ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
                 {label}
@@ -264,7 +270,7 @@ export function RegisterForm() {
       <div className="h-1 w-full rounded-full bg-slate-100">
         <div
           className="h-1 rounded-full bg-blue-600 transition-all duration-300"
-          style={{ width: `${((step + 1) / 7) * 100}%` }}
+          style={{ width: `${(currentVisiblePosition / visibleCount) * 100}%` }}
         />
       </div>
 
