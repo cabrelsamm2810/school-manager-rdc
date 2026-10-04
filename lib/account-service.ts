@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
+import { sendValidationCode } from '@/lib/mail';
 
 const validRoles = [
   'ELEVE',
@@ -49,6 +50,9 @@ export async function registerUser(payload: unknown) {
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) return { ok: false, error: 'Un compte existe d\u00e9j\u00e0 avec cet email.' };
 
+  // Générer un code de validation à 6 chiffres
+  const validationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
   const passwordHash = await hashPassword(data.password);
   const user = await prisma.user.create({
     data: {
@@ -68,10 +72,21 @@ export async function registerUser(payload: unknown) {
       fonction: data.fonction ?? '',
       grade: data.grade ?? '',
       dinacope: data.dinacope ?? '',
+      validationCode,
+      isActive: false,
     }
   });
 
-  return { ok: true, user };
+  // Envoyer le code de validation par email
+  try {
+    await sendValidationCode(data.email, validationCode, data.prenom);
+  } catch {
+    // Si l'envoi échoue, on supprime le compte pour permettre une nouvelle tentative
+    await prisma.user.delete({ where: { id: user.id } });
+    return { ok: false, error: "Impossible d'envoyer l'email de validation. Vérifiez votre adresse email et réessayez." };
+  }
+
+  return { ok: true, user, needsValidation: true };
 }
 
 export async function loginUser(payload: unknown) {
@@ -81,8 +96,11 @@ export async function loginUser(payload: unknown) {
   }
 
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (!user || !user.passwordHash || !user.isActive) {
+  if (!user || !user.passwordHash) {
     return { ok: false, error: 'Identifiants incorrects.' };
+  }
+  if (!user.isActive) {
+    return { ok: false, error: 'Votre compte n\u2019est pas encore validé. Vérifiez votre email pour le code de validation.' };
   }
 
   const valid = await verifyPassword(parsed.data.password, user.passwordHash);

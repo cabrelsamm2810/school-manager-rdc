@@ -40,7 +40,8 @@ model User {
   grade                 String   @default("")
   dinacope              String   @default("")
   profilePhotoUrl       String?
-  isActive              Boolean  @default(true)
+  validationCode        String?
+  isActive              Boolean  @default(false)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

@@ -196,7 +196,7 @@ export function RegisterForm() {
         setError(result.error ?? 'Impossible de créer le compte.');
         return;
       }
-      router.push('/login');
+      router.push(`/verify?email=${encodeURIComponent(form.email)}`);
       router.refresh();
     } catch {
       setError('Impossible de joindre le serveur.');
