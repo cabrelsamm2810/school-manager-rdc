@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
-import { ROLE_LABELS } from '@/lib/rbac';
+import { DashboardHeader } from '@/components/dashboards/DashboardHeader';
+import { QuickActions } from '@/components/dashboards/QuickActions';
 import { NationalDashboard } from '@/components/dashboards/NationalDashboard';
 import { ProvincialDashboard } from '@/components/dashboards/ProvincialDashboard';
 import { SousProvincialDashboard } from '@/components/dashboards/SousProvincialDashboard';
@@ -16,7 +17,9 @@ type SessionUser = {
   email: string;
   role: string;
   profilePhotoUrl?: string | null;
-  provinceAdministrative?: string;
+  provinceAdministrative?: string | null;
+  typeInstitution?: string | null;
+  institutionName?: string | null;
 };
 
 type DashboardStats = {
@@ -64,22 +67,19 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const roleLabel = user ? ROLE_LABELS[user.role] ?? user.role : '';
-
   // Affichage de chargement
-  if (!data) {
+  if (!data || !user) {
     return (
       <AppShell>
         <div className="p-4 md:p-6 lg:p-8">
           <div className="mx-auto max-w-6xl">
-            <p className="text-sm uppercase tracking-[0.2em] text-blue-600">Tableau de bord</p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-3xl">
-              {user ? `Bienvenue, ${user.prenom}` : 'Vue d\u2019ensemble'}
-            </h1>
-            <p className="mt-1.5 text-sm text-slate-500">
-              {user ? `${roleLabel} — Chargement des indicateurs…` : 'Chargement…'}
-            </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mb-6 h-24 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
+              ))}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
               ))}
@@ -101,6 +101,8 @@ export default function DashboardPage() {
     <AppShell>
       <div className="p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-6xl">
+          <DashboardHeader user={user} scope={data.scope} />
+          <QuickActions role={user.role} />
           {data.scope === 'national' && <NationalDashboard {...dashProps} />}
           {data.scope === 'provincial' && (
             <ProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />
