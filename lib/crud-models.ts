@@ -65,6 +65,26 @@ export const crudModels: Record<string, CrudModelConfig> = {
     ],
   },
 
+  'sous-divisions': {
+    delegate: prisma.sousDivisionEducationnelle,
+    entityName: 'sousDivisionEducationnelle',
+    entityNamePlural: 'sousDivisionsEducationnelles',
+    minRole: 'COORDINATION_PROVINCIALE',
+    searchFields: ['nom', 'provinceEducationnelle', 'lieuImplantation'],
+    defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: 'provinceAdministrative',
+    institutionField: false,
+    fields: [
+      { name: 'nom', type: 'string', required: true },
+      { name: 'provinceEducationnelle', type: 'string', required: true },
+      { name: 'provinceAdministrative', type: 'string' },
+      { name: 'lieuImplantation', type: 'string' },
+      { name: 'etablissements', type: 'number' },
+      { name: 'eleves', type: 'number' },
+      { name: 'statut', type: 'string' },
+    ],
+  },
+
   'ec-erc': {
     delegate: prisma.ecErc,
     entityName: 'ecErc',

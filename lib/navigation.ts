@@ -43,6 +43,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Provinces', href: '/provinces', icon: 'globe', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Provinces éducationnelles', href: '/provinces-educationnelles', icon: 'school', minRole: 'COORDINATION_PROVINCIALE' },
+      { label: 'Sous-divisions éduc.', href: '/sous-divisions', icon: 'district', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'EC-ERC', href: '/ec-erc', icon: 'organization', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Coord. nationale', href: '/coordination-nationale', icon: 'flag', minRole: 'COORDINATION_NATIONALE' },
       { label: 'Coord. provinciale', href: '/coordination-provinciale', icon: 'region', minRole: 'COORDINATION_PROVINCIALE' },

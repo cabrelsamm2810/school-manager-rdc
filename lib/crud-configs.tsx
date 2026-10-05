@@ -1,5 +1,6 @@
 import type { CrudConfig } from '@/components/CrudManager';
 import { StatutBadge } from '@/components/ui/StatutBadge';
+import { PROVINCE_EDUCATIONNELLE_NAMES } from '@/lib/provinces-rdc';
 
 /**
  * Configurations frontend pour le CrudManager de chaque module.
@@ -124,6 +125,46 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
       { label: 'Sous-divisions', value: (items: any[]) => String(items.reduce((s, e) => s + (e.sousDivisions || 0), 0)) },
       { label: 'Élèves total', value: (items: any[]) => items.reduce((s, e) => s + (e.eleves || 0), 0).toLocaleString('fr-FR') },
+    ],
+  },
+
+  'sous-divisions': {
+    apiPath: '/api/sous-divisions',
+    entityName: 'sousDivisionEducationnelle',
+    entityNamePlural: 'sousDivisionsEducationnelles',
+    icon: 'district',
+    searchFields: ['nom', 'provinceEducationnelle', 'lieuImplantation'],
+    fields: [
+      { name: 'nom', label: 'Nom de la sous-division', type: 'text', required: true },
+      { name: 'provinceEducationnelle', label: 'Province éducationnelle', type: 'select', required: true, half: true, options: PROVINCE_EDUCATIONNELLE_NAMES.map((n) => ({ value: n, label: n })) },
+      { name: 'provinceAdministrative', label: 'Province administrative', type: 'text', half: true },
+      { name: 'lieuImplantation', label: "Lieu d'implantation", type: 'text', half: true },
+      { name: 'etablissements', label: 'Nb établissements', type: 'number', half: true, default: 0 },
+      { name: 'eleves', label: 'Nb élèves', type: 'number', half: true, default: 0 },
+      { name: 'statut', label: 'Statut', type: 'select', half: true, default: 'Actif', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En setup', label: 'En setup' },
+      ] },
+    ],
+    columns: [
+      { key: 'nom', label: 'Sous-division', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
+      { key: 'provinceEducationnelle', label: 'Province éduc.' },
+      { key: 'lieuImplantation', label: "Lieu d'implantation" },
+      { key: 'etablissements', label: 'Établissements' },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
+    ],
+    filters: [
+      { name: 'provinceEducationnelle', label: 'Toutes les provinces éduc.' },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En setup', label: 'En setup' },
+      ] },
+    ],
+    statCards: [
+      { label: 'Sous-divisions', value: (items: any[]) => String(items.length), hint: 'Total' },
+      { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
+      { label: 'Provinces éduc.', value: (items: any[]) => String(new Set(items.map((e) => e.provinceEducationnelle)).size) },
+      { label: 'Établissements', value: (items: any[]) => String(items.reduce((s, e) => s + (e.etablissements || 0), 0)) },
     ],
   },
 

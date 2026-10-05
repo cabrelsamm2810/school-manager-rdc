@@ -309,6 +309,24 @@ model ProvinceEducationnelle {
   @@map("provinces_educationnelles")
 }
 
+model SousDivisionEducationnelle {
+  id                    String   @id @default(cuid())
+  nom                   String
+  provinceEducationnelle String  @default("")
+  provinceAdministrative String  @default("")
+  lieuImplantation      String   @default("")
+  etablissements        Int      @default(0)
+  eleves                Int      @default(0)
+  statut                String   @default("Actif")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([nom, provinceEducationnelle])
+  @@index([provinceEducationnelle])
+  @@index([provinceAdministrative])
+  @@map("sous_divisions_educationnelles")
+}
+
 model EcErc {
   id        String   @id @default(cuid())
   nom       String

@@ -1,4 +1,5 @@
 import { PrismaClient, Role } from '@prisma/client';
+import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
 
 const prisma = new PrismaClient();
 
@@ -273,7 +274,26 @@ async function main() {
     if (!existing) await prisma.note.create({ data: n });
   }
 
-  console.log('Seed terminé : données de démonstration insérées pour tous les modules.');
+  // ── Sous-divisions éducationnelles ──
+  for (const sd of SOUS_DIVISIONS_RDC) {
+    const existing = await prisma.sousDivisionEducationnelle.findFirst({
+      where: { nom: sd.nom, provinceEducationnelle: sd.provinceEducationnelle },
+    });
+    if (!existing) {
+      await prisma.sousDivisionEducationnelle.create({
+        data: {
+          nom: sd.nom,
+          provinceEducationnelle: sd.provinceEducationnelle,
+          provinceAdministrative: sd.provinceAdministrative,
+          lieuImplantation: sd.lieuImplantation,
+          etablissements: 0,
+          eleves: 0,
+          statut: 'Actif',
+        },
+      });
+    }
+  }
+  console.log(`Seed terminé : ${SOUS_DIVISIONS_RDC.length} sous-divisions éducationnelles insérées.`);
 }
 
 main()
