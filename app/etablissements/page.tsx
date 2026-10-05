@@ -19,7 +19,14 @@ type Etablissement = {
   email: string;
   effectif: number;
   statut: string;
+  coordSousProvincialeId: string | null;
+  coordSousProvinciale?: { id: string; nom: string } | null;
+  ecErcId: string | null;
+  ecErc?: { id: string; nom: string } | null;
 };
+
+type CoordSousProvinciale = { id: string; nom: string; province: string };
+type EcErc = { id: string; nom: string; type: string; province: string };
 
 const inputClass = 'w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
@@ -27,6 +34,7 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
 const emptyForm = {
   nom: '', type: '', province: '', ville: '', adresse: '',
   telephone: '', email: '', effectif: '', statut: 'Actif',
+  coordSousProvincialeId: '', ecErcId: '',
 };
 
 export default function EtablissementsPage() {
@@ -43,6 +51,27 @@ export default function EtablissementsPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [coordSousProvinciales, setCoordSousProvinciales] = useState<CoordSousProvinciale[]>([]);
+  const [ecErcs, setEcErcs] = useState<EcErc[]>([]);
+
+  async function loadInstitutions() {
+    try {
+      const [coordRes, ecRes] = await Promise.all([
+        fetch('/api/coordination-sous-provinciale'),
+        fetch('/api/ec-erc'),
+      ]);
+      const coordData = await coordRes.json();
+      const ecData = await ecRes.json();
+      if (coordRes.ok) setCoordSousProvinciales(coordData.items ?? coordData.coordSousProvinciales ?? []);
+      if (ecRes.ok) setEcErcs(ecData.items ?? ecData.ecErcs ?? []);
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    loadInstitutions();
+  }, []);
 
   async function loadData() {
     setLoading(true);
@@ -73,6 +102,8 @@ export default function EtablissementsPage() {
       nom: et.nom, type: et.type, province: et.province, ville: et.ville,
       adresse: et.adresse, telephone: et.telephone, email: et.email,
       effectif: String(et.effectif), statut: et.statut,
+      coordSousProvincialeId: et.coordSousProvincialeId ?? '',
+      ecErcId: et.ecErcId ?? '',
     });
     setShowForm(true);
   }
@@ -225,6 +256,28 @@ export default function EtablissementsPage() {
                   onChange={(e) => setForm({ ...form, adresse: e.target.value })}
                   className={inputClass} />
               </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-coord">Coordination sous-provinciale</label>
+                <select id="etab-coord" value={form.coordSousProvincialeId}
+                  onChange={(e) => setForm({ ...form, coordSousProvincialeId: e.target.value })}
+                  className={inputClass}>
+                  <option value="">— Aucune —</option>
+                  {coordSousProvinciales.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nom}{c.province ? ` (${c.province})` : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-ecerc">EC / ERC</label>
+                <select id="etab-ecerc" value={form.ecErcId}
+                  onChange={(e) => setForm({ ...form, ecErcId: e.target.value })}
+                  className={inputClass}>
+                  <option value="">— Aucune —</option>
+                  {ecErcs.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nom}{c.type ? ` (${c.type})` : ''}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {formError && (
@@ -275,7 +328,7 @@ export default function EtablissementsPage() {
                       <th className="px-4 py-3">Établissement</th>
                       <th className="px-4 py-3">Type</th>
                       <th className="px-4 py-3">Province</th>
-                      <th className="px-4 py-3">Ville</th>
+                      <th className="px-4 py-3">Institution</th>
                       <th className="px-4 py-3">Effectif</th>
                       <th className="px-4 py-3">Statut</th>
                       <th className="px-4 py-3 text-right">Actions</th>
@@ -287,7 +340,9 @@ export default function EtablissementsPage() {
                         <td className="px-4 py-3 font-medium text-slate-900">{et.nom}</td>
                         <td className="px-4 py-3 text-slate-600">{et.type || '—'}</td>
                         <td className="px-4 py-3 text-slate-600">{et.province || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600">{et.ville || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {et.coordSousProvinciale?.nom || et.ecErc?.nom || <span className="text-red-500">Non liée</span>}
+                        </td>
                         <td className="px-4 py-3 text-slate-600">{et.effectif.toLocaleString('fr-FR')}</td>
                         <td className="px-4 py-3">{<StatutBadge statut={et.statut} />}</td>
                         <td className="px-4 py-3">
@@ -313,6 +368,11 @@ export default function EtablissementsPage() {
                   <div key={et.id} className="rounded-2xl border border-slate-200 bg-white p-4">
                     <p className="font-semibold text-slate-900">{et.nom}</p>
                     <p className="mt-0.5 text-xs text-slate-500">{et.type || '—'} · {et.province || '—'}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {et.coordSousProvinciale?.nom || et.ecErc?.nom
+                        ? `🏫 ${et.coordSousProvinciale?.nom || et.ecErc?.nom}`
+                        : <span className="text-red-500">Non liée à une institution</span>}
+                    </p>
                     <div className="mt-1 flex items-center gap-2">
                       {<StatutBadge statut={et.statut} />}
                       <span className="text-xs text-slate-500">{et.effectif.toLocaleString('fr-FR')} élèves</span>

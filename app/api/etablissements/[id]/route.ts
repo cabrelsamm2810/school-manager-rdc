@@ -13,6 +13,8 @@ const updateSchema = z.object({
   email: z.string().trim().email('L\u2019email est invalide.').optional().or(z.literal('')),
   effectif: z.number().int().min(0).optional(),
   statut: z.string().trim().optional().or(z.literal('')),
+  coordSousProvincialeId: z.string().trim().optional().or(z.literal('')),
+  ecErcId: z.string().trim().optional().or(z.literal('')),
 });
 
 /** PUT /api/etablissements/[id] — modifier un établissement. */
@@ -49,6 +51,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       email: data.email ?? '',
       effectif: data.effectif ?? 0,
       statut: data.statut ?? 'Actif',
+      coordSousProvincialeId: data.coordSousProvincialeId || null,
+      ecErcId: data.ecErcId || null,
     },
   });
 
