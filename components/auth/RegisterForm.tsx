@@ -327,8 +327,8 @@ export function RegisterForm() {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Étape 2 — Institution</p>
             <p className="text-sm text-slate-500">
               {isEcErc
-                ? 'Vous avez choisi le parcours EC-ERC. Les rôles spécifiques à ce parcours vous seront proposés à l\u2019étape suivante.'
-                : 'Sélectionnez votre type d\u2019institution. Le parcours EC-ERC dispose de rôles dédiés séparés des autres institutions.'}
+                ? 'Vous avez choisi le parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo. Les rôles spécifiques à ce parcours vous seront proposés à l\u2019étape suivante.'
+                : 'Sélectionnez votre type d\u2019institution. Le parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo dispose de rôles dédiés séparés des autres institutions.'}
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {registrationInstitutionTypes.map((inst) => (
@@ -359,7 +359,7 @@ export function RegisterForm() {
         {step === 2 && (
           <div className="space-y-4">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-              Étape 3 — Rôle {isEcErc && '(Parcours EC-ERC)'}
+              Étape 3 — Rôle {isEcErc && '(Parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo)'}
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {roleOptions.map((role) => (

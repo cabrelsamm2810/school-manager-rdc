@@ -40,8 +40,8 @@ export type InstitutionConfig = {
 export const INSTITUTIONS: InstitutionConfig[] = [
   {
     code: 'EC_ERC',
-    label: 'EC-ERC',
-    description: 'Église du Christ au Congo — Église de Christ en RDC',
+    label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo',
+    description: 'Écoles Conventionnées des Églises du Réveil du Congo',
     color: 'text-blue-700',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',

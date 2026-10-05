@@ -49,7 +49,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Provinces', href: '/provinces', icon: 'globe', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Provinces éducationnelles', href: '/provinces-educationnelles', icon: 'school', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Sous-divisions éduc.', href: '/sous-divisions', icon: 'district', minRole: 'COORDINATION_PROVINCIALE' },
-      { label: 'EC-ERC', href: '/ec-erc', icon: 'organization', minRole: 'COORDINATION_PROVINCIALE' },
+      { label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo', href: '/ec-erc', icon: 'organization', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Coord. nationale', href: '/coordination-nationale', icon: 'flag', minRole: 'COORDINATION_NATIONALE' },
       { label: 'Coord. provinciale', href: '/coordination-provinciale', icon: 'region', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Coord. sous-provinciale', href: '/coordination-sous-provinciale', icon: 'district', minRole: 'COORDINATION_SOUS_PROVINCIALE' },

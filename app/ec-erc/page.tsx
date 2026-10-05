@@ -6,7 +6,7 @@ import { crudConfigs } from '@/lib/crud-configs';
 
 export default function EcErcPage() {
   return (
-    <ModulePage icon="organization" eyebrow="Organisation territoriale" title="Gestion EC-ERC" description="Entités EC et ERC de l'organisation scolaire.">
+    <ModulePage icon="organization" eyebrow="Organisation territoriale" title="Gestion EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo" description="Entités EC et ERC de l'organisation scolaire.">
       <CrudManager config={crudConfigs['ec-erc']} />
     </ModulePage>
   );
