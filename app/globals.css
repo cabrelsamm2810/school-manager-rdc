@@ -260,16 +260,96 @@ body {
 /* ── Registration selection cards ── */
 .select-card {
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+  position: relative;
 }
 .select-card:hover {
-  border-color: rgba(0, 102, 255, 0.5);
-  box-shadow: 0 4px 14px rgba(0, 40, 104, 0.12);
+  border-color: rgba(0, 102, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 40, 104, 0.1);
+  transform: translateY(-1px);
 }
 .select-card.selected {
   border-color: #0066FF;
-  background: rgba(0, 102, 255, 0.04);
-  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.15);
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.06) 0%, rgba(0, 40, 104, 0.03) 100%);
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2), 0 4px 16px rgba(0, 40, 104, 0.12);
+}
+
+/* ── Registration page ── */
+.register-bg {
+  position: relative;
+  background: linear-gradient(140deg, #0a1729 0%, #002868 35%, #003d99 65%, #0a1729 100%);
+  overflow: hidden;
+}
+.register-bg::before {
+  content: '';
+  position: absolute;
+  top: -15%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(0, 102, 255, 0.18) 0%, transparent 65%);
+  pointer-events: none;
+}
+.register-bg::after {
+  content: '';
+  position: absolute;
+  bottom: -15%;
+  left: -10%;
+  width: 45%;
+  height: 45%;
+  background: radial-gradient(circle, rgba(0, 102, 255, 0.12) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.register-card {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+@keyframes regCardIn {
+  0% { opacity: 0; transform: translateY(24px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.reg-card-in { animation: regCardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+@keyframes regHeaderIn {
+  0% { opacity: 0; transform: translateY(-12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.reg-header-in { animation: regHeaderIn 0.5s ease-out 0.1s forwards; opacity: 0; }
+
+@keyframes regFadeUp {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.reg-fade-up { animation: regFadeUp 0.35s ease-out forwards; opacity: 0; }
+
+/* Enhanced form fields */
+.reg-field {
+  width: 100%;
+  border-radius: 0.875rem;
+  border: 1.5px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  background: #f8fafc;
+}
+.reg-field:focus {
+  border-color: #0066FF;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+  background: #ffffff;
+}
+.reg-field::placeholder {
+  color: #94a3b8;
+}
+.reg-field:disabled {
+  opacity: 0.5;
+  background: #f1f5f9;
+  cursor: not-allowed;
 }
 
 /* ── Dashboard cards ── */
