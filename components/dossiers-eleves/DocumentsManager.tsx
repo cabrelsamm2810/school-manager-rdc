@@ -43,6 +43,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ type: '', titre: '', description: '' });
   const [filterType, setFilterType] = useState('');
+  const [searchTitle, setSearchTitle] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('recent');
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -62,6 +63,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
   // Filtrage et tri
   const filtered = docs
     .filter((d) => !filterType || d.type === filterType)
+    .filter((d) => !searchTitle.trim() || d.titre.toLowerCase().includes(searchTitle.trim().toLowerCase()))
     .sort((a, b) => {
       switch (sortMode) {
         case 'recent': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -175,6 +177,25 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
           >
             {showForm ? 'Annuler' : '+ Ajouter'}
           </button>
+        </div>
+
+        {/* Recherche par titre */}
+        <div className="relative">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            value={searchTitle}
+            onChange={(e) => setSearchTitle(e.target.value)}
+            placeholder="Rechercher par titre…"
+            className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-2 text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+          {searchTitle && (
+            <button onClick={() => setSearchTitle('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" aria-label="Effacer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            </button>
+          )}
         </div>
 
         {/* Barre de filtrage par type — chips cliquables */}
