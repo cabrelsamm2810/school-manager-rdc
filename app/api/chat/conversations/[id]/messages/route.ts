@@ -83,6 +83,7 @@ export async function GET(
       fileUrl: m.fileUrl,
       fileName: m.fileName,
       fileType: m.fileType,
+      replyToId: m.replyToId,
     }))
   );
 }
@@ -114,6 +115,7 @@ export async function POST(
   let fileUrl: string | null = null;
   let fileName: string | null = null;
   let fileType: string | null = null;
+  let replyToId: string | null = null;
 
   if (contentType.includes('multipart/form-data')) {
     // ── Upload avec fichier ──
@@ -157,6 +159,7 @@ export async function POST(
     // ── Message texte seul ──
     const body = await request.json();
     content = (body.content as string)?.trim() || '';
+    replyToId = (body.replyToId as string) || null;
   }
 
   if (!content && !fileUrl) {
@@ -171,6 +174,7 @@ export async function POST(
       fileUrl,
       fileName,
       fileType,
+      replyToId,
     },
   });
 
@@ -189,5 +193,6 @@ export async function POST(
     fileUrl: message.fileUrl,
     fileName: message.fileName,
     fileType: message.fileType,
+    replyToId: message.replyToId,
   });
 }

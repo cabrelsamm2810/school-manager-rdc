@@ -588,6 +588,7 @@ model ChatMessage {
   fileUrl         String?
   fileName        String?
   fileType        String?
+  replyToId       String?
   read            Boolean          @default(false)
   createdAt       DateTime         @default(now())
   conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -663,6 +664,7 @@ model ChatGroupMessage {
   fileUrl   String?
   fileName  String?
   fileType  String?
+  replyToId String?
   createdAt DateTime @default(now())
 
   @@index([groupId])
