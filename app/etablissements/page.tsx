@@ -8,6 +8,7 @@ import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrImportDialog } from '@/components/import/OcrImportDialog';
 import { EtablissementForm, emptyForm, type EtablissementFormData } from '@/components/etablissements/EtablissementForm';
 import { EtablissementFiche } from '@/components/etablissements/EtablissementFiche';
+import { NiveauScolaireSelector } from '@/components/etablissements/NiveauScolaireSelector';
 import { INSTITUTIONS, INSTITUTION_MAP, VALIDATION_STATUTS } from '@/lib/institutions';
 
 type Etablissement = {
@@ -186,14 +187,7 @@ export default function EtablissementsPage() {
               <option value="">Toutes institutions</option>
               {INSTITUTIONS.map((i) => <option key={i.code} value={i.code}>{i.label}</option>)}
             </select>
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
-              <option value="">Tous les types</option>
-              <option value="Primaire">Primaire</option>
-              <option value="Secondaire">Secondaire</option>
-              <option value="Supérieur">Supérieur</option>
-              <option value="Professionnel">Professionnel</option>
-            </select>
+            <NiveauScolaireSelector value={typeFilter} onChange={setTypeFilter} />
             <select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value)}
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
               <option value="">Tous les statuts</option>
