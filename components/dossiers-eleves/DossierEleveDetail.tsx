@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { DossierEleveExportButton } from './DossierEleveExport';
+import { DocumentsManager } from './DocumentsManager';
 
 type Eleve = {
   id: string;
@@ -52,21 +53,12 @@ type Interaction = {
 
 type Tab = 'documents' | 'resultats' | 'historique';
 
-const DOC_TYPES = ['Acte de naissance', 'Bulletin', 'Certificat médical', 'Photo', 'Contrat', 'Autre'];
 const INTERACTION_TYPES = ['Entretien parents', 'Sanction disciplinaire', 'Félicitation', 'Orientation', 'Suivi pédagogique', 'Autre'];
 const PERIODES = ['1er Trimestre', '2e Trimestre', '3e Trimestre', 'Examen de fin d\'année'];
 const MENTIONS = ['Excellent', 'Très Bien', 'Bien', 'Assez Bien', 'Passable', 'Insuffisant'];
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function getFileIcon(fileType: string) {
-  if (fileType.includes('pdf')) return '📄';
-  if (fileType.includes('image')) return '🖼️';
-  if (fileType.includes('word')) return '📝';
-  if (fileType.includes('excel') || fileType.includes('sheet')) return '📊';
-  return '📎';
 }
 
 export function DossierEleveDetail({ eleve }: { eleve: Eleve }) {
@@ -114,7 +106,7 @@ export function DossierEleveDetail({ eleve }: { eleve: Eleve }) {
 
       {/* Contenu */}
       <div className="p-4">
-        {tab === 'documents' && <DocumentsTab eleveId={eleve.id} />}
+        {tab === 'documents' && <DocumentsManager eleveId={eleve.id} />}
         {tab === 'resultats' && <ResultatsTab eleveId={eleve.id} />}
         {tab === 'historique' && <HistoriqueTab eleveId={eleve.id} />}
       </div>
@@ -122,162 +114,7 @@ export function DossierEleveDetail({ eleve }: { eleve: Eleve }) {
   );
 }
 
-// ── Onglet Documents ──
-function DocumentsTab({ eleveId }: { eleveId: string }) {
-  const [docs, setDocs] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({ type: '', titre: '', description: '' });
-  const fileRef = useRef<HTMLInputElement>(null);
 
-  async function load() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/eleves/${eleveId}/documents`);
-      const data = await res.json();
-      if (Array.isArray(data)) setDocs(data);
-    } catch { /* ignore */ }
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, [eleveId]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.titre.trim()) return;
-    const file = fileRef.current?.files?.[0];
-
-    setUploading(true);
-    try {
-      if (file) {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('type', form.type);
-        fd.append('titre', form.titre.trim());
-        fd.append('description', form.description);
-        await fetch(`/api/eleves/${eleveId}/documents`, { method: 'POST', body: fd });
-      } else {
-        await fetch(`/api/eleves/${eleveId}/documents`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        });
-      }
-      setForm({ type: '', titre: '', description: '' });
-      setShowForm(false);
-      if (fileRef.current) fileRef.current.value = '';
-      load();
-    } catch { /* ignore */ }
-    setUploading(false);
-  }
-
-  async function handleDelete(docId: string) {
-    if (!confirm('Supprimer ce document ?')) return;
-    await fetch(`/api/eleves/${eleveId}/documents?docId=${docId}`, { method: 'DELETE' });
-    load();
-  }
-
-  if (loading) return <p className="py-6 text-center text-sm text-slate-400">Chargement…</p>;
-
-  return (
-    <div>
-      <div className="mb-3 flex justify-between">
-        <h3 className="text-sm font-semibold text-slate-700">{docs.length} document{docs.length > 1 ? 's' : ''}</h3>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-700"
-        >
-          {showForm ? 'Annuler' : '+ Ajouter'}
-        </button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="mb-4 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-            <select
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">— Sélectionner —</option>
-              {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Titre *</label>
-            <input
-              type="text"
-              required
-              value={form.titre}
-              onChange={(e) => setForm({ ...form, titre: e.target.value })}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Ex: Bulletin 1er trimestre"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Fichier (max 10 Mo)</label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-              className="w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-blue-700"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={2}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={uploading || !form.titre.trim()}
-            className="w-full rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-40"
-          >
-            {uploading ? 'Envoi…' : 'Enregistrer'}
-          </button>
-        </form>
-      )}
-
-      {docs.length === 0 ? (
-        <p className="py-6 text-center text-sm text-slate-400">Aucun document. Cliquez sur « + Ajouter ».</p>
-      ) : (
-        <div className="space-y-2">
-          {docs.map((d) => (
-            <div key={d.id} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition hover:border-slate-200">
-              <span className="text-2xl">{getFileIcon(d.fileType)}</span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-slate-900">{d.titre}</p>
-                  {d.type && <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">{d.type}</span>}
-                </div>
-                <p className="truncate text-xs text-slate-500">
-                  {d.description || d.fileName || 'Aucune description'}
-                </p>
-                <p className="text-xs text-slate-400">{formatDate(d.createdAt)} • par {d.uploadedBy}</p>
-              </div>
-              <div className="flex shrink-0 gap-1">
-                {d.fileUrl && (
-                  <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50" aria-label="Voir">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M15 3h6v6M10 14L21 3M21 14v7a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" /></svg>
-                  </a>
-                )}
-                <button onClick={() => handleDelete(d.id)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Supprimer">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Onglet Résultats ──
 function ResultatsTab({ eleveId }: { eleveId: string }) {
