@@ -1,3 +1,5 @@
+import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
+
 export type InstitutionType = {
   value: string;
   label: string;
@@ -45,9 +47,8 @@ export const registrationInstitutionTypes = [
 export const ecErcRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
-  { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
-  { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent sous provincial' },
+  { value: 'DIRECTION_ECOLE', label: 'École EC-ERC' },
 ];
 
 export const nonEcErcRoleOptions: RoleOption[] = [
@@ -122,13 +123,14 @@ export const educationProvincesByAdmin: Record<string, string[]> = {
 
 /** Bureaux d'affectation pour la structure provinciale EC-ERC. */
 export const provincialBureaux = [
-  'Bureau d\u2019affectation',
   'Bureau d\u2019administration',
   'Bureau de la formation',
+  'Bureau de gestion',
+  'Bureau de planification',
+  'Bureau des établissements scolaires',
   'Bureau pédagogique',
   'Bureau des ressources humaines',
   'Bureau financier',
-  'Bureau de la planification',
   'Bureau du contentieux',
 ];
 
@@ -156,6 +158,32 @@ export const gradesByRole: Record<string, string[]> = {
   ENSEIGNANT: ['Chef de travaux', 'Professeur', 'Instituteur principal', 'Instituteur'],
   ELEVE: [],
   PARENT: [],
+};
+
+/** Fonctions par bureau (pour la coordination provinciale). */
+export const fonctionsByBureau: Record<string, string[]> = {
+  'Bureau d\u2019administration': ['Chef de bureau', 'Agent administratif principal', 'Agent administratif', 'Secrétaire administratif'],
+  'Bureau de la formation': ['Coordinateur de formation', 'Formateur principal', 'Formateur', 'Animateur'],
+  'Bureau de gestion': ['Gestionnaire principal', 'Gestionnaire', 'Comptable', 'Agent de gestion'],
+  'Bureau de planification': ['Planificateur principal', 'Planificateur', 'Analyste', 'Agent de planification'],
+  'Bureau des établissements scolaires': ['Superviseur des établissements', 'Agent de suivi', 'Inspecteur scolaire', 'Animateur scolaire'],
+  'Bureau pédagogique': ['Conseiller pédagogique', 'Animateur pédagogique', 'Inspecteur pédagogique'],
+  'Bureau des ressources humaines': ['Directeur RH', 'Agent RH', 'Chargé du personnel'],
+  'Bureau financier': ['Directeur financier', 'Comptable principal', 'Agent financier'],
+  'Bureau du contentieux': ['Juriste principal', 'Juriste', 'Agent juridique'],
+};
+
+/** Grades par bureau. */
+export const gradesByBureau: Record<string, string[]> = {
+  'Bureau d\u2019administration': ['Principal', 'Adjoint', 'Agent principal', 'Agent'],
+  'Bureau de la formation': ['Principal', 'Adjoint', 'Formateur principal', 'Formateur'],
+  'Bureau de gestion': ['Principal', 'Adjoint', 'Gestionnaire principal', 'Gestionnaire'],
+  'Bureau de planification': ['Principal', 'Adjoint', 'Planificateur principal', 'Planificateur'],
+  'Bureau des établissements scolaires': ['Superviseur principal', 'Superviseur', 'Agent principal', 'Agent'],
+  'Bureau pédagogique': ['Conseiller principal', 'Conseiller', 'Animateur'],
+  'Bureau des ressources humaines': ['Directeur', 'Agent principal', 'Agent'],
+  'Bureau financier': ['Directeur', 'Comptable principal', 'Agent'],
+  'Bureau du contentieux': ['Juriste principal', 'Juriste', 'Agent'],
 };
 
 /** Rôles nécessitant l'étape d'affectation (province, sous-province, bureau). */
@@ -198,3 +226,35 @@ export const rolesNeedingEducationProvince = new Set([
   'ELEVE',
   'PARENT',
 ]);
+
+/** Provinces éducationnelles par province administrative (issues des sous-divisions RDC). */
+export const educationProvincesByAdminFromSousDivisions: Record<string, string[]> = (() => {
+  const map: Record<string, string[]> = {};
+  for (const sd of SOUS_DIVISIONS_RDC) {
+    if (!map[sd.provinceAdministrative]) map[sd.provinceAdministrative] = [];
+    if (!map[sd.provinceAdministrative].includes(sd.provinceEducationnelle)) {
+      map[sd.provinceAdministrative].push(sd.provinceEducationnelle);
+    }
+  }
+  return map;
+})();
+
+/** Sous-divisions par province éducationnelle. */
+export const sousDivisionsByEducationProvince: Record<string, string[]> = (() => {
+  const map: Record<string, string[]> = {};
+  for (const sd of SOUS_DIVISIONS_RDC) {
+    if (!map[sd.provinceEducationnelle]) map[sd.provinceEducationnelle] = [];
+    map[sd.provinceEducationnelle].push(sd.nom);
+  }
+  return map;
+})();
+
+/** Types d'établissement pour le formulaire École. */
+export const ecoleTypes = [
+  'Maternelle',
+  'Primaire',
+  'Secondaire',
+  'Collège',
+  'Lycée',
+  'Mixte',
+];

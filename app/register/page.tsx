@@ -6,7 +6,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-3xl rounded-3xl bg-white/95 p-6 shadow-soft backdrop-blur-sm sm:p-8">
         <div className="mb-6 text-center">
           <p className="text-sm uppercase tracking-[0.2em] text-blue-600">School Manager RDC</p>
-          <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">Créer un compte</h1>
+          <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">Créer votre compte</h1>
+          <p className="mt-2 text-sm text-slate-500">Rejoignez School Manager RDC et accédez à votre espace numérique.</p>
         </div>
 
         <RegisterForm />

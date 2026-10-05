@@ -35,6 +35,8 @@ const registerSchema = z.object({
   dinacope: z.string().trim().optional().or(z.literal('')),
   coordSousProvincialeId: z.string().trim().optional().or(z.literal('')),
   etablissementId: z.string().trim().optional().or(z.literal('')),
+  profilePhotoUrl: z.string().optional().or(z.literal('')),
+  coordSousProvinciale: z.string().trim().optional().or(z.literal('')),
 });
 
 const loginSchema = z.object({
@@ -56,6 +58,16 @@ export async function registerUser(payload: unknown) {
   const validationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
   const passwordHash = await hashPassword(data.password);
+
+  // Try to link to a CoordSousProvinciale record by name
+  let coordSousProvincialeId = data.coordSousProvincialeId || null;
+  if (!coordSousProvincialeId && data.coordSousProvinciale) {
+    const existing = await prisma.coordSousProvinciale.findFirst({
+      where: { nom: data.coordSousProvinciale },
+    });
+    if (existing) coordSousProvincialeId = existing.id;
+  }
+
   const user = await prisma.user.create({
     data: {
       nom: data.nom,
@@ -74,8 +86,9 @@ export async function registerUser(payload: unknown) {
       fonction: data.fonction ?? '',
       grade: data.grade ?? '',
       dinacope: data.dinacope ?? '',
-      coordSousProvincialeId: data.coordSousProvincialeId || null,
+      coordSousProvincialeId,
       etablissementId: data.etablissementId || null,
+      profilePhotoUrl: data.profilePhotoUrl || null,
       validationCode,
       isActive: false,
     }
