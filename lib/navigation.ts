@@ -78,6 +78,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Paiements & premium', href: '/paiements', icon: 'card' },
       { label: 'Géolocalisation', href: '/geolocalisation', icon: 'location' },
+      { label: 'Config. géolocalisation', href: '/config-geolocalisation', icon: 'location' },
       { label: 'Paramètres', href: '/parametres', icon: 'settings' },
     ]
   },

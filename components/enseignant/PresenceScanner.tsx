@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { getGeoConfig, haversineDistance } from '@/lib/geo-config';
 
 type ScannedEleve = {
   id: string;
@@ -33,16 +34,17 @@ export function PresenceScanner({ onClose }: { onClose: () => void }) {
   const lastScannedValueRef = useRef('');
   const geoRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
-  // Demander la géolocalisation au montage
+  // Demander la géolocalisation au montage selon la configuration
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    const geoConfig = getGeoConfig();
+    if (!geoConfig.enabled || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         geoRef.current = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
         setGeoStatus('granted');
       },
       () => setGeoStatus('denied'),
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: geoConfig.highAccuracy, timeout: geoConfig.timeout, maximumAge: geoConfig.maxAge },
     );
   }, []);
 
@@ -59,13 +61,25 @@ export function PresenceScanner({ onClose }: { onClose: () => void }) {
     setSubmitting(true);
 
     try {
+      const geoConfig = getGeoConfig();
+      const lat = geoRef.current?.latitude ?? null;
+      const lng = geoRef.current?.longitude ?? null;
+
+      // Vérifier la zone scolaire si le géo-repérage est activé
+      if (geoConfig.geofenceEnabled && geoConfig.schoolLatitude != null && geoConfig.schoolLongitude != null && lat != null && lng != null) {
+        const dist = haversineDistance(lat, lng, geoConfig.schoolLatitude, geoConfig.schoolLongitude);
+        if (dist > geoConfig.schoolRadius) {
+          setError(`⚠️ Hors zone scolaire (${dist}m > ${geoConfig.schoolRadius}m)`);
+        }
+      }
+
       const res = await fetch('/api/presences/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           scannedValue,
-          latitude: geoRef.current?.latitude ?? null,
-          longitude: geoRef.current?.longitude ?? null,
+          latitude: lat,
+          longitude: lng,
         }),
       });
       const data = await res.json();
