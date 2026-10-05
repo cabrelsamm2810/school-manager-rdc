@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
+import { sendAbsenceNotification } from '@/lib/mail';
 
 const createSchema = z.object({
   eleveId: z.string().trim().min(1, 'L\u2019\u00e9l\u00e8ve est obligatoire.'),
@@ -59,7 +60,10 @@ export async function POST(request: NextRequest) {
   }
 
   const data = parsed.data;
-  const eleve = await prisma.eleve.findUnique({ where: { id: data.eleveId } });
+  const eleve = await prisma.eleve.findUnique({
+    where: { id: data.eleveId },
+    include: { etablissement: { select: { nom: true } } },
+  });
   if (!eleve) {
     return NextResponse.json({ error: 'Élève introuvable.' }, { status: 404 });
   }
@@ -73,6 +77,24 @@ export async function POST(request: NextRequest) {
     },
     include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true } } },
   });
+
+  // Envoyer un email au parent si l'élève est marqué absent
+  if (!data.present && eleve.email) {
+    const dateStr = new Date(data.date).toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    sendAbsenceNotification({
+      parentEmail: eleve.email,
+      parentNom: eleve.nomTuteur,
+      eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
+      classe: data.classe,
+      etablissementNom: eleve.etablissement?.nom || 'Établissement',
+      dateAbsence: dateStr,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ presence }, { status: 201 });
 }

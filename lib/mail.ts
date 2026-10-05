@@ -43,6 +43,63 @@ export async function sendValidationCode(email: string, code: string, nom: strin
 }
 
 /**
+ * Envoie un email de notification d'absence aux parents/tuteurs d'un élève.
+ */
+export async function sendAbsenceNotification(opts: {
+  parentEmail: string;
+  parentNom: string;
+  eleveNom: string;
+  classe: string;
+  etablissementNom: string;
+  dateAbsence: string;
+}): Promise<void> {
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #1e3a5f; font-size: 22px; margin: 0;">School Manager RDC</h1>
+        <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Notification d'absence</p>
+      </div>
+      <div style="background: #fef2f2; border-left: 4px solid #dc2626; border-radius: 12px; padding: 24px;">
+        <p style="color: #334155; font-size: 15px; margin: 0 0 12px;">
+          Bonjour ${opts.parentNom || 'Parent/Tuteur'},
+        </p>
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">
+          Nous vous informons que votre enfant <strong>${opts.eleveNom}</strong>,
+          élève en classe de <strong>${opts.classe}</strong> à
+          <strong>${opts.etablissementNom}</strong>, a été marqué
+          <span style="color: #dc2626; font-weight: bold;">absent(e)</span> le
+          <strong>${opts.dateAbsence}</strong>.
+        </p>
+        <div style="background: white; border-radius: 8px; padding: 14px; margin: 16px 0;">
+          <p style="color: #64748b; font-size: 13px; margin: 0;">
+            Si cette absence est justifiée, merci d'en informer l'établissement.
+            Pour toute question, contactez l'administration scolaire.
+          </p>
+        </div>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">
+        Cet email a été envoyé automatiquement par School Manager RDC.
+        Si vous recevez ce message par erreur, contactez l'établissement.
+      </p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: opts.parentEmail,
+      subject: `School Manager RDC — Absence de ${opts.eleveNom} le ${opts.dateAbsence}`,
+      html,
+    });
+  } catch (error) {
+    console.error('Erreur envoi notification d\'absence:', error);
+    throw error;
+  }
+}
+
+/**
  * Envoie un email de rappel de saisie des cotes à un enseignant.
  */
 export async function sendRappelCote(
