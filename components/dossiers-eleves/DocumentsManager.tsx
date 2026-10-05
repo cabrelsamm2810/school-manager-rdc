@@ -116,12 +116,12 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
     load();
   }
 
-  async function handleRename(docId: string, newTitre: string) {
-    if (!newTitre.trim()) return;
+  async function handleEdit(docId: string, fields: { titre: string; type: string; description: string }) {
+    if (!fields.titre.trim()) return;
     await fetch(`/api/eleves/${eleveId}/documents?docId=${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titre: newTitre.trim() }),
+      body: JSON.stringify(fields),
     });
     load();
   }
@@ -248,7 +248,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
               </div>
               <div className="space-y-2">
                 {grouped[group].map((d) => (
-                  <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onRename={handleRename} />
+                  <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onEdit={handleEdit} />
                 ))}
               </div>
             </div>
@@ -257,7 +257,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
       ) : (
         <div className="space-y-2">
           {filtered.map((d) => (
-            <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onRename={handleRename} />
+            <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onEdit={handleEdit} />
           ))}
         </div>
       )}
@@ -272,58 +272,80 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
 
 // ── Carte document ──
 function DocCard({
-  doc, onPreview, onDownload, onDelete, onRename,
+  doc, onPreview, onDownload, onDelete, onEdit,
 }: {
   doc: Document;
   onPreview: (d: Document) => void;
   onDownload: (d: Document) => void;
   onDelete: (id: string) => void;
-  onRename: (id: string, titre: string) => void;
+  onEdit: (id: string, fields: { titre: string; type: string; description: string }) => void;
 }) {
   const canPreview = isPreviewable(doc.fileType, doc.fileUrl);
   const canDownload = !!doc.fileUrl;
   const [editing, setEditing] = useState(false);
-  const [editTitre, setEditTitre] = useState(doc.titre);
+  const [editForm, setEditForm] = useState({ titre: doc.titre, type: doc.type, description: doc.description });
 
-  function submitRename() {
-    if (editTitre.trim() && editTitre.trim() !== doc.titre) {
-      onRename(doc.id, editTitre);
-    }
+  function startEdit() {
+    setEditForm({ titre: doc.titre, type: doc.type, description: doc.description });
+    setEditing(true);
+  }
+  function cancelEdit() {
+    setEditing(false);
+    setEditForm({ titre: doc.titre, type: doc.type, description: doc.description });
+  }
+  function submitEdit() {
+    if (editForm.titre.trim()) onEdit(doc.id, editForm);
     setEditing(false);
   }
 
   return (
     <div className="rounded-lg border border-slate-100 p-3 transition hover:border-slate-200">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
-        <div className="min-w-0 flex-1">
-          {editing ? (
-            <div className="flex items-center gap-1.5">
-              <input
-                type="text"
-                value={editTitre}
-                onChange={(e) => setEditTitre(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') { setEditing(false); setEditTitre(doc.titre); } }}
-                autoFocus
-                className="flex-1 rounded-lg border border-blue-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-              <button onClick={submitRename} className="rounded-lg bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700">OK</button>
-              <button onClick={() => { setEditing(false); setEditTitre(doc.titre); }} className="rounded-lg px-2 py-1 text-xs text-slate-500 hover:bg-slate-100">✕</button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <p className="truncate text-sm font-medium text-slate-900">{doc.titre}</p>
-                {doc.type && <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">{doc.type}</span>}
-              </div>
-              <p className="truncate text-xs text-slate-500">
-                {doc.description || doc.fileName || 'Aucune description'}
-              </p>
-              <p className="text-xs text-slate-400">{formatDate(doc.createdAt)} • par {doc.uploadedBy}</p>
-            </>
-          )}
+      {editing ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
+            <input
+              type="text"
+              value={editForm.titre}
+              onChange={(e) => setEditForm({ ...editForm, titre: e.target.value })}
+              autoFocus
+              placeholder="Titre *"
+              className="flex-1 rounded-lg border border-blue-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+          <select
+            value={editForm.type}
+            onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="">— Type —</option>
+            {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <textarea
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            rows={2}
+            placeholder="Description"
+            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+          <div className="flex justify-end gap-1.5">
+            <button onClick={submitEdit} className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">Enregistrer</button>
+            <button onClick={cancelEdit} className="rounded-lg px-3 py-1 text-xs text-slate-500 hover:bg-slate-100">Annuler</button>
+          </div>
         </div>
-        {!editing && (
+      ) : (
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-medium text-slate-900">{doc.titre}</p>
+              {doc.type && <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">{doc.type}</span>}
+            </div>
+            <p className="truncate text-xs text-slate-500">
+              {doc.description || doc.fileName || 'Aucune description'}
+            </p>
+            <p className="text-xs text-slate-400">{formatDate(doc.createdAt)} • par {doc.uploadedBy}</p>
+          </div>
           <div className="flex shrink-0 gap-0.5">
             {canPreview && (
               <button onClick={() => onPreview(doc)} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Prévisualiser" title="Prévisualiser">
@@ -340,15 +362,15 @@ function DocCard({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" /></svg>
               </a>
             )}
-            <button onClick={() => setEditing(true)} className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50" aria-label="Renommer" title="Renommer">
+            <button onClick={startEdit} className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50" aria-label="Modifier" title="Modifier">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
             </button>
             <button onClick={() => onDelete(doc.id)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Supprimer" title="Supprimer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
