@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { PERIODES, getCurrentAnneeScolaire, calculateGrades, isValidCote, getMention } from '@/lib/cahier-de-cote';
 import { BulletinPreview } from './BulletinPreview';
 import { BulletinBatchPreview } from './BulletinBatchPreview';
+import { BulletinSinglePreview } from './BulletinSinglePreview';
 
 type SessionUser = {
   id: string;
@@ -74,6 +75,8 @@ export function CahierDeCoteManager() {
   const [showBulletin, setShowBulletin] = useState(false);
   const [bulletinEleveId, setBulletinEleveId] = useState('');
   const [showBatchPreview, setShowBatchPreview] = useState(false);
+  const [showSinglePreview, setShowSinglePreview] = useState(false);
+  const [singlePreviewEleve, setSinglePreviewEleve] = useState<Eleve | null>(null);
   const [batchDownloading, setBatchDownloading] = useState(false);
 
   const isDirection = user && (user.role === 'DIRECTION_ECOLE' || user.role === 'SUPER_ADMIN');
@@ -306,6 +309,40 @@ export function CahierDeCoteManager() {
   function handleGenerateBulletin(eleveId: string) {
     setBulletinEleveId(eleveId);
     setShowBulletin(true);
+  }
+
+  function handleSinglePreview(eleve: Eleve) {
+    setSinglePreviewEleve(eleve);
+    setShowSinglePreview(true);
+  }
+
+  async function handleSingleDownloadPdf() {
+    if (!singlePreviewEleve) return;
+    try {
+      // Générer le bulletin d'abord
+      const genRes = await fetch('/api/cahier-de-cote/bulletin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eleveId: singlePreviewEleve.id, periode: selectedPeriode, anneeScolaire: ANNEE_SCOLAIRE }),
+      });
+      const genData = await genRes.json();
+      if (!genRes.ok) throw new Error(genData.error || 'Erreur');
+      // Télécharger le PDF
+      const res = await fetch(`/api/cahier-de-cote/bulletin/pdf?bulletinId=${genData.bulletin.id}`);
+      if (!res.ok) throw new Error('Erreur lors de la génération du PDF');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bulletin_${singlePreviewEleve.prenom}_${singlePreviewEleve.nom}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      setShowSinglePreview(false);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du téléchargement.');
+    }
   }
 
   async function handleBatchDownloadPdf() {
@@ -608,16 +645,28 @@ export function CahierDeCoteManager() {
                         )}
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <button
-                          onClick={() => handleGenerateBulletin(e.id)}
-                          disabled={!existing}
-                          className="rounded-lg p-1.5 text-blue-600 transition hover:bg-blue-50 disabled:opacity-30"
-                          title="Générer le bulletin QR"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-                            <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14h1v1M14 20h7v1" />
-                          </svg>
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleSinglePreview(e)}
+                            className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100"
+                            title="Aperçu du bulletin"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleGenerateBulletin(e.id)}
+                            disabled={!existing}
+                            className="rounded-lg p-1.5 text-blue-600 transition hover:bg-blue-50 disabled:opacity-30"
+                            title="Générer le bulletin QR"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+                              <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14h1v1M14 20h7v1" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -722,6 +771,12 @@ export function CahierDeCoteManager() {
                       📋 Générer le bulletin QR
                     </button>
                   )}
+                  <button
+                    onClick={() => handleSinglePreview(e)}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                  >
+                    👁️ Aperçu du bulletin
+                  </button>
                 </div>
               );
             })}
@@ -744,6 +799,19 @@ export function CahierDeCoteManager() {
           periode={selectedPeriode}
           anneeScolaire={ANNEE_SCOLAIRE}
           onClose={() => setShowBulletin(false)}
+        />
+      )}
+
+      {/* ── Modal Aperçu bulletin individuel ── */}
+      {showSinglePreview && singlePreviewEleve && (
+        <BulletinSinglePreview
+          eleveId={singlePreviewEleve.id}
+          eleveNom={`${singlePreviewEleve.prenom} ${singlePreviewEleve.nom} ${singlePreviewEleve.postNom}`.trim()}
+          classe={selectedClasse}
+          periode={selectedPeriode}
+          anneeScolaire={ANNEE_SCOLAIRE}
+          onClose={() => setShowSinglePreview(false)}
+          onDownload={handleSingleDownloadPdf}
         />
       )}
 
