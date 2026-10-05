@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
 
   const bulletinDataList: BulletinPdfData[] = [];
   let generated = 0;
-  const skipped: string[] = [];
 
   for (const eleve of eleves) {
     const cotes = await prisma.cahierDeCote.findMany({
@@ -53,11 +52,6 @@ export async function GET(request: NextRequest) {
         ...scopeWhere,
       },
     });
-
-    if (cotes.length === 0) {
-      skipped.push(`${eleve.prenom} ${eleve.nom}`);
-      continue;
-    }
 
     const donnees = cotes.map((c) => ({
       cours: c.cours,
@@ -70,13 +64,19 @@ export async function GET(request: NextRequest) {
       mention: c.mention,
     }));
 
-    const moyenneGenerale = Math.round((cotes.reduce((sum, c) => sum + c.moyenne, 0) / cotes.length) * 100) / 100;
-    const pourcentageGeneral = Math.round((moyenneGenerale / 20) * 100 * 100) / 100;
-    const mentionGenerale = getMention(pourcentageGeneral);
+    const moyenneGenerale = cotes.length > 0
+      ? Math.round((cotes.reduce((sum, c) => sum + c.moyenne, 0) / cotes.length) * 100) / 100
+      : 0;
+    const pourcentageGeneral = cotes.length > 0
+      ? Math.round((moyenneGenerale / 20) * 100 * 100) / 100
+      : 0;
+    const mentionGenerale = cotes.length > 0 ? getMention(pourcentageGeneral) : 'Non évalué';
 
     const etablissement = cotes[0]?.etablissementId
       ? await prisma.etablissement.findUnique({ where: { id: cotes[0].etablissementId } })
-      : null;
+      : (eleve.etablissementId
+        ? await prisma.etablissement.findUnique({ where: { id: eleve.etablissementId } })
+        : null);
 
     const qrToken = generateQrToken();
     const verifyUrl = `${baseUrl}/api/cahier-de-cote/bulletin/verify?token=${qrToken}`;
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
 
   if (generated === 0) {
     return NextResponse.json({
-      error: `Aucune cote trouvée pour cette classe en ${periode}.`,
+      error: `Aucun élève trouvé pour cette classe.`,
     }, { status: 404 });
   }
 

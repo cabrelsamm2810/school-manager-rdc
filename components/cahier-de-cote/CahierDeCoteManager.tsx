@@ -328,7 +328,7 @@ export function CahierDeCoteManager() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `bulletins_${selectedClasse.replace(/\s+/g, '_')}_${selectedPeriode.replace(/\s+/g, '_')}.zip`;
+      a.download = `bulletins_${selectedClasse.replace(/\s+/g, '_')}_${selectedPeriode.replace(/\s+/g, '_')}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
