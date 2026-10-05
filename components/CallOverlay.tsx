@@ -127,6 +127,7 @@ export function CallOverlay({
     }
 
     pc.ontrack = (e) => {
+      if (pc !== pcRef.current) return;
       e.streams[0].getTracks().forEach((track) => {
         remoteStream.addTrack(track);
       });
@@ -136,7 +137,7 @@ export function CallOverlay({
     };
 
     pc.onicecandidate = (e) => {
-      if (e.candidate && callIdRef.current) {
+      if (e.candidate && callIdRef.current && pc === pcRef.current) {
         fetch(`/api/chat/calls/${callIdRef.current}/ice`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -146,6 +147,7 @@ export function CallOverlay({
     };
 
     pc.onconnectionstatechange = () => {
+      if (pc !== pcRef.current) return;
       if (pc.connectionState === 'connected') {
         setPhase('connected');
         startCallTimer();
@@ -169,8 +171,7 @@ export function CallOverlay({
       });
     } catch {
       setError('Micro/caméra inaccessible. Vérifiez les permissions.');
-      endCall();
-      return;
+      return null;
     }
 
     return pc;
@@ -224,7 +225,11 @@ export function CallOverlay({
     (async () => {
       try {
         const pc = await setupPeerConnection();
-        if (!pc || cancelled) return;
+        if (!pc) {
+          if (!cancelled) endCall();
+          return;
+        }
+        if (cancelled) return;
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -291,7 +296,10 @@ export function CallOverlay({
 
     try {
       const pc = await setupPeerConnection();
-      if (!pc) return;
+      if (!pc) {
+        endCall();
+        return;
+      }
 
       await pc.setRemoteDescription(JSON.parse(incomingOffer));
 
