@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { sendAbsenceNotification } from '@/lib/mail';
+import { sendAbsenceNotification, sendPresenceNotification } from '@/lib/mail';
 
 const createSchema = z.object({
   eleveId: z.string().trim().min(1, 'L\u2019\u00e9l\u00e8ve est obligatoire.'),
   date: z.string().trim().min(1, 'La date est obligatoire.'),
   present: z.boolean(),
   classe: z.string().trim().min(1, 'La classe est obligatoire.'),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
 });
 
 /** GET /api/presences — liste des présences (filtrable par classe, date, élève). */
@@ -74,26 +76,42 @@ export async function POST(request: NextRequest) {
       date: new Date(data.date),
       present: data.present,
       classe: data.classe,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
     },
     include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true } } },
   });
 
-  // Envoyer un email au parent si l'élève est marqué absent
-  if (!data.present && eleve.emailTuteur) {
-    const dateStr = new Date(data.date).toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    sendAbsenceNotification({
-      parentEmail: eleve.emailTuteur,
-      parentNom: eleve.nomTuteur,
-      eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
-      classe: data.classe,
-      etablissementNom: eleve.etablissement?.nom || 'Établissement',
-      dateAbsence: dateStr,
-    }).catch(() => {});
+  const dateStr = new Date(data.date).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  // Envoyer un email au parent selon le statut de présence
+  if (eleve.emailTuteur) {
+    if (!data.present) {
+      sendAbsenceNotification({
+        parentEmail: eleve.emailTuteur,
+        parentNom: eleve.nomTuteur,
+        eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
+        classe: data.classe,
+        etablissementNom: eleve.etablissement?.nom || 'Établissement',
+        dateAbsence: dateStr,
+      }).catch(() => {});
+    } else {
+      sendPresenceNotification({
+        parentEmail: eleve.emailTuteur,
+        parentNom: eleve.nomTuteur,
+        eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
+        classe: data.classe,
+        etablissementNom: eleve.etablissement?.nom || 'Établissement',
+        datePresence: dateStr,
+        heurePresence: new Date(data.date).toLocaleTimeString('fr-FR'),
+        localisation: data.latitude != null && data.longitude != null ? `${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}` : undefined,
+      }).catch(() => {});
+    }
   }
 
   return NextResponse.json({ presence }, { status: 201 });

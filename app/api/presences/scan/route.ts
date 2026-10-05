@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
+import { sendPresenceNotification } from '@/lib/mail';
 
 /**
  * POST /api/presences/scan
@@ -15,6 +16,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null);
   const scannedValue = body?.scannedValue?.trim();
+  const latitude = typeof body?.latitude === 'number' ? body.latitude : null;
+  const longitude = typeof body?.longitude === 'number' ? body.longitude : null;
 
   if (!scannedValue) {
     return NextResponse.json({ error: 'Valeur scannée vide.' }, { status: 400 });
@@ -93,8 +96,24 @@ export async function POST(request: NextRequest) {
     // Si marqué absent, on le met à présent
     const updated = await prisma.presence.update({
       where: { id: existing.id },
-      data: { present: true, date: new Date() },
+      data: { present: true, date: new Date(), latitude, longitude },
     });
+
+    // Envoyer un email de présence au parent
+    if (eleve.emailTuteur) {
+      const now = new Date();
+      sendPresenceNotification({
+        parentEmail: eleve.emailTuteur,
+        parentNom: eleve.nomTuteur,
+        eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
+        classe: eleve.classe,
+        etablissementNom: eleve.etablissement?.nom || 'Établissement',
+        datePresence: now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+        heurePresence: now.toLocaleTimeString('fr-FR'),
+        localisation: latitude != null && longitude != null ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` : undefined,
+      }).catch(() => {});
+    }
+
     return NextResponse.json({
       updated: true,
       eleve: {
@@ -116,8 +135,25 @@ export async function POST(request: NextRequest) {
       date: new Date(),
       present: true,
       classe: eleve.classe,
+      latitude,
+      longitude,
     },
   });
+
+  // Envoyer un email de présence au parent
+  if (eleve.emailTuteur) {
+    const now = new Date();
+    sendPresenceNotification({
+      parentEmail: eleve.emailTuteur,
+      parentNom: eleve.nomTuteur,
+      eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
+      classe: eleve.classe,
+      etablissementNom: eleve.etablissement?.nom || 'Établissement',
+      datePresence: now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      heurePresence: now.toLocaleTimeString('fr-FR'),
+      localisation: latitude != null && longitude != null ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` : undefined,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({
     created: true,

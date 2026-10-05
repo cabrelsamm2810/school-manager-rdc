@@ -182,6 +182,8 @@ model Presence {
   date      DateTime @default(now())
   present   Boolean  @default(true)
   classe    String
+  latitude  Float?
+  longitude Float?
 
   @@index([eleveId])
   @@index([date])

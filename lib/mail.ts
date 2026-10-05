@@ -100,6 +100,68 @@ export async function sendAbsenceNotification(opts: {
 }
 
 /**
+ * Envoie un email de notification de présence aux parents/tuteurs d'un élève.
+ */
+export async function sendPresenceNotification(opts: {
+  parentEmail: string;
+  parentNom: string;
+  eleveNom: string;
+  classe: string;
+  etablissementNom: string;
+  datePresence: string;
+  heurePresence: string;
+  localisation?: string;
+}): Promise<void> {
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
+
+  const localisationInfo = opts.localisation
+    ? `<p style="color: #64748b; font-size: 13px; margin: 8px 0 0;">📍 Localisation du scan : ${opts.localisation}</p>`
+    : '';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #1e3a5f; font-size: 22px; margin: 0;">School Manager RDC</h1>
+        <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Notification de présence</p>
+      </div>
+      <div style="background: #f0fdf4; border-left: 4px solid #16a34a; border-radius: 12px; padding: 24px;">
+        <p style="color: #334155; font-size: 15px; margin: 0 0 12px;">
+          Bonjour ${opts.parentNom || 'Parent/Tuteur'},
+        </p>
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">
+          Nous vous informons que votre enfant <strong>${opts.eleveNom}</strong>,
+          élève en classe de <strong>${opts.classe}</strong> à
+          <strong>${opts.etablissementNom}</strong>, a été marqué
+          <span style="color: #16a34a; font-weight: bold;">présent(e)</span> le
+          <strong>${opts.datePresence}</strong> à <strong>${opts.heurePresence}</strong>.
+        </p>
+        ${localisationInfo}
+        <div style="background: white; border-radius: 8px; padding: 14px; margin: 16px 0;">
+          <p style="color: #64748b; font-size: 13px; margin: 0;">
+            Cette notification confirme l'enregistrement de la présence de votre enfant via le scan de sa carte scolaire.
+          </p>
+        </div>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">
+        Cet email a été envoyé automatiquement par School Manager RDC.
+      </p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: opts.parentEmail,
+      subject: `School Manager RDC — Présence de ${opts.eleveNom} le ${opts.datePresence}`,
+      html,
+    });
+  } catch (error) {
+    console.error('Erreur envoi notification de présence:', error);
+    throw error;
+  }
+}
+
+/**
  * Envoie un email de rappel de saisie des cotes à un enseignant.
  */
 export async function sendRappelCote(

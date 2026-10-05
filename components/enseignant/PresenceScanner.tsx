@@ -28,8 +28,23 @@ export function PresenceScanner({ onClose }: { onClose: () => void }) {
   const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
   const [manualMatricule, setManualMatricule] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'granted' | 'denied'>('idle');
   const lastScanTimeRef = useRef(0);
   const lastScannedValueRef = useRef('');
+  const geoRef = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  // Demander la géolocalisation au montage
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        geoRef.current = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setGeoStatus('granted');
+      },
+      () => setGeoStatus('denied'),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }, []);
 
   const handleScanResult = useCallback(async (scannedValue: string) => {
     // Anti-doublon: ignorer si même valeur dans les 3 dernières secondes
@@ -47,7 +62,11 @@ export function PresenceScanner({ onClose }: { onClose: () => void }) {
       const res = await fetch('/api/presences/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scannedValue }),
+        body: JSON.stringify({
+          scannedValue,
+          latitude: geoRef.current?.latitude ?? null,
+          longitude: geoRef.current?.longitude ?? null,
+        }),
       });
       const data = await res.json();
 
@@ -151,6 +170,24 @@ export function PresenceScanner({ onClose }: { onClose: () => void }) {
                 <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-500">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
                   Caméra active — en attente de scan...
+                </div>
+              )}
+
+              {geoStatus === 'granted' && (
+                <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-blue-600">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z" />
+                    <circle cx="12" cy="9" r="2.5" />
+                  </svg>
+                  Géolocalisation activée
+                </div>
+              )}
+              {geoStatus === 'denied' && (
+                <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-amber-600">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
+                  </svg>
+                  Géolocalisation indisponible
                 </div>
               )}
 
