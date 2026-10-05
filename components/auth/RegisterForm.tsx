@@ -17,6 +17,7 @@ import {
   rolesNeedingEducationProvince,
   type RoleOption,
 } from '@/lib/meta-data';
+import { ErcLogo } from '@/components/ui/ErcLogo';
 
 const STEP_LABELS = [
   'Informations',
@@ -330,6 +331,15 @@ export function RegisterForm() {
                 ? 'Vous avez choisi le parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo. Les rôles spécifiques à ce parcours vous seront proposés à l\u2019étape suivante.'
                 : 'Sélectionnez votre type d\u2019institution. Le parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo dispose de rôles dédiés séparés des autres institutions.'}
             </p>
+            {isEcErc && (
+              <div className="flex items-center gap-3 rounded-2xl bg-blue-50 p-4">
+                <ErcLogo size={56} />
+                <div>
+                  <p className="font-semibold text-slate-900">EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo</p>
+                  <p className="text-xs text-slate-500">Parcours spécifique avec rôles dédiés</p>
+                </div>
+              </div>
+            )}
             <div className="grid gap-3 sm:grid-cols-2">
               {registrationInstitutionTypes.map((inst) => (
                 <div
@@ -338,9 +348,9 @@ export function RegisterForm() {
                   className={`select-card rounded-2xl border-2 p-4 ${form.typeInstitution === inst.value ? 'selected' : 'border-slate-200'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold ${form.typeInstitution === inst.value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      {inst.value === 'EC-ERC' ? '★' : '◆'}
-                    </div>
+                    {inst.value === 'EC-ERC'
+                      ? <ErcLogo size={40} />
+                      : <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold ${form.typeInstitution === inst.value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>◆</div>}
                     <div>
                       <p className="font-semibold text-slate-900">{inst.label}</p>
                       {inst.value === 'EC-ERC' && <p className="text-xs text-blue-600">Parcours spécifique</p>}
