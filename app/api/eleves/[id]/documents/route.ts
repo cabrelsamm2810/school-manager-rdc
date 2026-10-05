@@ -107,7 +107,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
 
-  const { titre, type, description } = body as { titre?: string; type?: string; description?: string };
+  const { titre, type, description, newEleveId } = body as { titre?: string; type?: string; description?: string; newEleveId?: string };
 
   const existing = await prisma.dossierEleveDocument.findFirst({
     where: { id: docId, eleveId: params.id },
@@ -118,6 +118,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   if (titre !== undefined) data.titre = titre.trim();
   if (type !== undefined) data.type = type.trim();
   if (description !== undefined) data.description = description.trim();
+
+  // Déplacement vers un autre dossier élève
+  if (newEleveId !== undefined && newEleveId.trim() && newEleveId !== params.id) {
+    const target = await prisma.eleve.findUnique({ where: { id: newEleveId.trim() } });
+    if (!target) return NextResponse.json({ error: 'Élève de destination introuvable.' }, { status: 404 });
+    data.eleveId = newEleveId.trim();
+  }
 
   const updated = await prisma.dossierEleveDocument.update({
     where: { id: docId },

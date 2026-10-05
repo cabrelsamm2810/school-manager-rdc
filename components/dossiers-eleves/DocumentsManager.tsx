@@ -126,6 +126,15 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
     load();
   }
 
+  async function handleMove(docId: string, targetEleveId: string) {
+    await fetch(`/api/eleves/${eleveId}/documents?docId=${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newEleveId: targetEleveId }),
+    });
+    load();
+  }
+
   function handleDownload(doc: Document) {
     if (!doc.fileUrl) return;
     const link = document.createElement('a');
@@ -248,7 +257,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
               </div>
               <div className="space-y-2">
                 {grouped[group].map((d) => (
-                  <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onEdit={handleEdit} />
+                  <DocCard key={d.id} doc={d} eleveId={eleveId} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onEdit={handleEdit} onMove={handleMove} />
                 ))}
               </div>
             </div>
@@ -257,7 +266,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
       ) : (
         <div className="space-y-2">
           {filtered.map((d) => (
-            <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onEdit={handleEdit} />
+            <DocCard key={d.id} doc={d} eleveId={eleveId} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onEdit={handleEdit} onMove={handleMove} />
           ))}
         </div>
       )}
@@ -271,19 +280,27 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
 }
 
 // ── Carte document ──
+type EleveOption = { id: string; nom: string; postNom: string; prenom: string; classe: string };
+
 function DocCard({
-  doc, onPreview, onDownload, onDelete, onEdit,
+  doc, eleveId, onPreview, onDownload, onDelete, onEdit, onMove,
 }: {
   doc: Document;
+  eleveId: string;
   onPreview: (d: Document) => void;
   onDownload: (d: Document) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, fields: { titre: string; type: string; description: string }) => void;
+  onMove: (docId: string, targetEleveId: string) => void;
 }) {
   const canPreview = isPreviewable(doc.fileType, doc.fileUrl);
   const canDownload = !!doc.fileUrl;
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ titre: doc.titre, type: doc.type, description: doc.description });
+  const [moving, setMoving] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchResults, setSearchResults] = useState<EleveOption[]>([]);
+  const [searching, setSearching] = useState(false);
 
   function startEdit() {
     setEditForm({ titre: doc.titre, type: doc.type, description: doc.description });
@@ -296,6 +313,25 @@ function DocCard({
   function submitEdit() {
     if (editForm.titre.trim()) onEdit(doc.id, editForm);
     setEditing(false);
+  }
+
+  async function doSearch(q: string) {
+    setSearchQ(q);
+    if (q.trim().length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/eleves?search=${encodeURIComponent(q.trim())}`);
+      const data = await res.json();
+      setSearchResults((data.eleves || []).filter((e: EleveOption) => e.id !== eleveId).slice(0, 8));
+    } catch { /* ignore */ }
+    setSearching(false);
+  }
+
+  function pickTarget(targetId: string) {
+    onMove(doc.id, targetId);
+    setMoving(false);
+    setSearchQ('');
+    setSearchResults([]);
   }
 
   return (
@@ -333,6 +369,44 @@ function DocCard({
             <button onClick={cancelEdit} className="rounded-lg px-3 py-1 text-xs text-slate-500 hover:bg-slate-100">Annuler</button>
           </div>
         </div>
+      ) : moving ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-slate-600">Déplacer « {doc.titre} » vers le dossier de :</p>
+          <input
+            type="text"
+            value={searchQ}
+            onChange={(e) => doSearch(e.target.value)}
+            autoFocus
+            placeholder="Rechercher un élève (nom, prénom, matricule)…"
+            className="w-full rounded-lg border border-blue-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+          {searching && <p className="text-xs text-slate-400">Recherche…</p>}
+          {searchResults.length > 0 && (
+            <div className="max-h-44 space-y-1 overflow-auto">
+              {searchResults.map((e) => (
+                <button
+                  key={e.id}
+                  onClick={() => pickTarget(e.id)}
+                  className="flex w-full items-center gap-2 rounded-lg border border-slate-100 px-2 py-1.5 text-left text-xs transition hover:border-blue-300 hover:bg-blue-50"
+                >
+                  <span className="text-base">👤</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-slate-800">
+                      {e.prenom} {e.nom} {e.postNom || ''}
+                    </span>
+                    <span className="text-slate-400">{e.classe}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {searchQ.trim().length >= 2 && !searching && searchResults.length === 0 && (
+            <p className="text-xs text-slate-400">Aucun élève trouvé.</p>
+          )}
+          <div className="flex justify-end">
+            <button onClick={() => { setMoving(false); setSearchQ(''); setSearchResults([]); }} className="rounded-lg px-3 py-1 text-xs text-slate-500 hover:bg-slate-100">Annuler</button>
+          </div>
+        </div>
       ) : (
         <div className="flex items-center gap-3">
           <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
@@ -364,6 +438,9 @@ function DocCard({
             )}
             <button onClick={startEdit} className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50" aria-label="Modifier" title="Modifier">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            </button>
+            <button onClick={() => setMoving(true)} className="rounded-lg p-1.5 text-indigo-600 hover:bg-indigo-50" aria-label="Déplacer" title="Déplacer vers un autre dossier">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /><path d="M12 17v-6M9 14l3-3 3 3" /></svg>
             </button>
             <button onClick={() => onDelete(doc.id)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Supprimer" title="Supprimer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
