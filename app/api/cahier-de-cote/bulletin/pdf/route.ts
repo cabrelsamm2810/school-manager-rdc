@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   // Construire l'URL de vérification
   const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
-  const verifyUrl = `${baseUrl}/api/cahier-de-cote/bulletin/verify?token=${bulletin.qrToken}`;
+  const verifyUrl = `${baseUrl}/verifier-bulletin?token=${bulletin.qrToken}`;
 
   const donnees = JSON.parse(bulletin.donnees || '[]');
 

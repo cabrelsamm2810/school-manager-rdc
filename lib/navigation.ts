@@ -31,6 +31,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Tableau de bord enseignant', href: '/enseignant/dashboard', icon: 'home', minRole: 'ENSEIGNANT' },
       { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', minRole: 'ENSEIGNANT' },
       { label: 'Rappels de cotes', href: '/rappels-cotes', icon: 'bell', minRole: 'DIRECTION_ECOLE' },
+      { label: 'Bulletin numérique', href: '/bulletin-numerique', icon: 'notebook', minRole: 'DIRECTION_ECOLE' },
       { label: 'Carte scolaire', href: '/carte-scolaire', icon: 'map', minRole: 'DIRECTION_ECOLE' },
       { label: 'Recherche d’élèves', href: '/recherche-eleves', icon: 'search' },
       { label: 'Photo passeport', href: '/photo-passeport', icon: 'photo', minRole: 'DIRECTION_ECOLE' },

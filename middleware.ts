@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/verify', '/about'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/verify', '/about', '/verifier-bulletin'];
 
 /** Hiérarchie des rôles (doublon de lib/rbac.ts sans dépendance Prisma pour edge). */
 const ROLE_RANK: Record<string, number> = {
@@ -26,6 +26,7 @@ const ROUTE_MIN_ROLE: Record<string, string> = {
   '/carte-scolaire': 'DIRECTION_ECOLE',
   '/photo-passeport': 'DIRECTION_ECOLE',
   '/cartes-qr': 'DIRECTION_ECOLE',
+  '/bulletin-numerique': 'DIRECTION_ECOLE',
   '/dossiers-eleves': 'DIRECTION_ECOLE',
   '/provinces': 'COORDINATION_PROVINCIALE',
   '/ec-erc': 'COORDINATION_PROVINCIALE',

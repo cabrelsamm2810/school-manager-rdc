@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
   // Construire l'URL de vérification
   const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
-  const verifyUrl = `${baseUrl}/api/cahier-de-cote/bulletin/verify?token=${qrToken}`;
+  const verifyUrl = `${baseUrl}/verifier-bulletin?token=${qrToken}`;
 
   // Générer le QR code en data URL
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {

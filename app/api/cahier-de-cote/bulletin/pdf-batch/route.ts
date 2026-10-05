@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         : null);
 
     const qrToken = generateQrToken();
-    const verifyUrl = `${baseUrl}/api/cahier-de-cote/bulletin/verify?token=${qrToken}`;
+    const verifyUrl = `${baseUrl}/verifier-bulletin?token=${qrToken}`;
 
     const existingBulletin = await prisma.bulletin.findFirst({
       where: { eleveId: eleve.id, periode, anneeScolaire },
