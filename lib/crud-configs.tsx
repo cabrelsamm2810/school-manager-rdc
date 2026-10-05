@@ -86,6 +86,47 @@ export const crudConfigs: Record<string, CrudConfig> = {
     ],
   },
 
+  'provinces-educationnelles': {
+    apiPath: '/api/provinces-educationnelles',
+    entityName: 'provinceEducationnelle',
+    entityNamePlural: 'provincesEducationnelles',
+    icon: 'school',
+    searchFields: ['nom', 'provinceAdministrative', 'chefLieu'],
+    fields: [
+      { name: 'nom', label: 'Nom', type: 'text', required: true },
+      { name: 'provinceAdministrative', label: 'Province administrative', type: 'text', half: true },
+      { name: 'chefLieu', label: 'Chef-lieu', type: 'text', half: true },
+      { name: 'sousDivisions', label: 'Nb sous-divisions', type: 'number', half: true, default: 0 },
+      { name: 'etablissements', label: 'Nb établissements', type: 'number', half: true, default: 0 },
+      { name: 'eleves', label: 'Nb élèves', type: 'number', half: true, default: 0 },
+      { name: 'statut', label: 'Statut', type: 'select', half: true, default: 'Actif', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En setup', label: 'En setup' },
+      ] },
+    ],
+    columns: [
+      { key: 'nom', label: 'Province éducationnelle', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
+      { key: 'provinceAdministrative', label: 'Province administrative' },
+      { key: 'chefLieu', label: 'Chef-lieu' },
+      { key: 'sousDivisions', label: 'Sous-divisions' },
+      { key: 'etablissements', label: 'Établissements' },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
+    ],
+    filters: [
+      { name: 'provinceAdministrative', label: 'Toutes les provinces' },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'En setup', label: 'En setup' },
+      ] },
+    ],
+    statCards: [
+      { label: 'Provinces éduc.', value: (items: any[]) => String(items.length), hint: 'Total' },
+      { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
+      { label: 'Sous-divisions', value: (items: any[]) => String(items.reduce((s, e) => s + (e.sousDivisions || 0), 0)) },
+      { label: 'Élèves total', value: (items: any[]) => items.reduce((s, e) => s + (e.eleves || 0), 0).toLocaleString('fr-FR') },
+    ],
+  },
+
   'ec-erc': {
     apiPath: '/api/ec-erc',
     entityName: 'ecErc',
