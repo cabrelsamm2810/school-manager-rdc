@@ -59,6 +59,13 @@ export async function GET(request: NextRequest) {
     ];
   }
 
+  // ── Isolation par institution ──
+  // SUPER_ADMIN voit tout ; les autres ne voient que leur institution.
+  const userInst = (auth.user as any).typeInstitution;
+  if (auth.user.role !== 'SUPER_ADMIN' && userInst && !institution) {
+    where.institution = userInst;
+  }
+
   // Filtrage hiérarchique par périmètre territorial
   const scope = getScopeLevel(auth.user.role);
   if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
@@ -105,6 +112,16 @@ export async function POST(request: NextRequest) {
   const validInstitution = INSTITUTIONS.find((i) => i.code === data.institution);
   if (!validInstitution) {
     return NextResponse.json({ error: 'Institution non reconnue.' }, { status: 400 });
+  }
+
+  // ── Isolation par institution ──
+  // SUPER_ADMIN peut créer pour n'importe quelle institution ; les autres ne créent que pour la leur.
+  const userInst = (auth.user as any).typeInstitution;
+  if (auth.user.role !== 'SUPER_ADMIN' && userInst && userInst !== data.institution) {
+    return NextResponse.json(
+      { error: 'Vous ne pouvez créer un établissement que pour votre propre institution.' },
+      { status: 403 },
+    );
   }
 
   // Générer un identifiant School Manager unique

@@ -14,6 +14,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'matricule', 'etablissement'],
     defaultSort: { field: 'nom', order: 'asc' },
+    institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'matricule', type: 'string', required: true, unique: true },
@@ -34,6 +35,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     searchFields: ['nom', 'chefLieu'],
     defaultSort: { field: 'nom', order: 'asc' },
     provinceField: 'nom',
+    institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true, unique: true },
       { name: 'chefLieu', type: 'string' },
@@ -51,6 +53,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     searchFields: ['nom', 'province'],
     defaultSort: { field: 'nom', order: 'asc' },
     provinceField: 'province',
+    institutionField: 'institution',
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'type', type: 'string' },
@@ -69,6 +72,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     searchFields: ['province', 'coordonnateur'],
     defaultSort: { field: 'province', order: 'asc' },
     provinceField: 'province',
+    institutionField: 'institution',
     fields: [
       { name: 'province', type: 'string', required: true },
       { name: 'institution', type: 'string' },
@@ -87,6 +91,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     searchFields: ['province'],
     defaultSort: { field: 'province', order: 'asc' },
     provinceField: 'province',
+    institutionField: 'institution',
     fields: [
       { name: 'province', type: 'string', required: true },
       { name: 'institution', type: 'string' },
@@ -106,6 +111,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     defaultSort: { field: 'nom', order: 'asc' },
     provinceField: 'province',
     sousProvincialeField: 'id',
+    institutionField: 'institution',
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'province', type: 'string' },
@@ -123,6 +129,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['bureau', 'fonction', 'titulaire', 'localisation'],
     defaultSort: { field: 'bureau', order: 'asc' },
+    institutionField: false,
     fields: [
       { name: 'bureau', type: 'string', required: true },
       { name: 'fonction', type: 'string' },
@@ -138,6 +145,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['grade', 'categorie'],
     defaultSort: { field: 'grade', order: 'asc' },
+    institutionField: false,
     fields: [
       { name: 'grade', type: 'string', required: true },
       { name: 'categorie', type: 'string' },
@@ -153,6 +161,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_PROVINCIAL',
     searchFields: ['reference', 'objet', 'demandeur'],
     defaultSort: { field: 'createdAt', order: 'desc' },
+    institutionField: false,
     fields: [
       { name: 'reference', type: 'string', required: true, unique: true },
       { name: 'objet', type: 'string', required: true },
@@ -169,6 +178,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_PROVINCIAL',
     searchFields: ['etablissement', 'visiteur', 'objet'],
     defaultSort: { field: 'date', order: 'desc' },
+    institutionField: false,
     fields: [
       { name: 'date', type: 'date' },
       { name: 'etablissement', type: 'string', required: true },
@@ -185,6 +195,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_SOUS_PROVINCIAL',
     searchFields: ['service'],
     defaultSort: { field: 'service', order: 'asc' },
+    institutionField: false,
     fields: [
       { name: 'service', type: 'string', required: true },
       { name: 'procedures', type: 'number' },
@@ -200,6 +211,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'ELEVE',
     searchFields: ['titre', 'message', 'type'],
     defaultSort: { field: 'createdAt', order: 'desc' },
+    institutionField: false,
     fields: [
       { name: 'titre', type: 'string', required: true },
       { name: 'message', type: 'string' },
@@ -215,6 +227,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['reference', 'description'],
     defaultSort: { field: 'date', order: 'desc' },
+    institutionField: false,
     fields: [
       { name: 'reference', type: 'string', required: true, unique: true },
       { name: 'description', type: 'string', required: true },
@@ -231,6 +244,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'ENSEIGNANT',
     searchFields: ['eleve', 'classe'],
     defaultSort: { field: 'eleve', order: 'asc' },
+    institutionField: false,
     fields: [
       { name: 'eleve', type: 'string', required: true },
       { name: 'classe', type: 'string' },

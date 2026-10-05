@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   let eleveWhere: Record<string, unknown> = {};
 
   if (scope === 'national') {
-    // Pas de filtre — accès national
+    // Pas de filtre territorial — accès national
   } else if (scope === 'sousProvincial' && sousProvId) {
     etabWhere = { coordSousProvincialeId: sousProvId };
     eleveWhere = { etablissement: { coordSousProvincialeId: sousProvId } };
@@ -31,6 +31,15 @@ export async function GET(request: NextRequest) {
     eleveWhere = { etablissement: { province: prov } };
   }
 
+  // ── Isolation par institution (appliquée après les filtres territoriaux) ──
+  // SUPER_ADMIN voit tout ; les autres ne voient que leur institution.
+  const userInst = (user as any).typeInstitution;
+  if (user.role !== 'SUPER_ADMIN' && userInst) {
+    etabWhere = { AND: [etabWhere, { institution: userInst }] };
+    const existingEtabFilter = (eleveWhere.etablissement as Record<string, unknown>) || {};
+    eleveWhere = { AND: [eleveWhere, { etablissement: { ...existingEtabFilter, institution: userInst } }] };
+  }
+
   // ── Stats de base (communes à tous les niveaux) ──
   const [totalEleves, totalEtablissements, totalEnseignants, totalProvinces, totalClassesAgg, totalDossiers, totalVisites, totalSousProvinciales] = await Promise.all([
     prisma.eleve.count({ where: eleveWhere }),
@@ -40,7 +49,7 @@ export async function GET(request: NextRequest) {
     prisma.eleve.groupBy({ by: ['classe'], where: eleveWhere, _count: true }),
     prisma.dossier.count(),
     prisma.visite.count(),
-    prisma.coordSousProvinciale.count(scope === 'provincial' ? { where: { province: prov } } : {}),
+    prisma.coordSousProvinciale.count(scope === 'provincial' ? { where: { province: prov, ...(userInst ? { institution: userInst } : {}) } } : (userInst ? { where: { institution: userInst } } : {})),
   ]);
 
   const totalClasses = totalClassesAgg.length;
@@ -55,14 +64,14 @@ export async function GET(request: NextRequest) {
     chartData = provinces.map((p) => ({ label: p.nom, value: p.eleves }));
   } else if (scope === 'provincial' && prov) {
     const sousProvs = await prisma.coordSousProvinciale.findMany({
-      where: { province: prov },
+      where: { province: prov, ...(userInst ? { institution: userInst } : {}) },
       select: { id: true, nom: true },
       orderBy: { nom: 'asc' },
     });
     const results = await Promise.all(
       sousProvs.map(async (sp) => {
-        const nbEtab = await prisma.etablissement.count({ where: { coordSousProvincialeId: sp.id } });
-        const nbEleves = await prisma.eleve.count({ where: { etablissement: { coordSousProvincialeId: sp.id } } });
+        const nbEtab = await prisma.etablissement.count({ where: { coordSousProvincialeId: sp.id, ...(userInst ? { institution: userInst } : {}) } });
+        const nbEleves = await prisma.eleve.count({ where: { etablissement: { coordSousProvincialeId: sp.id, ...(userInst ? { institution: userInst } : {}) } } });
         return { label: sp.nom, nbEtab, nbEleves };
       }),
     );
@@ -70,7 +79,7 @@ export async function GET(request: NextRequest) {
     chartData = results.map((r) => ({ label: r.label, value: r.nbEleves }));
   } else if (scope === 'sousProvincial' && sousProvId) {
     const etabs = await prisma.etablissement.findMany({
-      where: { coordSousProvincialeId: sousProvId },
+      where: { coordSousProvincialeId: sousProvId, ...(userInst ? { institution: userInst } : {}) },
       select: { id: true, nom: true, type: true },
       orderBy: { nom: 'asc' },
     });

@@ -6,6 +6,8 @@ export type AuthUser = {
   provinceAdministrative?: string;
   coordSousProvincialeId?: string | null;
   etablissementId?: string | null;
+  typeInstitution?: string;
+  institutionName?: string;
 };
 
 export type ScopeLevel = 'national' | 'provincial' | 'sousProvincial' | 'school';
@@ -17,6 +19,8 @@ export type ScopeConfig = {
   sousProvincialeField?: string;
   /** Champ du modèle correspondant à etablissementId (FK). Utiliser 'id' si le modèle EST Etablissement. */
   etablissementField?: string;
+  /** Champ du modèle correspondant à l'institution (défaut: 'institution'). Mettre à false pour désactiver le filtre. */
+  institutionField?: string | false;
 };
 
 /**
@@ -53,34 +57,44 @@ export function buildScopeWhere(
   if (!user) return {};
 
   const scope = getScopeLevel(user.role);
+  const where: Record<string, unknown> = {};
 
-  if (scope === 'national') return {};
+  // ── Filtre par institution (isolation des données entre les 5 types) ──
+  // SUPER_ADMIN voit tout ; tous les autres sont limités à leur institution.
+  const instField = config.institutionField !== undefined ? config.institutionField : 'institution';
+  if (instField && user.role !== 'SUPER_ADMIN' && user.typeInstitution) {
+    where[instField] = user.typeInstitution;
+  }
+
+  if (scope === 'national') return where;
 
   if (scope === 'provincial') {
     const prov = user.provinceAdministrative;
-    if (!prov) return {};
-    return { [config.provinceField ?? 'province']: prov };
+    if (prov) where[config.provinceField ?? 'province'] = prov;
+    return where;
   }
 
   if (scope === 'sousProvincial') {
     // Filtrer par la sous-division spécifique si le modèle le permet
     if (config.sousProvincialField && user.coordSousProvincialeId) {
-      return { [config.sousProvincialField]: user.coordSousProvincialeId };
+      where[config.sousProvincialField] = user.coordSousProvincialeId;
+    } else {
+      // Sinon, repli sur la province
+      const prov = user.provinceAdministrative;
+      if (prov) where[config.provinceField ?? 'province'] = prov;
     }
-    // Sinon, repli sur la province
-    const prov = user.provinceAdministrative;
-    if (!prov) return {};
-    return { [config.provinceField ?? 'province']: prov };
+    return where;
   }
 
   // school : DIRECTION_ECOLE, ENSEIGNANT
   if (config.etablissementField && user.etablissementId) {
-    return { [config.etablissementField]: user.etablissementId };
+    where[config.etablissementField] = user.etablissementId;
+  } else {
+    // Repli sur la province pour les modèles sans lien direct à un établissement
+    const prov = user.provinceAdministrative;
+    if (prov) where[config.provinceField ?? 'province'] = prov;
   }
-  // Repli sur la province pour les modèles sans lien direct à un établissement
-  const prov = user.provinceAdministrative;
-  if (!prov) return {};
-  return { [config.provinceField ?? 'province']: prov };
+  return where;
 }
 
 /**

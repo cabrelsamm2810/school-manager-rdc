@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
+import { getScopeLevel } from '@/lib/territory-filter';
 
 const updateSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom officiel est obligatoire.'),
@@ -48,6 +49,24 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: 'Établissement introuvable.' }, { status: 404 });
   }
 
+  // ── Isolation par institution et périmètre territorial ──
+  const user = auth.user as any;
+  if (user.role !== 'SUPER_ADMIN') {
+    if (user.typeInstitution && user.typeInstitution !== etablissement.institution) {
+      return NextResponse.json({ error: 'Accès refusé : institution différente.' }, { status: 403 });
+    }
+    const scope = getScopeLevel(user.role);
+    if (scope === 'school' && user.etablissementId && user.etablissementId !== params.id) {
+      return NextResponse.json({ error: 'Accès refusé : établissement différent.' }, { status: 403 });
+    }
+    if (scope === 'sousProvincial' && user.coordSousProvincialeId && etablissement.coordSousProvincialeId !== user.coordSousProvincialeId) {
+      return NextResponse.json({ error: 'Accès refusé : sous-province différente.' }, { status: 403 });
+    }
+    if (scope === 'provincial' && user.provinceAdministrative && etablissement.province !== user.provinceAdministrative) {
+      return NextResponse.json({ error: 'Accès refusé : province différente.' }, { status: 403 });
+    }
+  }
+
   return NextResponse.json({ etablissement });
 }
 
@@ -71,6 +90,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const existing = await prisma.etablissement.findUnique({ where: { id: params.id } });
   if (!existing) {
     return NextResponse.json({ error: 'Établissement introuvable.' }, { status: 404 });
+  }
+
+  // ── Isolation par institution et périmètre ──
+  const user = auth.user as any;
+  if (user.role !== 'SUPER_ADMIN') {
+    if (user.typeInstitution && user.typeInstitution !== existing.institution) {
+      return NextResponse.json({ error: 'Accès refusé : institution différente.' }, { status: 403 });
+    }
+    const scope = getScopeLevel(user.role);
+    if (scope === 'school' && user.etablissementId && user.etablissementId !== params.id) {
+      return NextResponse.json({ error: 'Accès refusé : établissement différent.' }, { status: 403 });
+    }
+    if (scope === 'sousProvincial' && user.coordSousProvincialeId && existing.coordSousProvincialeId !== user.coordSousProvincialeId) {
+      return NextResponse.json({ error: 'Accès refusé : sous-province différente.' }, { status: 403 });
+    }
+    if (scope === 'provincial' && user.provinceAdministrative && existing.province !== user.provinceAdministrative) {
+      return NextResponse.json({ error: 'Accès refusé : province différente.' }, { status: 403 });
+    }
   }
 
   // Une école validée ne peut être modifiée sans une nouvelle validation
@@ -142,6 +179,24 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       { error: 'Un établissement validé ne peut pas être supprimé. Le suspendre à la place.' },
       { status: 403 },
     );
+  }
+
+  // ── Isolation par institution et périmètre ──
+  const user = auth.user as any;
+  if (user.role !== 'SUPER_ADMIN') {
+    if (user.typeInstitution && user.typeInstitution !== existing.institution) {
+      return NextResponse.json({ error: 'Accès refusé : institution différente.' }, { status: 403 });
+    }
+    const scope = getScopeLevel(user.role);
+    if (scope === 'school' && user.etablissementId && user.etablissementId !== params.id) {
+      return NextResponse.json({ error: 'Accès refusé : établissement différent.' }, { status: 403 });
+    }
+    if (scope === 'sousProvincial' && user.coordSousProvincialeId && existing.coordSousProvincialeId !== user.coordSousProvincialeId) {
+      return NextResponse.json({ error: 'Accès refusé : sous-province différente.' }, { status: 403 });
+    }
+    if (scope === 'provincial' && user.provinceAdministrative && existing.province !== user.provinceAdministrative) {
+      return NextResponse.json({ error: 'Accès refusé : province différente.' }, { status: 403 });
+    }
   }
 
   await prisma.etablissement.delete({ where: { id: params.id } });

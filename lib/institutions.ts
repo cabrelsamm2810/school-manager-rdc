@@ -7,6 +7,8 @@
  * Les écoles d'une institution ne doivent jamais apparaître dans les dashboards d'une autre.
  */
 
+import { ROLE_RANK } from '@/lib/rbac';
+
 export type InstitutionCode =
   | 'EC_ERC'
   | 'PUBLIQUE'
@@ -173,4 +175,41 @@ export function generateIdentifiantSM(institution: string): string {
   const year = new Date().getFullYear();
   const random = Math.floor(1000 + Math.random() * 9000);
   return `SM-${prefix}-${year}-${random}`;
+}
+
+/* ── Flux de validation hiérarchique ──
+ *
+ * Chaque transition précise le rôle minimum requis pour l'effectuer.
+ * Le flux respecte la hiérarchie administrative :
+ *   DIRECTION_ECOLE soumet → COORDINATION_SOUS_PROVINCIALE vérifie et valide.
+ */
+
+export type ValidationTransition = {
+  from: ValidationStatut;
+  to: ValidationStatut;
+  minRole: string;
+};
+
+export const VALIDATION_TRANSITIONS: ValidationTransition[] = [
+  { from: 'Brouillon', to: 'En attente de vérification', minRole: 'DIRECTION_ECOLE' },
+  { from: 'En attente de vérification', to: 'En cours de vérification', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'En attente de vérification', to: 'Rejetée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'En cours de vérification', to: 'Validée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'En cours de vérification', to: 'Rejetée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'Validée', to: 'Suspendue', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'Rejetée', to: 'Brouillon', minRole: 'DIRECTION_ECOLE' },
+  { from: 'Suspendue', to: 'Brouillon', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'Suspendue', to: 'Validée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+];
+
+/**
+ * Vérifie qu'une transition de statut est autorisée pour un rôle donné.
+ * SUPER_ADMIN peut effectuer toutes les transitions.
+ */
+export function canTransition(from: string, to: string, role: string): boolean {
+  if (from === to) return false;
+  if (role === 'SUPER_ADMIN') return true;
+  const transition = VALIDATION_TRANSITIONS.find((t) => t.from === from && t.to === to);
+  if (!transition) return false;
+  return (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[transition.minRole] ?? 0);
 }

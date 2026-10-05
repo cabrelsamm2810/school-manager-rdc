@@ -23,6 +23,7 @@ export type CrudModelConfig = {
   provinceField?: string;
   sousProvincialeField?: string;
   etablissementField?: string;
+  institutionField?: string | false;
 };
 
 function buildSchema(fields: CrudFieldDef[]) {
@@ -93,6 +94,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
       etablissementField: config.etablissementField,
+      institutionField: config.institutionField,
     };
     const scopeWhere = buildScopeWhere(auth.user, scopeConfig);
     if (Object.keys(scopeWhere).length > 0) {
@@ -160,6 +162,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
       etablissementField: config.etablissementField,
+      institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
     const existing = await config.delegate.findFirst({ where: { id: params.id, ...scopeW } });
@@ -196,6 +199,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
       etablissementField: config.etablissementField,
+      institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
     const existing = await config.delegate.findFirst({ where: { id: params.id, ...scopeW } });
@@ -239,6 +243,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
       etablissementField: config.etablissementField,
+      institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
 
@@ -266,6 +271,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
       etablissementField: config.etablissementField,
+      institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
 

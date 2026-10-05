@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { VALIDATION_STATUTS } from '@/lib/institutions';
+import { getScopeLevel } from '@/lib/territory-filter';
+import { VALIDATION_STATUTS, canTransition } from '@/lib/institutions';
 
 const validateSchema = z.object({
   statut: z.enum(VALIDATION_STATUTS as [string, ...string[]]),
@@ -12,10 +13,15 @@ const validateSchema = z.object({
 /**
  * PATCH /api/etablissements/[id]/validate
  * Change le statut de validation d'un établissement.
- * Réservé aux rôles de coordination (sous-provinciale et au-dessus).
+ *
+ * Règles enforced :
+ *  1. Isolation par institution — le validateur doit appartenir à la même institution.
+ *  2. Périmètre territorial — le validateur doit couvrir le territoire de l'établissement.
+ *  3. Hiérarchie de transition — seules les transitions autorisées sont acceptées,
+ *     et chaque transition exige un rôle minimum.
  */
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireRole(request, 'COORDINATION_SOUS_PROVINCIALE');
+  const auth = await requireRole(request, 'DIRECTION_ECOLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
@@ -34,18 +40,63 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'Établissement introuvable.' }, { status: 404 });
   }
 
+  const user = auth.user as any;
+  const newStatut = parsed.data.statut;
+  const oldStatut = existing.statutValidation;
+
+  // ── 1. Isolation par institution ──
+  // SUPER_ADMIN peut tout faire ; les autres doivent être de la même institution.
+  if (user.role !== 'SUPER_ADMIN' && user.typeInstitution && user.typeInstitution !== existing.institution) {
+    return NextResponse.json(
+      { error: 'Vous ne pouvez valider qu\u2019un établissement de votre propre institution.' },
+      { status: 403 },
+    );
+  }
+
+  // ── 2. Périmètre territorial ──
+  // DIRECTION_ECOLE ne peut valider que son propre établissement ;
+  // COORDINATION_SOUS_PROVINCIALE doit couvrir la sous-division de l'établissement ;
+  // COORDINATION_PROVINCIALE doit couvrir la province.
+  const scope = getScopeLevel(user.role);
+  if (scope === 'school' && user.etablissementId && user.etablissementId !== params.id) {
+    return NextResponse.json(
+      { error: 'Vous ne pouvez valider que votre propre établissement.' },
+      { status: 403 },
+    );
+  }
+  if (scope === 'sousProvincial' && user.coordSousProvincialeId && existing.coordSousProvincialeId !== user.coordSousProvincialeId) {
+    return NextResponse.json(
+      { error: 'Cet établissement n\u2019appartient pas à votre coordination sous-provinciale.' },
+      { status: 403 },
+    );
+  }
+  if (scope === 'provincial' && user.provinceAdministrative && existing.province !== user.provinceAdministrative) {
+    return NextResponse.json(
+      { error: 'Cet établissement n\u2019appartient pas à votre province.' },
+      { status: 403 },
+    );
+  }
+
+  // ── 3. Hiérarchie de transition ──
+  if (!canTransition(oldStatut, newStatut, user.role)) {
+    return NextResponse.json(
+      { error: `Transition non autorisée : ${oldStatut} → ${newStatut}.` },
+      { status: 400 },
+    );
+  }
+
   const etablissement = await prisma.etablissement.update({
     where: { id: params.id },
-    data: { statutValidation: parsed.data.statut },
+    data: { statutValidation: newStatut },
   });
 
   await prisma.etablissementValidationLog.create({
     data: {
       etablissementId: params.id,
-      statut: parsed.data.statut,
+      statut: newStatut,
       commentaire: parsed.data.commentaire || '',
-      validateurId: (auth.user as any).id,
-      validateurNom: `${(auth.user as any).nom} ${(auth.user as any).postNom} ${(auth.user as any).prenom}`.trim(),
+      validateurId: user.id,
+      validateurNom: `${user.nom} ${user.postNom} ${user.prenom}`.trim(),
     },
   });
 

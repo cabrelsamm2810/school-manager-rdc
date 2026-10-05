@@ -30,6 +30,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ institutions });
   }
 
+  // ── Isolation par institution ──
+  // SUPER_ADMIN peut consulter n'importe quelle institution ; les autres ne voient que la leur.
+  const userInst = (auth.user as any).typeInstitution;
+  if (auth.user.role !== 'SUPER_ADMIN' && userInst && userInst !== institutionCode) {
+    return NextResponse.json(
+      { error: 'Vous ne pouvez consulter que votre propre institution.' },
+      { status: 403 },
+    );
+  }
+
   // Charger les structures administratives pour cette institution
   const [coordNationales, coordProvinciales, coordSousProvinciales] = await Promise.all([
     prisma.coordNationale.findMany({
