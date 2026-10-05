@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const STEP_META: Record<number, { title: string; subtitle: string; color: string }> = {
   0: { title: 'Votre institution', subtitle: 'Choisissez votre type d\'établissement', color: '#0066FF' },
@@ -318,6 +318,7 @@ const STEP_IMAGES: Record<number, string> = {
 /** Affiche l'image officielle si elle existe, sinon le fallback SVG */
 function StepIllustration({ step }: { step: number }) {
   const [imgError, setImgError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
   const imageUrl = STEP_IMAGES[step];
   const SvgFallback = SVG_FALLBACKS[step] ?? SVG_FALLBACKS[0];
 
@@ -326,12 +327,20 @@ function StepIllustration({ step }: { step: number }) {
     setImgError(false);
   }, [step]);
 
+  // L'image rendue côté serveur peut échouer avant l'hydratation (onError manqué) :
+  // on vérifie l'état réel de l'image au montage.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) setImgError(true);
+  }, [step]);
+
   if (imgError) {
     return <SvgFallback />;
   }
 
   return (
     <img
+      ref={imgRef}
       src={imageUrl}
       alt={`Illustration étape ${step + 1}`}
       className="h-full w-full rounded-xl object-cover"

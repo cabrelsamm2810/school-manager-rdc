@@ -94,5 +94,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|school-background|logo).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|school-background|logo|illustrations).*)']
 };
