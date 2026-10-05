@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { PresenceScanner } from './PresenceScanner';
 
 type Eleve = {
   id: string;
@@ -33,6 +34,7 @@ export function PresenceManager() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
 
   // Charger les classes disponibles
   useEffect(() => {
@@ -157,7 +159,19 @@ export function PresenceManager() {
 
   return (
     <Card className="mt-5">
-      <h2 className="text-base font-semibold text-slate-900">Gestion des présences</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-slate-900">Gestion des présences</h2>
+        <button
+          onClick={() => setShowScanner(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:shadow-lg"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h2v2H7zM15 8h2v2h-2zM7 14h2v2H7zM15 14h2v2h-2zM10 11h4" />
+          </svg>
+          Scanner QR
+        </button>
+      </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <div className="flex-1">
@@ -248,6 +262,10 @@ export function PresenceManager() {
 
       {message && (
         <p className="mt-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">{message}</p>
+      )}
+
+      {showScanner && (
+        <PresenceScanner onClose={() => setShowScanner(false)} />
       )}
     </Card>
   );

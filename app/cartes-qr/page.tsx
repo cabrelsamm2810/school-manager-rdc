@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import QRCode from 'qrcode';
 import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
 import { StatutBadge } from '@/components/ui/StatutBadge';
@@ -17,12 +18,30 @@ type Eleve = {
 export default function CartesQrPage() {
   const [eleves, setEleves] = useState<Eleve[]>([]);
   const [loading, setLoading] = useState(true);
+  const qrCacheRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     fetch('/api/eleves')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.eleves) setEleves(data.eleves);
+      .then(async (data) => {
+        if (data?.eleves) {
+          // Générer les QR codes pour chaque élève
+          for (const e of data.eleves) {
+            if (!qrCacheRef.current[e.matricule]) {
+              try {
+                const qrUrl = await QRCode.toDataURL(e.matricule, {
+                  width: 200,
+                  margin: 1,
+                  color: { dark: '#1e3a5f', light: '#ffffff' },
+                });
+                qrCacheRef.current[e.matricule] = qrUrl;
+              } catch {
+                // ignore
+              }
+            }
+          }
+          setEleves(data.eleves);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -67,7 +86,13 @@ export default function CartesQrPage() {
                   <p className="font-medium text-slate-900">{e.matricule}</p>
                   {e.etablissement && <p className="mt-1 text-xs text-slate-500">{e.etablissement.nom}</p>}
                 </div>
-                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-100 text-2xl">▣</div>
+                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-white p-1">
+                  {qrCacheRef.current[e.matricule] ? (
+                    <img src={qrCacheRef.current[e.matricule]} alt={`QR ${e.matricule}`} className="h-full w-full rounded" />
+                  ) : (
+                    <div className="h-full w-full animate-pulse rounded bg-slate-200" />
+                  )}
+                </div>
               </div>
               <div className="border-t border-slate-100 px-4 py-2.5">{<StatutBadge statut="Générée" />}</div>
             </div>

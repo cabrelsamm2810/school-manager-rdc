@@ -23,6 +23,7 @@
     "archiver": "^8.0.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
+    "html5-qrcode": "^2.3.8",
     "iconv-lite": "^0.7.3",
     "next": "14.2.15",
     "nodemailer": "^10.0.14",
