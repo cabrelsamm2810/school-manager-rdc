@@ -38,13 +38,13 @@ export default function HomePage() {
           <div className="flex items-center gap-2 md:gap-3">
             <Link
               href="/login"
-              className="btn-secondary px-4 py-2 text-xs md:px-5 md:py-2.5 md:text-sm"
+              className="home-btn-primary px-5 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
             >
               Se connecter
             </Link>
             <Link
               href="/register"
-              className="btn-primary px-5 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
+              className="home-btn-secondary px-5 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
             >
               Créer un compte
             </Link>
@@ -69,15 +69,13 @@ export default function HomePage() {
           <div className="hero-cta mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/login"
-              className="btn-secondary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
-              style={{ borderRadius: '9999px' }}
+              className="home-btn-primary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
             >
               Se connecter
             </Link>
             <Link
               href="/register"
-              className="btn-primary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
-              style={{ borderRadius: '9999px' }}
+              className="home-btn-secondary w-full px-8 py-3.5 text-sm sm:w-auto sm:min-w-[220px] md:text-base"
             >
               Créer un compte
             </Link>
