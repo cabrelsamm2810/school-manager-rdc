@@ -565,11 +565,14 @@ body {
   width: 100%;
   max-width: 24rem;
   border-radius: 1.75rem;
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   padding: 1.75rem 1.25rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 20px 60px rgba(0, 30, 80, 0.35),
+    0 0 0 1px rgba(0, 102, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   animation: loginFadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
   opacity: 0;
 }
