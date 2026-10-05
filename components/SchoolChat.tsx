@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { clsx } from 'clsx';
 import { Icon } from '@/components/ui/Icon';
 import { ROLE_LABELS } from '@/lib/rbac';
+import { CallOverlay } from '@/components/CallOverlay';
 
 type ChatUser = {
   id: string;
@@ -106,6 +107,16 @@ export function SchoolChat() {
   const [loading, setLoading] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [activeCall, setActiveCall] = useState<{
+    callId?: string;
+    offer?: string;
+    isCaller: boolean;
+    callType: 'audio' | 'video';
+    otherUserName: string;
+    otherUserPhoto?: string | null;
+    otherUserId: string;
+    conversationId: string;
+  } | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordingError, setRecordingError] = useState('');
@@ -163,6 +174,57 @@ export function SchoolChat() {
       })
       .catch(() => {});
   }, []);
+
+  // ── Appels audio/vidéo ──
+  const startCall = useCallback(
+    (type: 'audio' | 'video') => {
+      if (!activeConversation) return;
+      setActiveCall({
+        isCaller: true,
+        callType: type,
+        otherUserName: activeConversation.otherUser?.displayName ?? 'Utilisateur',
+        otherUserPhoto: activeConversation.otherUser?.profilePhotoUrl,
+        otherUserId: activeConversation.otherUser?.id ?? '',
+        conversationId: activeConversation.id,
+      });
+    },
+    [activeConversation]
+  );
+
+  // Polling des appels entrants
+  useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(async () => {
+      if (activeCall) return; // déjà en appel
+      try {
+        const res = await fetch('/api/chat/calls');
+        const calls = await res.json();
+        if (Array.isArray(calls) && calls.length > 0) {
+          const call = calls[0];
+          // Trouve la conversation et l'autre utilisateur
+          const conv = conversations.find((c) => c.id === call.conversationId);
+          if (conv?.otherUser) {
+            // Récupère l'offer
+            const callRes = await fetch(`/api/chat/calls/${call.id}`);
+            const callData = await callRes.json();
+            setActiveCall({
+              callId: call.id,
+              offer: callData.offer,
+              isCaller: false,
+              callType: call.type === 'video' ? 'video' : 'audio',
+              otherUserName: conv.otherUser.displayName,
+              otherUserPhoto: conv.otherUser.profilePhotoUrl,
+              otherUserId: conv.otherUser.id,
+              conversationId: call.conversationId,
+            });
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [currentUser, activeCall, conversations]);
 
   // Ouvre une conversation
   const openConversation = useCallback(
@@ -554,6 +616,25 @@ export function SchoolChat() {
                   {activeConversation.otherUser?.roleLabel ?? ''}
                 </p>
               </div>
+              <button
+                onClick={() => startCall('audio')}
+                className="rounded-full p-2 text-white transition hover:bg-white/20"
+                aria-label="Appel audio"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => startCall('video')}
+                className="rounded-full p-2 text-white transition hover:bg-white/20"
+                aria-label="Appel vidéo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <polygon points="23 7 16 12 23 17 23 7" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+              </button>
             </div>
 
             {/* Zone messages — fond style WhatsApp */}
@@ -794,6 +875,21 @@ export function SchoolChat() {
           </div>
         )}
       </div>
+
+      {/* ── Overlay d'appel audio/vidéo ── */}
+      {activeCall && (
+        <CallOverlay
+          conversationId={activeCall.conversationId}
+          otherUserId={activeCall.otherUserId}
+          otherUserName={activeCall.otherUserName}
+          otherUserPhoto={activeCall.otherUserPhoto}
+          callType={activeCall.callType}
+          isCaller={activeCall.isCaller}
+          incomingCallId={activeCall.callId}
+          incomingOffer={activeCall.offer}
+          onEnd={() => setActiveCall(null)}
+        />
+      )}
 
       {/* ── Modal : nouvelle conversation ── */}
       {showNewChat && (

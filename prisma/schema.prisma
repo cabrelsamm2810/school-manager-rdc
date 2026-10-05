@@ -365,3 +365,23 @@ model ChatMessage {
   @@index([read])
   @@map("chat_messages")
 }
+
+model ChatCall {
+  id              String   @id @default(cuid())
+  conversationId  String
+  callerId        String
+  calleeId        String
+  type            String   @default("audio")
+  status          String   @default("ringing")
+  offer           String   @default("")
+  answer          String   @default("")
+  callerIce       String   @default("[]")
+  calleeIce       String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([conversationId])
+  @@index([calleeId])
+  @@index([status])
+  @@map("chat_calls")
+}
