@@ -3,18 +3,10 @@ import { LoginForm } from '@/components/auth/LoginForm';
 export default function LoginPage() {
   return (
     <main className="login-page relative flex min-h-screen flex-col overflow-x-hidden">
-      {/* Logo en arrière-plan */}
-      <div
-        className="login-bg-logo pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: 'url(/logo.png)',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          backgroundSize: 'contain',
-        }}
-      />
-      {/* Voile de contraste */}
-      <div className="login-bg-veil pointer-events-none absolute inset-0" />
+      {/* Formes décoratives abstraites en arrière-plan */}
+      <div className="login-bg-shape login-bg-shape-1" />
+      <div className="login-bg-shape login-bg-shape-2" />
+      <div className="login-bg-shape login-bg-shape-3" />
 
       {/* Contenu */}
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10">
