@@ -28,23 +28,23 @@ export default function HomePage() {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/70 to-slate-950/90" />
 
         {/* Nav bar */}
-        <nav className="relative z-10 flex items-center justify-between px-5 py-4 md:px-10">
+        <nav className="relative z-10 flex items-center justify-between px-3 py-4 md:px-10">
           <div className="flex items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-white shadow-md md:h-12 md:w-12">
               <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
             </div>
-            <span className="nav-brand text-sm font-bold tracking-wide md:text-base">School Manager RDC</span>
+            <span className="nav-brand hidden text-sm font-bold tracking-wide md:inline md:text-base">School Manager RDC</span>
           </div>
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-1.5 md:gap-3">
             <Link
               href="/login"
-              className="home-btn-primary px-5 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
+              className="home-btn-primary px-4 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
             >
               Se connecter
             </Link>
             <Link
               href="/register"
-              className="home-btn-secondary px-5 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
+              className="home-btn-secondary px-4 py-2 text-xs md:px-6 md:py-2.5 md:text-sm"
             >
               Créer un compte
             </Link>
