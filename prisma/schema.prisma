@@ -46,13 +46,19 @@ model User {
   coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
   etablissementId       String?
   etablissement         Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  classe                String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+
+  chatGroupsCreated     ChatGroup[]
+  chatGroupMemberships  ChatGroupMember[]
+  chatGroupMessages     ChatGroupMessage[]
 
   @@index([role])
   @@index([isActive])
   @@index([coordSousProvincialeId])
   @@index([etablissementId])
+  @@index([classe])
   @@map("users")
 }
 
@@ -115,6 +121,7 @@ model Etablissement {
   ecErc                EcErc?   @relation(fields: [ecErcId], references: [id], onDelete: SetNull)
   eleves               Eleve[]
   users                User[]
+  chatGroups           ChatGroup[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -384,4 +391,56 @@ model ChatCall {
   @@index([calleeId])
   @@index([status])
   @@map("chat_calls")
+}
+
+model ChatGroup {
+  id              String   @id @default(cuid())
+  name            String
+  classe          String
+  etablissementId String?
+  etablissement   Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  createdById     String
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members         ChatGroupMember[]
+  messages        ChatGroupMessage[]
+
+  @@index([classe])
+  @@index([etablissementId])
+  @@index([createdById])
+  @@map("chat_groups")
+}
+
+model ChatGroupMember {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("chat_group_members")
+}
+
+model ChatGroupMessage {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String   @default("")
+  fileUrl   String?
+  fileName  String?
+  fileType  String?
+  createdAt DateTime @default(now())
+
+  @@index([groupId])
+  @@index([senderId])
+  @@map("chat_group_messages")
 }

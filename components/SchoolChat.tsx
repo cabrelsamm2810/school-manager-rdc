@@ -30,10 +30,28 @@ type Conversation = {
   updatedAt: string;
 };
 
+type GroupChat = {
+  id: string;
+  name: string;
+  classe: string;
+  memberCount: number;
+  isAdmin: boolean;
+  lastMessage: {
+    content: string;
+    createdAt: string;
+    senderId: string;
+    senderName: string;
+    fileUrl?: string | null;
+    fileName?: string | null;
+  } | null;
+  updatedAt: string;
+};
+
 type Message = {
   id: string;
   content: string;
   senderId: string;
+  senderName?: string;
   createdAt: string;
   read: boolean;
   fileUrl?: string | null;
@@ -127,6 +145,14 @@ export function SchoolChat() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [groups, setGroups] = useState<GroupChat[]>([]);
+  const [activeChatType, setActiveChatType] = useState<'conversation' | 'group'>('conversation');
+  const [activeGroup, setActiveGroup] = useState<GroupChat | null>(null);
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [availableClasses, setAvailableClasses] = useState<string[]>([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupClasse, setNewGroupClasse] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   // Charge l'utilisateur courant
   useEffect(() => {
@@ -150,31 +176,48 @@ export function SchoolChat() {
       .catch(() => {});
   }, []);
 
+  const loadGroups = useCallback(() => {
+    fetch('/api/chat/groups')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setGroups(data);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
-    if (currentUser) loadConversations();
-  }, [currentUser, loadConversations]);
+    if (currentUser) {
+      loadConversations();
+      loadGroups();
+    }
+  }, [currentUser, loadConversations, loadGroups]);
 
   // Polling léger pour les nouvelles conversations/messages
   useEffect(() => {
     if (!currentUser) return;
     const interval = setInterval(() => {
       loadConversations();
+      loadGroups();
       if (activeConversationId) {
-        loadMessages(activeConversationId);
+        loadMessages(activeConversationId, activeChatType);
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [currentUser, activeConversationId, loadConversations]);
+  }, [currentUser, activeConversationId, activeChatType, loadConversations, loadGroups]);
 
   // Charge les messages d'une conversation
-  const loadMessages = useCallback((convId: string) => {
-    fetch(`/api/chat/conversations/${convId}/messages`)
+  const loadMessages = useCallback((chatId: string, type?: 'conversation' | 'group') => {
+    const chatType = type ?? activeChatType;
+    const endpoint = chatType === 'group'
+      ? `/api/chat/groups/${chatId}/messages`
+      : `/api/chat/conversations/${chatId}/messages`;
+    fetch(endpoint)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setMessages(data);
       })
       .catch(() => {});
-  }, []);
+  }, [activeChatType]);
 
   // ── Appels audio/vidéo ──
   const startCall = useCallback(
@@ -231,9 +274,23 @@ export function SchoolChat() {
   const openConversation = useCallback(
     (conv: Conversation) => {
       setActiveConversationId(conv.id);
+      setActiveChatType('conversation');
       setActiveConversation(conv);
+      setActiveGroup(null);
       setMobileShowChat(true);
-      loadMessages(conv.id);
+      loadMessages(conv.id, 'conversation');
+    },
+    [loadMessages]
+  );
+
+  const openGroup = useCallback(
+    (group: GroupChat) => {
+      setActiveConversationId(group.id);
+      setActiveChatType('group');
+      setActiveGroup(group);
+      setActiveConversation(null);
+      setMobileShowChat(true);
+      loadMessages(group.id, 'group');
     },
     [loadMessages]
   );
@@ -250,18 +307,21 @@ export function SchoolChat() {
     setInputText('');
     setLoading(true);
 
-    // Optimistic: ajoute le message immédiatement
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: Message = {
       id: tempId,
       content,
       senderId: currentUser?.id ?? '',
+      senderName: `${currentUser?.prenom} ${currentUser?.nom}`.trim(),
       createdAt: new Date().toISOString(),
       read: false,
     };
     setMessages((prev) => [...prev, optimisticMsg]);
 
-    fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
+    const endpoint = activeChatType === 'group'
+      ? `/api/chat/groups/${activeConversationId}/messages`
+      : `/api/chat/conversations/${activeConversationId}/messages`;
+    fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
@@ -272,12 +332,12 @@ export function SchoolChat() {
           setMessages((prev) =>
             prev.map((m) => (m.id === tempId ? data : m))
           );
-          loadConversations();
+          if (activeChatType === 'group') loadGroups(); else loadConversations();
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [inputText, activeConversationId, currentUser, loadConversations]);
+  }, [inputText, activeConversationId, activeChatType, currentUser, loadConversations, loadGroups]);
 
   // Envoie un fichier
   const sendFile = useCallback(
@@ -297,6 +357,7 @@ export function SchoolChat() {
         id: tempId,
         content: inputText.trim(),
         senderId: currentUser?.id ?? '',
+        senderName: `${currentUser?.prenom} ${currentUser?.nom}`.trim(),
         createdAt: new Date().toISOString(),
         read: false,
         fileUrl: previewUrl,
@@ -306,7 +367,10 @@ export function SchoolChat() {
       setMessages((prev) => [...prev, optimisticMsg]);
       setInputText('');
 
-      fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
+      const endpoint = activeChatType === 'group'
+        ? `/api/chat/groups/${activeConversationId}/messages`
+        : `/api/chat/conversations/${activeConversationId}/messages`;
+      fetch(endpoint, {
         method: 'POST',
         body: formData,
       })
@@ -315,7 +379,7 @@ export function SchoolChat() {
           if (data.id) {
             URL.revokeObjectURL(previewUrl);
             setMessages((prev) => prev.map((m) => (m.id === tempId ? data : m)));
-            loadConversations();
+            if (activeChatType === 'group') loadGroups(); else loadConversations();
           }
         })
         .catch(() => {
@@ -324,7 +388,7 @@ export function SchoolChat() {
         })
         .finally(() => setUploading(false));
     },
-    [activeConversationId, currentUser, inputText, loadConversations]
+    [activeConversationId, activeChatType, currentUser, inputText, loadConversations, loadGroups]
   );
 
   const handleFileSelect = useCallback(
@@ -436,6 +500,52 @@ export function SchoolChat() {
     [loadConversations, openConversation]
   );
 
+  const createGroup = useCallback(() => {
+    if (!newGroupName.trim() || !newGroupClasse.trim()) return;
+    setCreatingGroup(true);
+    fetch('/api/chat/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newGroupName.trim(), classe: newGroupClasse.trim() }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.id) {
+          setShowNewGroup(false);
+          setNewGroupName('');
+          setNewGroupClasse('');
+          loadGroups();
+          setTimeout(() => {
+            fetch('/api/chat/groups')
+              .then((r) => r.json())
+              .then((grps) => {
+                if (Array.isArray(grps)) {
+                  const grp = grps.find((g: GroupChat) => g.id === data.id);
+                  if (grp) openGroup(grp);
+                }
+              });
+          }, 300);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCreatingGroup(false));
+  }, [newGroupName, newGroupClasse, loadGroups, openGroup]);
+
+  // Charge les classes disponibles pour la création de groupe
+  useEffect(() => {
+    if (showNewGroup) {
+      fetch('/api/eleves?limit=1000')
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const classes = [...new Set(data.map((e: { classe?: string }) => e.classe).filter(Boolean))].sort() as string[];
+            setAvailableClasses(classes);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [showNewGroup]);
+
   // Charge tous les utilisateurs pour le nouveau chat
   useEffect(() => {
     if (showNewChat) {
@@ -452,6 +562,16 @@ export function SchoolChat() {
   const filteredConversations = conversations.filter((c) =>
     c.otherUser?.displayName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const filteredGroups = groups.filter((g) =>
+    g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    g.classe.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const mergedChatList = [
+    ...filteredConversations.map((c) => ({ type: 'conversation' as const, item: c })),
+    ...filteredGroups.map((g) => ({ type: 'group' as const, item: g })),
+  ].sort((a, b) => new Date(b.item.updatedAt).getTime() - new Date(a.item.updatedAt).getTime());
 
   const filteredUsers = allUsers.filter((u) =>
     u.displayName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -473,16 +593,30 @@ export function SchoolChat() {
             <Icon name="chat" className="h-5 w-5 text-white" />
             <h2 className="text-base font-semibold text-white">SchoolChat</h2>
           </div>
-          <button
-            onClick={() => setShowNewChat(true)}
-            className="rounded-full p-2 text-white transition hover:bg-white/20"
-            aria-label="Nouvelle conversation"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowNewGroup(true)}
+              className="rounded-full p-2 text-white transition hover:bg-white/20"
+              aria-label="Nouveau groupe"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowNewChat(true)}
+              className="rounded-full p-2 text-white transition hover:bg-white/20"
+              aria-label="Nouvelle conversation"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Barre de recherche */}
@@ -504,7 +638,7 @@ export function SchoolChat() {
 
         {/* Liste des conversations */}
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
+          {mergedChatList.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center p-8 text-center">
               <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
                 <Icon name="chat" className="h-8 w-8 text-slate-400" />
@@ -515,15 +649,56 @@ export function SchoolChat() {
               </p>
             </div>
           ) : (
-            filteredConversations.map((conv) => {
-              const isActive = conv.id === activeConversationId;
+            mergedChatList.map(({ type, item }) => {
+              const isActive = item.id === activeConversationId;
+              if (type === 'group') {
+                const grp = item as GroupChat;
+                return (
+                  <button
+                    key={grp.id}
+                    onClick={() => openGroup(grp)}
+                    className={clsx(
+                      'flex w-full items-center gap-3 border-b border-slate-50 px-3 py-3 text-left transition hover:bg-slate-50',
+                      isActive && activeChatType === 'group' && 'bg-[#e1f0eb]'
+                    )}
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#128C7E] text-white">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="truncate text-sm font-semibold text-slate-900">{grp.name}</span>
+                        {grp.lastMessage && (
+                          <span className="ml-2 shrink-0 text-xs text-slate-400">{formatListTime(grp.lastMessage.createdAt)}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-xs text-slate-500">
+                          {grp.lastMessage
+                            ? (grp.lastMessage.senderId === currentUser?.id ? 'Vous: ' : `${grp.lastMessage.senderName}: `) +
+                              (grp.lastMessage.content ||
+                                (isAudioFile(null, grp.lastMessage.fileUrl) ? '🎤 Message vocal'
+                                  : grp.lastMessage.fileUrl && grp.lastMessage.fileName ? `📎 ${grp.lastMessage.fileName}` : '📎 Fichier'))
+                            : `Classe ${grp.classe} • ${grp.memberCount} membres`}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              }
+              const conv = item as Conversation;
               return (
                 <button
                   key={conv.id}
                   onClick={() => openConversation(conv)}
                   className={clsx(
                     'flex w-full items-center gap-3 border-b border-slate-50 px-3 py-3 text-left transition hover:bg-slate-50',
-                    isActive && 'bg-[#e1f0eb]'
+                    isActive && activeChatType === 'conversation' && 'bg-[#e1f0eb]'
                   )}
                 >
                   {/* Avatar */}
@@ -593,7 +768,7 @@ export function SchoolChat() {
           mobileShowChat ? 'flex' : 'hidden md:flex'
         )}
       >
-        {activeConversation ? (
+        {(activeConversation || activeGroup) ? (
           <>
             {/* En-tête du chat */}
             <div className="flex items-center gap-3 border-b border-slate-200 bg-[#075E54] px-4 py-2.5">
@@ -606,46 +781,65 @@ export function SchoolChat() {
                   <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
               </button>
-              {activeConversation.otherUser?.profilePhotoUrl ? (
-                <img
-                  src={activeConversation.otherUser.profilePhotoUrl}
-                  alt=""
-                  className="h-10 w-10 rounded-full object-cover"
-                />
+              {activeGroup ? (
+                <>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white">{activeGroup.name}</p>
+                    <p className="truncate text-xs text-white/70">Classe {activeGroup.classe} • {activeGroup.memberCount} membres</p>
+                  </div>
+                </>
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-sm font-semibold text-white">
-                  {activeConversation.otherUser
-                    ? getInitials(activeConversation.otherUser.displayName)
-                    : '?'}
-                </div>
+                <>
+                  {activeConversation?.otherUser?.profilePhotoUrl ? (
+                    <img
+                      src={activeConversation.otherUser.profilePhotoUrl}
+                      alt=""
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-sm font-semibold text-white">
+                      {activeConversation?.otherUser
+                        ? getInitials(activeConversation.otherUser.displayName)
+                        : '?'}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {activeConversation?.otherUser?.displayName ?? 'Utilisateur supprimé'}
+                    </p>
+                    <p className="truncate text-xs text-white/70">
+                      {activeConversation?.otherUser?.roleLabel ?? ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => startCall('audio')}
+                    className="rounded-full p-2 text-white transition hover:bg-white/20"
+                    aria-label="Appel audio"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => startCall('video')}
+                    className="rounded-full p-2 text-white transition hover:bg-white/20"
+                    aria-label="Appel vidéo"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                      <polygon points="23 7 16 12 23 17 23 7" />
+                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                    </svg>
+                  </button>
+                </>
               )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">
-                  {activeConversation.otherUser?.displayName ?? 'Utilisateur supprimé'}
-                </p>
-                <p className="truncate text-xs text-white/70">
-                  {activeConversation.otherUser?.roleLabel ?? ''}
-                </p>
-              </div>
-              <button
-                onClick={() => startCall('audio')}
-                className="rounded-full p-2 text-white transition hover:bg-white/20"
-                aria-label="Appel audio"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => startCall('video')}
-                className="rounded-full p-2 text-white transition hover:bg-white/20"
-                aria-label="Appel vidéo"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                  <polygon points="23 7 16 12 23 17 23 7" />
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                </svg>
-              </button>
             </div>
 
             {/* Zone messages — fond style WhatsApp */}
@@ -660,8 +854,9 @@ export function SchoolChat() {
               {messages.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="rounded-lg bg-[#fff9c4] px-4 py-2 text-center text-sm text-slate-700 shadow-sm">
-                    Démarrez votre conversation avec{' '}
-                    {activeConversation.otherUser?.displayName ?? 'cet utilisateur'}
+                    {activeGroup
+                      ? `Démarrez la conversation dans le groupe ${activeGroup.name}`
+                      : `Démarrez votre conversation avec ${activeConversation?.otherUser?.displayName ?? 'cet utilisateur'}`}
                   </div>
                 </div>
               ) : (
@@ -701,6 +896,10 @@ export function SchoolChat() {
                                 : 'rounded-tl-none bg-white text-slate-900'
                             )}
                           >
+                            {/* Nom de l'expéditeur pour les groupes */}
+                            {activeChatType === 'group' && !isMe && msg.senderName && (
+                              <p className="mb-0.5 text-xs font-semibold text-[#075E54]">{msg.senderName}</p>
+                            )}
                             {/* Image */}
                             {isImageFile(msg.fileType, msg.fileUrl) && msg.fileUrl && (
                               <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="mb-1 block">
@@ -900,6 +1099,62 @@ export function SchoolChat() {
           incomingOffer={activeCall.offer}
           onEnd={() => setActiveCall(null)}
         />
+      )}
+
+      {/* ── Modal : nouveau groupe ── */}
+      {showNewGroup && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-16 md:pt-24">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-[#075E54] px-4 py-3">
+              <h3 className="text-base font-semibold text-white">Nouveau groupe de classe</h3>
+              <button
+                onClick={() => { setShowNewGroup(false); setNewGroupName(''); setNewGroupClasse(''); }}
+                className="rounded-full p-1.5 text-white transition hover:bg-white/20"
+                aria-label="Fermer"
+              >
+                <Icon name="close" className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4 p-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Nom du groupe</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Classe de 6e A"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#075E54]/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Classe</label>
+                <input
+                  type="text"
+                  list="available-classes"
+                  placeholder="Ex: 6A"
+                  value={newGroupClasse}
+                  onChange={(e) => setNewGroupClasse(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#075E54]/20"
+                />
+                <datalist id="available-classes">
+                  {availableClasses.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+                <p className="mt-1 text-xs text-slate-400">
+                  Tous les élèves inscrits avec cette classe seront automatiquement ajoutés.
+                </p>
+              </div>
+              <button
+                onClick={createGroup}
+                disabled={!newGroupName.trim() || !newGroupClasse.trim() || creatingGroup}
+                className="w-full rounded-full bg-[#075E54] py-2.5 text-sm font-semibold text-white transition hover:bg-[#064c43] disabled:opacity-40"
+              >
+                {creatingGroup ? 'Création…' : 'Créer le groupe'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Modal : nouvelle conversation ── */}
