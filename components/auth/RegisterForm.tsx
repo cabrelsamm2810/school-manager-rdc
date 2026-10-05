@@ -331,15 +331,6 @@ export function RegisterForm() {
                 ? 'Vous avez choisi le parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo. Les rôles spécifiques à ce parcours vous seront proposés à l\u2019étape suivante.'
                 : 'Sélectionnez votre type d\u2019institution. Le parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo dispose de rôles dédiés séparés des autres institutions.'}
             </p>
-            {isEcErc && (
-              <div className="flex items-center gap-3 rounded-2xl bg-blue-50 p-4">
-                <ErcLogo size={56} />
-                <div>
-                  <p className="font-semibold text-slate-900">EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo</p>
-                  <p className="text-xs text-slate-500">Parcours spécifique avec rôles dédiés</p>
-                </div>
-              </div>
-            )}
             <div className="grid gap-3 sm:grid-cols-2">
               {registrationInstitutionTypes.map((inst) => (
                 <div
