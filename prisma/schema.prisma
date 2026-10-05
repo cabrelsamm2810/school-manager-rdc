@@ -86,11 +86,35 @@ model Eleve {
   documents  DossierEleveDocument[]
   resultats  DossierEleveResultat[]
   interactions DossierEleveInteraction[]
+  cours      Cours[]
 
   @@index([classe])
   @@index([nom])
   @@index([etablissementId])
   @@map("eleves")
+}
+
+model Cours {
+  id          String   @id @default(cuid())
+  titre       String
+  type        String   @default("cours")
+  classe      String
+  eleveId     String?
+  eleve       Eleve?   @relation(fields: [eleveId], references: [id], onDelete: SetNull)
+  date        DateTime
+  heureDebut  String   @default("")
+  heureFin    String   @default("")
+  salle       String   @default("")
+  enseignant  String   @default("")
+  description String   @default("")
+  couleur     String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([classe])
+  @@index([eleveId])
+  @@map("cours")
 }
 
 model DossierEleveDocument {
