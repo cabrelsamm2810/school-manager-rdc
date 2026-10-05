@@ -88,24 +88,24 @@ function MessageActions({
 
   return (
     <div
-      className="absolute z-20 min-w-[140px] overflow-hidden rounded-xl bg-white dark:bg-slate-800 py-1 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700"
+      className="absolute z-20 min-w-[150px] overflow-hidden rounded-2xl bg-white dark:bg-slate-800 py-1.5 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-700"
       style={{ animation: 'msgActionIn 0.15s ease-out' }}
       onClick={(e) => e.stopPropagation()}
     >
-      <button onClick={onReply} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-700">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <button onClick={onReply} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-700">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-blue-500">
           <polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" />
         </svg>
         Répondre
       </button>
-      <button onClick={onForward} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-700">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <button onClick={onForward} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-700">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-violet-500">
           <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
         Transférer
       </button>
       {canDelete && (
-        <button onClick={onDelete} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/30">
+        <button onClick={onDelete} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/30">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
             <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
@@ -201,10 +201,10 @@ export function ChatBubble({
           onTouchEnd={cancelPress}
           onTouchMove={cancelPress}
           className={clsx(
-            'relative px-3 py-2 shadow-sm transition',
+            'relative px-3 py-2 transition',
             isMe
-              ? 'bg-[#dbeafe] dark:bg-[#1e3a8a] text-slate-900 dark:text-blue-50'
-              : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100',
+              ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-[#1e3a8a] dark:to-[#1e40af] text-slate-900 dark:text-blue-50 shadow-md'
+              : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700/40',
             // Coins arrondis avec queue
             isMe
               ? isConsecutive ? 'rounded-2xl rounded-tr-md' : 'rounded-2xl rounded-tr-sm'
@@ -215,16 +215,18 @@ export function ChatBubble({
         >
           {/* Nom de l'expéditeur pour les groupes */}
           {isGroup && !isMe && showSenderName && msg.senderName && (
-            <p className="mb-0.5 text-xs font-bold text-[#1e3a8a] dark:text-blue-400">{msg.senderName}</p>
+            <p className="mb-1 text-xs font-bold tracking-wide text-[#1e3a8a] dark:text-blue-400">{msg.senderName}</p>
           )}
 
           {/* Aperçu de réponse */}
           {replyToMessage && (
             <div className={clsx(
-              'mb-1.5 rounded-lg px-2.5 py-1.5 border-l-2',
-              isMe ? 'bg-blue-100/60 dark:bg-blue-900/40 border-[#1e3a8a]' : 'bg-slate-100 dark:bg-slate-700/60 border-slate-400'
+              'mb-2 rounded-lg px-2.5 py-1.5 border-l-[3px]',
+              isMe
+                ? 'bg-blue-100/50 dark:bg-blue-900/30 border-[#1e3a8a] dark:border-blue-400'
+                : 'bg-slate-100 dark:bg-slate-700/50 border-slate-400 dark:border-slate-500'
             )}>
-              <p className={clsx('text-[11px] font-semibold', isMe ? 'text-[#1e3a8a] dark:text-blue-300' : 'text-slate-600 dark:text-slate-300')}>
+              <p className={clsx('text-[11px] font-bold tracking-wide', isMe ? 'text-[#1e3a8a] dark:text-blue-300' : 'text-slate-600 dark:text-slate-300')}>
                 {replyToMessage.senderName || (replyToMessage.senderId === msg.senderId ? 'Vous' : 'Utilisateur')}
               </p>
               <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
@@ -235,8 +237,8 @@ export function ChatBubble({
 
           {/* Image */}
           {hasImage && msg.fileUrl && (
-            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="mb-1 block overflow-hidden rounded-lg">
-              <img src={msg.fileUrl} alt={msg.fileName || 'Image'} className="max-h-60 w-full rounded-lg object-cover" />
+            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="mb-1.5 block overflow-hidden rounded-xl">
+              <img src={msg.fileUrl} alt={msg.fileName || 'Image'} className="max-h-60 w-full rounded-xl object-cover transition hover:opacity-95" />
             </a>
           )}
 
@@ -264,8 +266,8 @@ export function ChatBubble({
           )}
 
           {/* Heure + statut de lecture */}
-          <div className="mt-0.5 flex items-center justify-end gap-1">
-            <span className={clsx('text-[10px]', isMe ? 'text-slate-400 dark:text-blue-200/60' : 'text-slate-400 dark:text-slate-500')}>
+          <div className="mt-1 flex items-center justify-end gap-1">
+            <span className={clsx('text-[10px] tabular-nums', isMe ? 'text-slate-400 dark:text-blue-200/60' : 'text-slate-400 dark:text-slate-500')}>
               {formatTime(msg.createdAt)}
             </span>
             {isMe && <ReadCheck read={msg.read} />}

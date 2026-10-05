@@ -60,7 +60,7 @@ export function FileBubble({
 
   return (
     <div className="w-[220px] md:w-[260px]">
-      <div className="flex items-center gap-3 rounded-xl bg-slate-100 dark:bg-slate-700/60 p-3 transition hover:bg-slate-200 dark:hover:bg-slate-700">
+      <div className="flex items-center gap-3 rounded-xl bg-slate-100 dark:bg-slate-700/60 p-3 ring-1 ring-slate-200/60 dark:ring-slate-600/40 transition hover:bg-slate-200 dark:hover:bg-slate-700">
         {/* Icône du type de fichier */}
         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${bg} text-white`}>
           <span className="text-[10px] font-bold tracking-wide">{icon}</span>

@@ -86,13 +86,13 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
   const trackColor = isMe ? 'bg-blue-200/60 dark:bg-blue-900/40' : 'bg-slate-200 dark:bg-slate-600';
 
   return (
-    <div className="flex items-center gap-2.5 py-0.5">
+    <div className="flex items-center gap-2.5 py-1">
       <audio ref={audioRef} src={src} preload="metadata" className="hidden" />
 
       {/* Bouton play/pause circulaire avec pulsation */}
       <button
         onClick={togglePlay}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition active:scale-90"
         style={{
           backgroundColor: accent,
           animation: playing ? 'voicePulse 1.4s ease-in-out infinite' : undefined,
@@ -113,7 +113,7 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
 
       {/* Waveform + durées */}
       <div className="min-w-0 flex-1">
-        <div onClick={seek} className="flex h-8 cursor-pointer items-center gap-[2px]">
+        <div onClick={seek} className="flex h-9 cursor-pointer items-center gap-[2px]">
           {bars.map((h, i) => {
             const barProgress = (i / bars.length) * 100;
             const played = barProgress <= progress;

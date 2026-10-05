@@ -908,6 +908,45 @@ body {
   50% { transform: scaleY(1); }
 }
 
+/* ── Call overlay animations ── */
+@keyframes callRingPulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes callAvatarGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(59,130,246,0.3), 0 0 60px rgba(59,130,246,0.15); }
+  50% { box-shadow: 0 0 50px rgba(59,130,246,0.5), 0 0 80px rgba(59,130,246,0.25); }
+}
+@keyframes callFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes callSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes callShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+@keyframes callGradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes callSpinnerRotate {
+  to { transform: rotate(360deg); }
+}
+@keyframes callBtnPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes callDotBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
 /* ── Print styles for Cahier de cote and Bulletins ── */
 @media print {
   body * { visibility: hidden; }

@@ -164,7 +164,7 @@ export function ChatComposer({
       {/* Barre principale */}
       <div className="flex items-center gap-1.5 md:gap-2">
         <button onClick={() => setShowAttach((s) => !s)} disabled={uploading || sending}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1e3a8a] dark:text-blue-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1e3a8a] dark:text-blue-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 disabled:opacity-40"
           aria-label="Pièces jointes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
@@ -187,7 +187,7 @@ export function ChatComposer({
 
         {value.trim() ? (
           <button onClick={handleSend} disabled={uploading || sending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-white shadow-md transition hover:bg-[#172554] active:scale-95 disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1e3a8a] to-[#2563eb] text-white shadow-lg transition hover:shadow-xl hover:from-[#172554] hover:to-[#1d4ed8] active:scale-90 disabled:opacity-40"
             aria-label="Envoyer">
             {sending ? (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5 animate-spin">
@@ -199,7 +199,7 @@ export function ChatComposer({
           </button>
         ) : (
           <button onClick={onStartRecording} disabled={uploading}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1e3a8a] dark:text-blue-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1e3a8a] dark:text-blue-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 disabled:opacity-40"
             aria-label="Enregistrer un message vocal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="22" />

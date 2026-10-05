@@ -798,7 +798,7 @@ export function SchoolChat() {
                         </span>
                       )}
                       {conv.unreadCount > 0 && (
-                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#fbbf24] px-1.5 text-xs font-bold text-[#1e3a8a]">
+                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-1.5 text-xs font-bold text-[#1e3a8a] shadow-sm">
                           {conv.unreadCount}
                         </span>
                       )}
@@ -866,28 +866,28 @@ export function SchoolChat() {
                   {/* Bouton recherche dans la conversation */}
                   <button
                     onClick={() => setShowSearchInConv((s) => !s)}
-                    className="rounded-full p-2 text-white transition hover:bg-white/20"
+                    className="rounded-full p-1.5 text-white/80 transition hover:bg-white/15 hover:text-white sm:p-2"
                     aria-label="Rechercher dans la conversation"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 sm:h-5 sm:w-5">
                       <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                     </svg>
                   </button>
                   <button
                     onClick={() => startCall('audio')}
-                    className="rounded-full p-2 text-white transition hover:bg-white/20"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white shadow-sm ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-white/20 active:scale-90 sm:h-10 sm:w-10"
                     aria-label="Appel audio"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 sm:h-5 sm:w-5">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
                   </button>
                   <button
                     onClick={() => startCall('video')}
-                    className="rounded-full p-2 text-white transition hover:bg-white/20"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white shadow-sm ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-white/20 active:scale-90 sm:h-10 sm:w-10"
                     aria-label="Appel vidéo"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 sm:h-5 sm:w-5">
                       <polygon points="23 7 16 12 23 17 23 7" />
                       <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                     </svg>
@@ -974,8 +974,8 @@ export function SchoolChat() {
                     return (
                       <div key={msg.id}>
                         {showDate && (
-                          <div className="my-3 flex justify-center">
-                            <span className="rounded-full bg-white/80 dark:bg-slate-800/80 px-3 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 shadow-sm">
+                          <div className="my-4 flex justify-center">
+                            <span className="rounded-full bg-white/90 dark:bg-slate-800/90 px-4 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 shadow-md ring-1 ring-slate-200/50 dark:ring-slate-700/50">
                               {new Date(msg.createdAt).toLocaleDateString('fr-FR', {
                                 weekday: 'long',
                                 day: 'numeric',
@@ -1033,12 +1033,12 @@ export function SchoolChat() {
             />
           </>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center bg-slate-100 dark:bg-slate-950 p-8 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#1e3a8a]/10 dark:bg-blue-900/20">
-              <Icon name="chat" className="h-10 w-10 text-[#1e3a8a] dark:text-blue-400" />
+          <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-8 text-center">
+            <div className="mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#1e3a8a]/10 to-blue-500/10 dark:from-blue-900/20 dark:to-blue-600/10 ring-1 ring-blue-200/30 dark:ring-blue-800/30">
+              <Icon name="chat" className="h-12 w-12 text-[#1e3a8a] dark:text-blue-400" />
             </div>
-            <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">SchoolChat</p>
-            <p className="mt-1 max-w-xs text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-xl font-bold tracking-tight text-slate-700 dark:text-slate-200">SchoolChat</p>
+            <p className="mt-2 max-w-xs text-sm text-slate-500 dark:text-slate-400">
               Sélectionnez une conversation ou démarrez-en une nouvelle pour commencer à discuter.
             </p>
           </div>
