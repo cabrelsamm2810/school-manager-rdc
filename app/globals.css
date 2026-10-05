@@ -873,6 +873,11 @@ body {
   75% { transform: translateX(6px); }
 }
 
+@keyframes voiceBarDance {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
 /* ── Print styles for Cahier de cote and Bulletins ── */
 @media print {
   body * { visibility: hidden; }

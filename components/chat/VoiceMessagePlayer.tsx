@@ -109,6 +109,10 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
                 style={{
                   height: `${h}%`,
                   backgroundColor: played ? accent : undefined,
+                  transformOrigin: 'center',
+                  animation: playing
+                    ? `voiceBarDance 0.8s ease-in-out ${i * 0.04}s infinite`
+                    : undefined,
                 }}
               />
             );
