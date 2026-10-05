@@ -21,14 +21,34 @@ async function main() {
     await prisma.enseignant.upsert({ where: { matricule: e.matricule }, create: e, update: {} });
   }
 
-  // ── Provinces ──
+  // ── Provinces : les 26 provinces administratives et éducationnelles de la RDC ──
   const provinces = [
     { nom: 'Kinshasa', chefLieu: 'Kinshasa', etablissements: 320, eleves: 485000, statut: 'Actif' },
     { nom: 'Kongo Central', chefLieu: 'Matadi', etablissements: 180, eleves: 210000, statut: 'Actif' },
-    { nom: 'Haut-Katanga', chefLieu: 'Lubumbashi', etablissements: 240, eleves: 320000, statut: 'Actif' },
-    { nom: 'Nord-Kivu', chefLieu: 'Goma', etablissements: 150, eleves: 180000, statut: 'Actif' },
+    { nom: 'Kwango', chefLieu: 'Kenge', etablissements: 0, eleves: 0, statut: 'En setup' },
     { nom: 'Kwilu', chefLieu: 'Bandundu', etablissements: 95, eleves: 120000, statut: 'En setup' },
+    { nom: 'Mai-Ndombe', chefLieu: 'Inongo', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Kasaï', chefLieu: 'Tshikapa', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Kasaï Central', chefLieu: 'Kananga', etablissements: 85, eleves: 110000, statut: 'Actif' },
+    { nom: 'Kasaï Oriental', chefLieu: 'Mbuji-Mayi', etablissements: 130, eleves: 170000, statut: 'Actif' },
+    { nom: 'Lomami', chefLieu: 'Kabinda', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Sankuru', chefLieu: 'Lusambo', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Maniema', chefLieu: 'Kindu', etablissements: 60, eleves: 75000, statut: 'Actif' },
+    { nom: 'Sud-Kivu', chefLieu: 'Bukavu', etablissements: 120, eleves: 160000, statut: 'Actif' },
+    { nom: 'Nord-Kivu', chefLieu: 'Goma', etablissements: 150, eleves: 180000, statut: 'Actif' },
+    { nom: 'Ituri', chefLieu: 'Bunia', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Haut-Uele', chefLieu: 'Isiro', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Bas-Uele', chefLieu: 'Buta', etablissements: 0, eleves: 0, statut: 'En setup' },
     { nom: 'Tshopo', chefLieu: 'Kisangani', etablissements: 110, eleves: 140000, statut: 'Actif' },
+    { nom: 'Mongala', chefLieu: 'Lisala', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Nord-Ubangi', chefLieu: 'Gbadolite', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Sud-Ubangi', chefLieu: 'Gemena', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Équateur', chefLieu: 'Mbandaka', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Tshuapa', chefLieu: 'Boende', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Haut-Lomami', chefLieu: 'Kamina', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Lualaba', chefLieu: 'Kolwezi', etablissements: 0, eleves: 0, statut: 'En setup' },
+    { nom: 'Haut-Katanga', chefLieu: 'Lubumbashi', etablissements: 240, eleves: 320000, statut: 'Actif' },
+    { nom: 'Tanganyika', chefLieu: 'Kalemie', etablissements: 0, eleves: 0, statut: 'En setup' },
   ];
   for (const p of provinces) {
     await prisma.province.upsert({ where: { nom: p.nom }, create: p, update: {} });
