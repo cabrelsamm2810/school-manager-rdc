@@ -18,7 +18,6 @@ import {
   ecoleTypes,
   type RoleOption,
 } from '@/lib/meta-data';
-import { ErcLogo } from '@/components/ui/ErcLogo';
 import { ProfilePhotoUpload } from '@/components/auth/ProfilePhotoUpload';
 
 const STEP_LABELS = ['Institution', 'Structure', 'Fonction', 'Informations', 'Compte', 'Vérification'];
@@ -113,7 +112,7 @@ function CheckBadge() {
 }
 
 function InstitutionIcon({ type, selected }: { type: string; selected: boolean }) {
-  if (type === 'EC-ERC') return (<ErcLogo size={44} />);
+  if (type === 'EC-ERC') return (<img src="/illustrations/ec-erc-logo.png" alt="EC-ERC" className="h-16 w-16 object-contain" />);
   const bg = selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500';
   let path: ReactNode = null;
   if (type === 'PUBLIQUE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
