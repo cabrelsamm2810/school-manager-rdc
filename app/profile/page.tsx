@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -31,6 +32,50 @@ export default function ProfilePage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+    setUploading(true);
+    setMessage('');
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const res = await fetch('/api/users/me/photo', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.profilePhotoUrl) {
+        setProfile({ ...profile, profilePhotoUrl: data.profilePhotoUrl });
+        window.dispatchEvent(new Event('profile-photo-updated'));
+        setMessage('Photo de profil mise à jour avec succès.');
+      } else {
+        setMessage(data.error ?? 'Erreur lors du téléversement.');
+      }
+    } catch {
+      setMessage('Impossible de joindre le serveur.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleRemovePhoto() {
+    if (!profile) return;
+    setUploading(true);
+    setMessage('');
+    try {
+      const res = await fetch('/api/users/me/photo', { method: 'DELETE' });
+      if (res.ok) {
+        setProfile({ ...profile, profilePhotoUrl: null });
+        window.dispatchEvent(new Event('profile-photo-updated'));
+        setMessage('Photo de profil supprimée.');
+      } else {
+        setMessage('Erreur lors de la suppression.');
+      }
+    } catch {
+      setMessage('Impossible de joindre le serveur.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,11 +124,37 @@ export default function ProfilePage() {
             <form onSubmit={handleSave} className="rounded-3xl bg-white p-6 shadow-soft md:p-8">
               <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm text-slate-500">Photo de profil</p>
-                  <div className="mt-4 flex h-32 w-32 items-center justify-center rounded-full bg-blue-600 text-3xl font-bold text-white">
-                    {initials}
+                  <p className="text-sm font-medium text-slate-700">Photo de profil</p>
+                  <div className="mt-4 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-3xl font-bold text-white ring-4 ring-white shadow-md">
+                    {profile.profilePhotoUrl ? (
+                      <img src={profile.profilePhotoUrl} alt="Photo de profil" className="h-full w-full object-cover" />
+                    ) : (
+                      initials
+                    )}
                   </div>
-                  <p className="mt-3 text-xs text-slate-400">Photo passeport numérique à venir</p>
+                  <div className="mt-4 flex flex-col gap-2">
+                    <label className="cursor-pointer rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-blue-500">
+                      {uploading ? 'Téléversement…' : 'Changer la photo'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handlePhotoChange}
+                        disabled={uploading}
+                        className="hidden"
+                      />
+                    </label>
+                    {profile.profilePhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        disabled={uploading}
+                        className="rounded-xl border border-red-200 px-4 py-2.5 text-center text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                      >
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-3 text-xs text-slate-400">JPG, PNG, WebP ou GIF — 5 Mo max</p>
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2">

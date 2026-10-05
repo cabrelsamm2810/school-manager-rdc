@@ -37,6 +37,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
+  // Rafraîchit l'utilisateur quand la photo de profil change (page /profile)
+  useEffect(() => {
+    function refreshUser() {
+      fetch('/api/auth/session')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.authenticated) setUser(data.user);
+        })
+        .catch(() => {});
+    }
+    window.addEventListener('profile-photo-updated', refreshUser);
+    return () => window.removeEventListener('profile-photo-updated', refreshUser);
+  }, []);
+
   // Ferme le drawer et le menu utilisateur lors d'un changement de route
   useEffect(() => {
     setSidebarOpen(false);
