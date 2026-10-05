@@ -48,7 +48,6 @@ export const ecErcRoleOptions: RoleOption[] = [
   { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
   { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent sous provincial' },
-  { value: 'DIRECTION_ECOLE', label: 'École EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo' },
 ];
 
 export const nonEcErcRoleOptions: RoleOption[] = [
