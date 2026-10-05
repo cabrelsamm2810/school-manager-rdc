@@ -62,8 +62,27 @@ export function ImportDialog({ endpoint, moduleName, columns, onImported, onClos
 
   function downloadTemplate() {
     const header = columns.join(',');
-    const csv = header + '\n';
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const example = columns.map((col) => {
+      const examples: Record<string, string> = {
+        matricule: 'EL001',
+        nom: 'Mukendi',
+        postNom: 'Kalonji',
+        prenom: 'Jean',
+        sexe: 'M',
+        dateNaissance: '2010-05-15',
+        lieuNaissance: 'Kinshasa',
+        classe: '6ème primaire',
+        telephone: '+243812345678',
+        email: 'jean@example.com',
+        adresse: 'Commune de Gombe',
+        nomTuteur: 'Kalonji Paul',
+        telephoneTuteur: '+243899112233',
+        etablissementId: '',
+      };
+      return examples[col] ?? '';
+    });
+    const csv = header + '\n' + example.join(',');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
