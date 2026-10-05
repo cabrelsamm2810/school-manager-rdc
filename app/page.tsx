@@ -165,8 +165,8 @@ export default function HomePage() {
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-blue-600/10 blur-3xl" />
             <div className="relative flex flex-col items-center gap-5 text-center md:flex-row md:items-center md:justify-between md:text-left">
               <div className="flex flex-col items-center gap-4 md:flex-row md:items-center md:gap-5">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-600/20 ring-1 ring-blue-500/30 md:h-20 md:w-20">
-                  <Icon name="organization" className="h-8 w-8 text-blue-400 md:h-10 md:w-10" />
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/90 p-1 ring-1 ring-blue-500/30 md:h-20 md:w-20">
+                  <img src="/illustrations/ec-erc-logo.jpg" alt="EC-ERC" className="h-full w-full rounded-xl object-contain" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-white md:text-2xl">EC-ERC</h2>
