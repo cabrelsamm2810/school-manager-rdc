@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { clsx } from 'clsx';
 import { PERIODES, getCurrentAnneeScolaire, calculateGrades, isValidCote, getMention } from '@/lib/cahier-de-cote';
 import { BulletinPreview } from './BulletinPreview';
+import { BulletinBatchPreview } from './BulletinBatchPreview';
 
 type SessionUser = {
   id: string;
@@ -72,6 +73,7 @@ export function CahierDeCoteManager() {
   const [success, setSuccess] = useState('');
   const [showBulletin, setShowBulletin] = useState(false);
   const [bulletinEleveId, setBulletinEleveId] = useState('');
+  const [showBatchPreview, setShowBatchPreview] = useState(false);
   const [batchDownloading, setBatchDownloading] = useState(false);
 
   const isDirection = user && (user.role === 'DIRECTION_ECOLE' || user.role === 'SUPER_ADMIN');
@@ -460,23 +462,14 @@ export function CahierDeCoteManager() {
             🖨️ Imprimer
           </button>
           <button
-            onClick={handleBatchDownloadPdf}
-            disabled={batchDownloading || eleves.length === 0}
+            onClick={() => setShowBatchPreview(true)}
+            disabled={eleves.length === 0}
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:shadow-lg disabled:opacity-50"
           >
-            {batchDownloading ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Génération...
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                Tous les bulletins (PDF)
-              </>
-            )}
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            Aperçu & bulletins (PDF)
           </button>
         </div>
       )}
@@ -751,6 +744,18 @@ export function CahierDeCoteManager() {
           periode={selectedPeriode}
           anneeScolaire={ANNEE_SCOLAIRE}
           onClose={() => setShowBulletin(false)}
+        />
+      )}
+
+      {/* ── Modal Aperçu batch ── */}
+      {showBatchPreview && (
+        <BulletinBatchPreview
+          classe={selectedClasse}
+          periode={selectedPeriode}
+          anneeScolaire={ANNEE_SCOLAIRE}
+          etablissementId={selectedEtab}
+          onClose={() => setShowBatchPreview(false)}
+          onDownload={handleBatchDownloadPdf}
         />
       )}
     </div>
