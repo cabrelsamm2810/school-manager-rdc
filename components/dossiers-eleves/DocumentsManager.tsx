@@ -15,7 +15,7 @@ type Document = {
   createdAt: string;
 };
 
-const DOC_TYPES = ['Acte de naissance', 'Bulletin', 'Certificat médical', 'Photo', 'Contrat', 'Autre'];
+const DOC_TYPES = ['Acte de naissance', 'Bulletin', 'Relevé de notes', 'Certificat médical', 'Certificat de scolarité', 'Photo', 'Contrat', 'Autre'];
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -71,6 +71,18 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
         default: return 0;
       }
     });
+
+  // Types présents dans les documents (avec compteurs) pour la barre de filtrage
+  const typeCounts = (() => {
+    const map = new Map<string, number>();
+    for (const d of docs) {
+      const key = d.type || 'Autre';
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count);
+  })();
 
   // Regroupement par type pour la vue organisée
   const grouped = filtered.reduce<Record<string, Document[]>>((acc, d) => {
@@ -165,16 +177,34 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
           </button>
         </div>
 
-        {/* Filtres et tri */}
-        <div className="flex gap-2">
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
+        {/* Barre de filtrage par type — chips cliquables */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <button
+            onClick={() => setFilterType('')}
+            className={clsx(
+              'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition',
+              filterType === '' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            )}
           >
-            <option value="">Tous les types</option>
-            {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+            Tous{docs.length > 0 && <span className="ml-1 opacity-70">({docs.length})</span>}
+          </button>
+          {typeCounts.map(({ type, count }) => (
+            <button
+              key={type}
+              onClick={() => setFilterType(type)}
+              className={clsx(
+                'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition',
+                filterType === type ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              )}
+            >
+              {type}<span className="ml-1 opacity-70">({count})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Tri */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400">Trier :</span>
           <select
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as SortMode)}
