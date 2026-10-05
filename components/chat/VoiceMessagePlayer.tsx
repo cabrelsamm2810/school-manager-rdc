@@ -78,7 +78,12 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
       <button
         onClick={togglePlay}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95"
-        style={{ backgroundColor: accent }}
+        style={{
+          backgroundColor: accent,
+          animation: playing
+            ? 'voicePulse 1.4s ease-in-out infinite'
+            : undefined,
+        }}
         aria-label={playing ? 'Pause' : 'Lecture'}
       >
         {playing ? (
