@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
 
+  const userEtablissementId = auth.user.etablissementId;
+
   const formData = await request.formData().catch(() => null);
   if (!formData) {
     return NextResponse.json({ error: 'Aucun fichier re\u00e7u.' }, { status: 400 });
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
           adresse: String(row.adresse ?? '').trim(),
           nomTuteur: String(row.nomTuteur ?? '').trim(),
           telephoneTuteur: String(row.telephoneTuteur ?? '').trim(),
-          etablissementId: String(row.etablissementId ?? '').trim() || null,
+          etablissementId: String(row.etablissementId ?? '').trim() || userEtablissementId || null,
         },
       });
       existingMatricules.add(matricule);
