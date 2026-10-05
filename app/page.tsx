@@ -229,6 +229,7 @@ export default function HomePage() {
               <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
                 <p className="text-xs font-medium text-slate-300 md:text-sm">Solution numérique de gestion scolaire</p>
                 <p className="text-xs text-slate-500 md:text-sm">Accessible sur téléphone, tablette et ordinateur</p>
+                <a href="mailto:schoolmanager.rdc@gmail.com" className="footer-link mt-1">schoolmanager.rdc@gmail.com</a>
               </div>
             </div>
 
