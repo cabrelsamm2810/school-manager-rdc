@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader, StatCard, Card } from '@/components/ui/Card';
 import { PresenceManager } from '@/components/enseignant/PresenceManager';
+import { PresenceStatsJour } from '@/components/enseignant/PresenceStatsJour';
 
 type ClassData = { classe: string; effectif: number };
 type PresenceData = { classe: string; taux: number | null; totalRecords: number };
@@ -147,6 +148,9 @@ export default function EnseignantDashboardPage() {
                   </table>
                 </div>
               </Card>
+
+              {/* Statistiques de présence par jour */}
+              <PresenceStatsJour />
 
               {/* Gestion des présences */}
               <PresenceManager />
