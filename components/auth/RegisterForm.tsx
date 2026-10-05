@@ -86,7 +86,7 @@ const INSTITUTION_SHORT: Record<string, string> = {
   'INDEPENDANTE': 'École indépendante',
 };
 const INSTITUTION_DESC: Record<string, string> = {
-  'EC-ERC': 'Églises du Réveil du Congo',
+  'EC-ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
   'PUBLIQUE': 'Établissement public',
   'CATHOLIQUE': 'Conventionné catholique',
   'ISLAMIQUE': 'Établissement islamique',
@@ -430,11 +430,13 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                 <div key={inst.value} onClick={() => handleInstitutionType(inst.value)}
                   className={`select-card rounded-2xl border-2 p-4 ${form.typeInstitution === inst.value ? 'selected' : 'border-slate-200'}`}>
                   {form.typeInstitution === inst.value && <CheckBadge />}
-                  <div className="flex items-center gap-3">
-                    <InstitutionIcon type={inst.value} selected={form.typeInstitution === inst.value} />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-900">{INSTITUTION_SHORT[inst.value] ?? inst.label}</p>
-                      <p className="truncate text-xs text-slate-500">{INSTITUTION_DESC[inst.value]}</p>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+                      <InstitutionIcon type={inst.value} selected={form.typeInstitution === inst.value} />
+                    </div>
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="font-bold tracking-tight text-slate-900">{INSTITUTION_SHORT[inst.value] ?? inst.label}</p>
+                      <p className="text-xs leading-snug text-slate-500">{INSTITUTION_DESC[inst.value]}</p>
                     </div>
                   </div>
                 </div>
