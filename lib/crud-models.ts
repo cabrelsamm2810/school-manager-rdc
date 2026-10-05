@@ -277,6 +277,40 @@ export const crudModels: Record<string, CrudModelConfig> = {
     ],
   },
 
+  'classes-rdc': {
+    delegate: prisma.classeRdc,
+    entityName: 'classeRdc',
+    entityNamePlural: 'classesRdc',
+    minRole: 'DIRECTION_ECOLE',
+    searchFields: ['nom', 'cycle', 'diplome'],
+    defaultSort: { field: 'ordre', order: 'asc' },
+    institutionField: false,
+    fields: [
+      { name: 'nom', type: 'string', required: true, unique: true },
+      { name: 'cycle', type: 'string' },
+      { name: 'ordre', type: 'number' },
+      { name: 'diplome', type: 'string' },
+      { name: 'statut', type: 'string' },
+    ],
+  },
+
+  'matieres-rdc': {
+    delegate: prisma.matiereRdc,
+    entityName: 'matiereRdc',
+    entityNamePlural: 'matieresRdc',
+    minRole: 'DIRECTION_ECOLE',
+    searchFields: ['nom', 'cycle', 'domaine'],
+    defaultSort: { field: 'nom', order: 'asc' },
+    institutionField: false,
+    fields: [
+      { name: 'nom', type: 'string', required: true },
+      { name: 'cycle', type: 'string', required: true },
+      { name: 'domaine', type: 'string' },
+      { name: 'coefficient', type: 'number' },
+      { name: 'statut', type: 'string' },
+    ],
+  },
+
   notes: {
     delegate: prisma.note,
     entityName: 'note',

@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from '@prisma/client';
 import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
+import { CLASSES_RDC, MATIERES_RDC } from '@/lib/curriculum-rdc';
 
 const prisma = new PrismaClient();
 
@@ -294,6 +295,30 @@ async function main() {
     }
   }
   console.log(`Seed terminé : ${SOUS_DIVISIONS_RDC.length} sous-divisions éducationnelles insérées.`);
+
+  // ── Classes & Niveaux du curriculum national RDC ──
+  for (const c of CLASSES_RDC) {
+    const existing = await prisma.classeRdc.findUnique({ where: { nom: c.nom } });
+    if (!existing) {
+      await prisma.classeRdc.create({
+        data: { nom: c.nom, cycle: c.cycle, ordre: c.ordre, diplome: c.diplome, statut: c.statut },
+      });
+    }
+  }
+  console.log(`Seed terminé : ${CLASSES_RDC.length} classes du curriculum national insérées.`);
+
+  // ── Matières & Cours du programme national RDC ──
+  for (const m of MATIERES_RDC) {
+    const existing = await prisma.matiereRdc.findFirst({
+      where: { nom: m.nom, cycle: m.cycle },
+    });
+    if (!existing) {
+      await prisma.matiereRdc.create({
+        data: { nom: m.nom, cycle: m.cycle, domaine: m.domaine, coefficient: m.coefficient, statut: m.statut },
+      });
+    }
+  }
+  console.log(`Seed terminé : ${MATIERES_RDC.length} matières du programme national insérées.`);
 }
 
 main()

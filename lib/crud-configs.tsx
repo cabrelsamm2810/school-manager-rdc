@@ -1,6 +1,7 @@
 import type { CrudConfig } from '@/components/CrudManager';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { PROVINCE_EDUCATIONNELLE_NAMES } from '@/lib/provinces-rdc';
+import { CYCLES_RDC } from '@/lib/curriculum-rdc';
 
 /**
  * Configurations frontend pour le CrudManager de chaque module.
@@ -574,6 +575,83 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { label: 'Payés', value: (items: any[]) => String(items.filter((e) => e.statut === 'Payé').length) },
       { label: 'En attente', value: (items: any[]) => String(items.filter((e) => e.statut === 'En attente').length) },
       { label: 'Rejetés', value: (items: any[]) => String(items.filter((e) => e.statut === 'Rejeté').length) },
+    ],
+  },
+
+  'classes-rdc': {
+    apiPath: '/api/classes-rdc',
+    entityName: 'classeRdc',
+    entityNamePlural: 'classesRdc',
+    icon: 'school',
+    searchFields: ['nom', 'cycle', 'diplome'],
+    fields: [
+      { name: 'nom', label: 'Nom de la classe', type: 'text', required: true },
+      { name: 'cycle', label: 'Cycle', type: 'select', required: true, half: true, options: CYCLES_RDC.map((c) => ({ value: c, label: c })) },
+      { name: 'ordre', label: 'Ordre', type: 'number', half: true, default: 0 },
+      { name: 'diplome', label: 'Diplôme délivré', type: 'text', half: true },
+      { name: 'statut', label: 'Statut', type: 'select', half: true, default: 'Actif', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
+    columns: [
+      { key: 'nom', label: 'Classe', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
+      { key: 'cycle', label: 'Cycle' },
+      { key: 'ordre', label: 'Ordre' },
+      { key: 'diplome', label: 'Diplôme' },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
+    ],
+    filters: [
+      { name: 'cycle', label: 'Tous les cycles', options: CYCLES_RDC.map((c) => ({ value: c, label: c })) },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
+    statCards: [
+      { label: 'Classes', value: (items: any[]) => String(items.length), hint: 'Total' },
+      { label: 'Cycles', value: (items: any[]) => String(new Set(items.map((e) => e.cycle)).size) },
+      { label: 'Avec diplôme', value: (items: any[]) => String(items.filter((e) => e.diplome).length) },
+      { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
+    ],
+  },
+
+  'matieres-rdc': {
+    apiPath: '/api/matieres-rdc',
+    entityName: 'matiereRdc',
+    entityNamePlural: 'matieresRdc',
+    icon: 'notebook',
+    searchFields: ['nom', 'cycle', 'domaine'],
+    fields: [
+      { name: 'nom', label: 'Nom de la matière', type: 'text', required: true },
+      { name: 'cycle', label: 'Cycle', type: 'select', required: true, half: true, options: CYCLES_RDC.map((c) => ({ value: c, label: c })) },
+      { name: 'domaine', label: 'Domaine', type: 'text', half: true },
+      { name: 'coefficient', label: 'Coefficient', type: 'number', half: true, default: 1 },
+      { name: 'statut', label: 'Statut', type: 'select', half: true, default: 'Actif', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
+    columns: [
+      { key: 'nom', label: 'Matière', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
+      { key: 'cycle', label: 'Cycle' },
+      { key: 'domaine', label: 'Domaine' },
+      { key: 'coefficient', label: 'Coef.' },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
+    ],
+    filters: [
+      { name: 'cycle', label: 'Tous les cycles', options: CYCLES_RDC.map((c) => ({ value: c, label: c })) },
+      { name: 'domaine', label: 'Tous les domaines' },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
+    statCards: [
+      { label: 'Matières', value: (items: any[]) => String(items.length), hint: 'Total' },
+      { label: 'Cycles', value: (items: any[]) => String(new Set(items.map((e) => e.cycle)).size) },
+      { label: 'Domaines', value: (items: any[]) => String(new Set(items.map((e) => e.domaine)).size) },
+      { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
     ],
   },
 

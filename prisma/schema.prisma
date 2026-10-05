@@ -327,6 +327,37 @@ model SousDivisionEducationnelle {
   @@map("sous_divisions_educationnelles")
 }
 
+model ClasseRdc {
+  id        String   @id @default(cuid())
+  nom       String   @unique
+  cycle     String   @default("")
+  ordre     Int      @default(0)
+  diplome   String   @default("")
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cycle])
+  @@index([ordre])
+  @@map("classes_rdc")
+}
+
+model MatiereRdc {
+  id          String   @id @default(cuid())
+  nom         String
+  cycle       String   @default("")
+  domaine     String   @default("")
+  coefficient Int      @default(1)
+  statut      String   @default("Actif")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([nom, cycle])
+  @@index([cycle])
+  @@index([domaine])
+  @@map("matieres_rdc")
+}
+
 model EcErc {
   id        String   @id @default(cuid())
   nom       String
