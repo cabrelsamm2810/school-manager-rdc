@@ -75,6 +75,8 @@ export async function GET(request: NextRequest) {
               content: lastMsg.content,
               createdAt: lastMsg.createdAt,
               senderId: lastMsg.senderId,
+              fileUrl: lastMsg.fileUrl,
+              fileName: lastMsg.fileName,
             }
           : null,
         unreadCount: unreadMap.get(c.id) ?? 0,

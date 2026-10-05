@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_FILE_TYPES = [
+  ...ALLOWED_IMAGE_TYPES,
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+  'application/zip',
+  'video/mp4',
+  'audio/mpeg',
+  'audio/mp4',
+];
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +41,6 @@ export async function GET(
     return NextResponse.json({ error: 'Conversation introuvable.' }, { status: 404 });
   }
 
-  // Vérifie que l'utilisateur est participant
   if (conversation.user1Id !== currentUser.id && conversation.user2Id !== currentUser.id) {
     return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
   }
@@ -46,6 +67,9 @@ export async function GET(
       senderId: m.senderId,
       createdAt: m.createdAt,
       read: m.read,
+      fileUrl: m.fileUrl,
+      fileName: m.fileName,
+      fileType: m.fileType,
     }))
   );
 }
@@ -71,10 +95,58 @@ export async function POST(
     return NextResponse.json({ error: 'Accès refusé.' }, { status: 403 });
   }
 
-  const body = await request.json();
-  const { content } = body as { content: string };
+  const contentType = request.headers.get('content-type') || '';
 
-  if (!content || !content.trim()) {
+  let content = '';
+  let fileUrl: string | null = null;
+  let fileName: string | null = null;
+  let fileType: string | null = null;
+
+  if (contentType.includes('multipart/form-data')) {
+    // ── Upload avec fichier ──
+    const formData = await request.formData().catch(() => null);
+    if (!formData) {
+      return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+    }
+
+    content = (formData.get('content') as string)?.trim() || '';
+    const file = formData.get('file');
+
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: 'Aucun fichier reçu.' }, { status: 400 });
+    }
+
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: 'Type de fichier non supporté.' }, { status: 400 });
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'Le fichier dépasse 10 Mo.' }, { status: 400 });
+    }
+
+    // Sauvegarde le fichier
+    const ext = file.name.split('.').pop() || 'bin';
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const uniqueName = `${Date.now()}-${safeName}`;
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'chat-files');
+
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
+
+    const bytes = await file.arrayBuffer();
+    await writeFile(path.join(uploadDir, uniqueName), Buffer.from(bytes));
+
+    fileUrl = `/uploads/chat-files/${uniqueName}`;
+    fileName = file.name;
+    fileType = file.type;
+  } else {
+    // ── Message texte seul ──
+    const body = await request.json();
+    content = (body.content as string)?.trim() || '';
+  }
+
+  if (!content && !fileUrl) {
     return NextResponse.json({ error: 'Message vide.' }, { status: 400 });
   }
 
@@ -82,7 +154,10 @@ export async function POST(
     data: {
       conversationId: params.id,
       senderId: currentUser.id,
-      content: content.trim(),
+      content,
+      fileUrl,
+      fileName,
+      fileType,
     },
   });
 
@@ -98,5 +173,8 @@ export async function POST(
     senderId: message.senderId,
     createdAt: message.createdAt,
     read: message.read,
+    fileUrl: message.fileUrl,
+    fileName: message.fileName,
+    fileType: message.fileType,
   });
 }

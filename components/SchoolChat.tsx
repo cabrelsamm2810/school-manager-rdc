@@ -21,6 +21,8 @@ type Conversation = {
     content: string;
     createdAt: string;
     senderId: string;
+    fileUrl?: string | null;
+    fileName?: string | null;
   } | null;
   unreadCount: number;
   updatedAt: string;
@@ -32,6 +34,9 @@ type Message = {
   senderId: string;
   createdAt: string;
   read: boolean;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileType?: string | null;
 };
 
 function formatTime(dateStr: string) {
@@ -59,6 +64,23 @@ function getInitials(name: string) {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
+function isImageFile(fileType?: string | null, fileUrl?: string | null) {
+  if (fileType?.startsWith('image/')) return true;
+  if (fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl)) return true;
+  return false;
+}
+
+function getFileIcon(fileType?: string | null) {
+  if (fileType?.includes('pdf')) return '📄';
+  if (fileType?.includes('word') || fileType?.includes('document')) return '📝';
+  if (fileType?.includes('excel') || fileType?.includes('sheet')) return '📊';
+  if (fileType?.includes('powerpoint') || fileType?.includes('presentation')) return '📽️';
+  if (fileType?.includes('zip')) return '🗜️';
+  if (fileType?.includes('video')) return '🎬';
+  if (fileType?.includes('audio')) return '🎵';
+  return '📎';
+}
+
 export function SchoolChat() {
   const [currentUser, setCurrentUser] = useState<{ id: string; prenom: string; nom: string } | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -71,7 +93,9 @@ export function SchoolChat() {
   const [allUsers, setAllUsers] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Charge l'utilisateur courant
   useEffect(() => {
@@ -172,6 +196,63 @@ export function SchoolChat() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [inputText, activeConversationId, currentUser, loadConversations]);
+
+  // Envoie un fichier
+  const sendFile = useCallback(
+    (file: File) => {
+      if (!activeConversationId) return;
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      if (inputText.trim()) formData.append('content', inputText.trim());
+
+      // Optimistic: ajoute un message temporaire
+      const tempId = `temp-${Date.now()}`;
+      const isImage = file.type.startsWith('image/');
+      const previewUrl = URL.createObjectURL(file);
+      const optimisticMsg: Message = {
+        id: tempId,
+        content: inputText.trim(),
+        senderId: currentUser?.id ?? '',
+        createdAt: new Date().toISOString(),
+        read: false,
+        fileUrl: previewUrl,
+        fileName: file.name,
+        fileType: file.type,
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
+      setInputText('');
+
+      fetch(`/api/chat/conversations/${activeConversationId}/messages`, {
+        method: 'POST',
+        body: formData,
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.id) {
+            URL.revokeObjectURL(previewUrl);
+            setMessages((prev) => prev.map((m) => (m.id === tempId ? data : m)));
+            loadConversations();
+          }
+        })
+        .catch(() => {
+          URL.revokeObjectURL(previewUrl);
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        })
+        .finally(() => setUploading(false));
+    },
+    [activeConversationId, currentUser, inputText, loadConversations]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) sendFile(file);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    },
+    [sendFile]
+  );
 
   // Démarre une nouvelle conversation
   const startNewChat = useCallback(
@@ -323,7 +404,11 @@ export function SchoolChat() {
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-xs text-slate-500">
                         {conv.lastMessage
-                          ? (conv.lastMessage.senderId === currentUser?.id ? 'Vous: ' : '') + conv.lastMessage.content
+                          ? (conv.lastMessage.senderId === currentUser?.id ? 'Vous: ' : '') +
+                            (conv.lastMessage.content ||
+                              (conv.lastMessage.fileUrl && conv.lastMessage.fileName
+                                ? `📎 ${conv.lastMessage.fileName}`
+                                : '📎 Fichier'))
                           : conv.otherUser?.roleLabel ?? ''}
                       </span>
                       {conv.unreadCount > 0 && (
@@ -436,9 +521,40 @@ export function SchoolChat() {
                                 : 'rounded-tl-none bg-white text-slate-900'
                             )}
                           >
-                            <p className="whitespace-pre-wrap break-words text-sm">
-                              {msg.content}
-                            </p>
+                            {/* Image */}
+                            {isImageFile(msg.fileType, msg.fileUrl) && msg.fileUrl && (
+                              <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="mb-1 block">
+                                <img
+                                  src={msg.fileUrl}
+                                  alt={msg.fileName || 'Image'}
+                                  className="max-h-60 w-full rounded-lg object-cover"
+                                />
+                              </a>
+                            )}
+                            {/* Fichier non-image */}
+                            {msg.fileUrl && !isImageFile(msg.fileType, msg.fileUrl) && (
+                              <a
+                                href={msg.fileUrl}
+                                download={msg.fileName || undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mb-1 flex items-center gap-2.5 rounded-lg bg-slate-100 p-2.5 transition hover:bg-slate-200"
+                              >
+                                <span className="text-2xl">{getFileIcon(msg.fileType)}</span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-slate-700">
+                                    {msg.fileName || 'Fichier'}
+                                  </p>
+                                  <p className="text-xs text-slate-400">Télécharger</p>
+                                </div>
+                              </a>
+                            )}
+                            {/* Texte */}
+                            {msg.content && (
+                              <p className="whitespace-pre-wrap break-words text-sm">
+                                {msg.content}
+                              </p>
+                            )}
                             <div className="mt-0.5 flex items-center justify-end gap-1">
                               <span className="text-[10px] text-slate-400">
                                 {formatTime(msg.createdAt)}
@@ -462,6 +578,29 @@ export function SchoolChat() {
 
             {/* Barre de saisie */}
             <div className="flex items-center gap-2 bg-slate-100 px-3 py-2.5 md:px-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,video/mp4,audio/mpeg,audio/mp4"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#075E54] shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+                aria-label="Joindre un fichier"
+              >
+                {uploading ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5 animate-spin">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                  </svg>
+                )}
+              </button>
               <input
                 type="text"
                 value={inputText}
