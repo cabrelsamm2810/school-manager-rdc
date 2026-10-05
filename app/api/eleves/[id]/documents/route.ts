@@ -96,6 +96,37 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   return NextResponse.json(doc, { status: 201 });
 }
 
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getSessionUser(request);
+  if (!user) return NextResponse.json({ error: 'Connexion requise.' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const docId = searchParams.get('docId');
+  if (!docId) return NextResponse.json({ error: 'ID document manquant.' }, { status: 400 });
+
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
+
+  const { titre, type, description } = body as { titre?: string; type?: string; description?: string };
+
+  const existing = await prisma.dossierEleveDocument.findFirst({
+    where: { id: docId, eleveId: params.id },
+  });
+  if (!existing) return NextResponse.json({ error: 'Document introuvable.' }, { status: 404 });
+
+  const data: Record<string, string> = {};
+  if (titre !== undefined) data.titre = titre.trim();
+  if (type !== undefined) data.type = type.trim();
+  if (description !== undefined) data.description = description.trim();
+
+  const updated = await prisma.dossierEleveDocument.update({
+    where: { id: docId },
+    data,
+  });
+
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getSessionUser(request);
   if (!user) return NextResponse.json({ error: 'Connexion requise.' }, { status: 401 });

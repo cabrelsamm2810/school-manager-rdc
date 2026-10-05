@@ -116,6 +116,16 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
     load();
   }
 
+  async function handleRename(docId: string, newTitre: string) {
+    if (!newTitre.trim()) return;
+    await fetch(`/api/eleves/${eleveId}/documents?docId=${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titre: newTitre.trim() }),
+    });
+    load();
+  }
+
   function handleDownload(doc: Document) {
     if (!doc.fileUrl) return;
     const link = document.createElement('a');
@@ -238,7 +248,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
               </div>
               <div className="space-y-2">
                 {grouped[group].map((d) => (
-                  <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} />
+                  <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onRename={handleRename} />
                 ))}
               </div>
             </div>
@@ -247,7 +257,7 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
       ) : (
         <div className="space-y-2">
           {filtered.map((d) => (
-            <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} />
+            <DocCard key={d.id} doc={d} onPreview={setPreviewDoc} onDownload={handleDownload} onDelete={handleDelete} onRename={handleRename} />
           ))}
         </div>
       )}
@@ -262,48 +272,82 @@ export function DocumentsManager({ eleveId }: { eleveId: string }) {
 
 // ── Carte document ──
 function DocCard({
-  doc, onPreview, onDownload, onDelete,
+  doc, onPreview, onDownload, onDelete, onRename,
 }: {
   doc: Document;
   onPreview: (d: Document) => void;
   onDownload: (d: Document) => void;
   onDelete: (id: string) => void;
+  onRename: (id: string, titre: string) => void;
 }) {
   const canPreview = isPreviewable(doc.fileType, doc.fileUrl);
   const canDownload = !!doc.fileUrl;
+  const [editing, setEditing] = useState(false);
+  const [editTitre, setEditTitre] = useState(doc.titre);
+
+  function submitRename() {
+    if (editTitre.trim() && editTitre.trim() !== doc.titre) {
+      onRename(doc.id, editTitre);
+    }
+    setEditing(false);
+  }
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 transition hover:border-slate-200">
-      <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-medium text-slate-900">{doc.titre}</p>
-          {doc.type && <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">{doc.type}</span>}
+    <div className="rounded-lg border border-slate-100 p-3 transition hover:border-slate-200">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">{getFileIcon(doc.fileType)}</span>
+        <div className="min-w-0 flex-1">
+          {editing ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={editTitre}
+                onChange={(e) => setEditTitre(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') { setEditing(false); setEditTitre(doc.titre); } }}
+                autoFocus
+                className="flex-1 rounded-lg border border-blue-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+              />
+              <button onClick={submitRename} className="rounded-lg bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700">OK</button>
+              <button onClick={() => { setEditing(false); setEditTitre(doc.titre); }} className="rounded-lg px-2 py-1 text-xs text-slate-500 hover:bg-slate-100">✕</button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <p className="truncate text-sm font-medium text-slate-900">{doc.titre}</p>
+                {doc.type && <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">{doc.type}</span>}
+              </div>
+              <p className="truncate text-xs text-slate-500">
+                {doc.description || doc.fileName || 'Aucune description'}
+              </p>
+              <p className="text-xs text-slate-400">{formatDate(doc.createdAt)} • par {doc.uploadedBy}</p>
+            </>
+          )}
         </div>
-        <p className="truncate text-xs text-slate-500">
-          {doc.description || doc.fileName || 'Aucune description'}
-        </p>
-        <p className="text-xs text-slate-400">{formatDate(doc.createdAt)} • par {doc.uploadedBy}</p>
-      </div>
-      <div className="flex shrink-0 gap-0.5">
-        {canPreview && (
-          <button onClick={() => onPreview(doc)} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Prévisualiser" title="Prévisualiser">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-          </button>
+        {!editing && (
+          <div className="flex shrink-0 gap-0.5">
+            {canPreview && (
+              <button onClick={() => onPreview(doc)} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" aria-label="Prévisualiser" title="Prévisualiser">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+              </button>
+            )}
+            {canDownload && (
+              <button onClick={() => onDownload(doc)} className="rounded-lg p-1.5 text-green-600 hover:bg-green-50" aria-label="Télécharger" title="Télécharger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+              </button>
+            )}
+            {doc.fileUrl && !canPreview && (
+              <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50" aria-label="Ouvrir" title="Ouvrir">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" /></svg>
+              </a>
+            )}
+            <button onClick={() => setEditing(true)} className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50" aria-label="Renommer" title="Renommer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            </button>
+            <button onClick={() => onDelete(doc.id)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Supprimer" title="Supprimer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+            </button>
+          </div>
         )}
-        {canDownload && (
-          <button onClick={() => onDownload(doc)} className="rounded-lg p-1.5 text-green-600 hover:bg-green-50" aria-label="Télécharger" title="Télécharger">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
-          </button>
-        )}
-        {doc.fileUrl && !canPreview && (
-          <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50" aria-label="Ouvrir" title="Ouvrir">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" /></svg>
-          </a>
-        )}
-        <button onClick={() => onDelete(doc.id)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" aria-label="Supprimer" title="Supprimer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-        </button>
       </div>
     </div>
   );
