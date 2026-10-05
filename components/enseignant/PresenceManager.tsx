@@ -19,6 +19,8 @@ type Presence = {
   date: string;
   present: boolean;
   classe: string;
+  latitude: number | null;
+  longitude: number | null;
   eleve: { id: string; matricule: string; nom: string; postNom: string; prenom: string };
 };
 
@@ -240,12 +242,28 @@ export function PresenceManager() {
               <div className="space-y-1.5">
                 {existingPresences.map((p) => (
                   <div key={p.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                    <span className="text-slate-700">
-                      {p.eleve.nom} {p.eleve.postNom} {p.eleve.prenom}
-                      <span className={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${p.present ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {p.present ? 'Présent' : 'Absent'}
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-slate-700">
+                        {p.eleve.nom} {p.eleve.postNom} {p.eleve.prenom}
+                        <span className={`ml-2 rounded px-2 py-0.5 text-xs font-medium ${p.present ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {p.present ? 'Présent' : 'Absent'}
+                        </span>
                       </span>
-                    </span>
+                      {p.latitude != null && p.longitude != null && (
+                        <a
+                          href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3 w-3">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z" />
+                            <circle cx="12" cy="9" r="2.5" />
+                          </svg>
+                          {p.latitude.toFixed(5)}, {p.longitude.toFixed(5)}
+                        </a>
+                      )}
+                    </div>
                     <button
                       onClick={() => handleDeletePresence(p.id)}
                       className="text-xs text-red-500 transition hover:text-red-700"
