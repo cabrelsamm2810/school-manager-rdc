@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { clsx } from 'clsx';
+import { DossierEleveExportButton } from './DossierEleveExport';
 
 type Eleve = {
   id: string;
@@ -85,6 +86,7 @@ export function DossierEleveDetail({ eleve }: { eleve: Eleve }) {
             {eleve.etablissement ? ` • ${eleve.etablissement.nom}` : ''}
           </p>
         </div>
+        <DossierEleveExportButton eleve={eleve} />
       </div>
 
       {/* Onglets */}
