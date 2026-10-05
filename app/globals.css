@@ -401,7 +401,8 @@ body {
   background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 40px rgba(0, 30, 80, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
 }
 
 @keyframes regCardIn {
@@ -440,13 +441,13 @@ body {
 }
 @media (min-width: 768px) {
   .reg-layout-illustration {
-    width: 280px;
+    width: 240px;
     flex-shrink: 0;
   }
 }
 @media (min-width: 1024px) {
   .reg-layout-illustration {
-    width: 320px;
+    width: 280px;
   }
 }
 
@@ -523,14 +524,16 @@ body {
 /* Enhanced form fields */
 .reg-field {
   width: 100%;
+  min-height: 3rem;
   border-radius: 0.875rem;
   border: 1.5px solid #e2e8f0;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
   color: #0f172a;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   background: #f8fafc;
+  -webkit-tap-highlight-color: transparent;
 }
 .reg-field:focus {
   border-color: #0066FF;

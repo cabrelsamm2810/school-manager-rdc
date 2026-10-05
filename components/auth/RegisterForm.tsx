@@ -719,25 +719,25 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
       )}
 
       {/* Navigation buttons */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-stretch justify-between gap-3">
         {step > 0 ? (
           <button type="button" onClick={prevStep}
-            className="btn-secondary-light px-5 py-3 text-sm"
+            className="btn-secondary-light min-h-[3rem] flex-1 px-5 py-3 text-sm sm:flex-none"
             style={{ borderRadius: '9999px' }}
           >
             ← Retour
           </button>
-        ) : <div />}
+        ) : <div className="hidden sm:block" />}
         {!isLastStep ? (
           <button type="button" onClick={nextStep}
-            className="btn-primary px-6 py-3 text-sm"
+            className="btn-primary min-h-[3rem] flex-1 px-6 py-3 text-sm sm:flex-none"
             style={{ borderRadius: '9999px' }}
           >
             Continuer →
           </button>
         ) : (
           <button type="submit" disabled={loading}
-            className={`btn-primary px-6 py-3 text-sm ${loading ? 'btn-loading' : ''}`}
+            className={`btn-primary min-h-[3rem] flex-1 px-6 py-3 text-sm sm:flex-none ${loading ? 'btn-loading' : ''}`}
             style={{ borderRadius: '9999px' }}
           >
             {loading ? (<><span className="btn-spinner" /> Création du compte…</>) : 'Confirmer l’inscription'}

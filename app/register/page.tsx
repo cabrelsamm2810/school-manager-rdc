@@ -3,7 +3,7 @@ import { RegisterLayout } from '@/components/auth/RegisterLayout';
 export default function RegisterPage() {
   return (
     <main className="register-bg flex min-h-screen items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6">
-      <div className="reg-card-in relative z-10 w-full max-w-5xl">
+      <div className="reg-card-in relative z-10 w-full max-w-3xl">
         {/* Branding header */}
         <div className="reg-header-in mb-5 flex flex-col items-center text-center">
           <div className="mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-white/30">
