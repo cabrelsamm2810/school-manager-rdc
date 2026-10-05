@@ -70,6 +70,18 @@ function isImageFile(fileType?: string | null, fileUrl?: string | null) {
   return false;
 }
 
+function isAudioFile(fileType?: string | null, fileUrl?: string | null) {
+  if (fileType?.startsWith('audio/')) return true;
+  if (fileUrl && /\.(mp3|wav|ogg|webm|m4a|aac|opus)$/i.test(fileUrl)) return true;
+  return false;
+}
+
+function formatDuration(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 function getFileIcon(fileType?: string | null) {
   if (fileType?.includes('pdf')) return '📄';
   if (fileType?.includes('word') || fileType?.includes('document')) return '📝';
@@ -94,8 +106,15 @@ export function SchoolChat() {
   const [loading, setLoading] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingError, setRecordingError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Charge l'utilisateur courant
   useEffect(() => {
@@ -254,6 +273,73 @@ export function SchoolChat() {
     [sendFile]
   );
 
+  // ── Enregistrement vocal ──
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      setRecordingError('');
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime((t) => t + 1);
+      }, 1000);
+    } catch {
+      setRecordingError('Micro inaccessible. Vérifiez les permissions.');
+    }
+  }, []);
+
+  const stopAndSendRecording = useCallback(() => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+      cancelRecording();
+      return;
+    }
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      const file = new File([blob], `message-vocal-${Date.now()}.webm`, {
+        type: 'audio/webm',
+      });
+      sendFile(file);
+      cleanupRecording();
+    };
+
+    mediaRecorder.stop();
+  }, [sendFile]);
+
+  const cancelRecording = useCallback(() => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.onstop = () => {};
+      mediaRecorder.stop();
+    }
+    cleanupRecording();
+  }, []);
+
+  const cleanupRecording = useCallback(() => {
+    recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
+    recordingStreamRef.current = null;
+    mediaRecorderRef.current = null;
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingTime(0);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  }, []);
+
   // Démarre une nouvelle conversation
   const startNewChat = useCallback(
     (userId: string) => {
@@ -406,9 +492,11 @@ export function SchoolChat() {
                         {conv.lastMessage
                           ? (conv.lastMessage.senderId === currentUser?.id ? 'Vous: ' : '') +
                             (conv.lastMessage.content ||
-                              (conv.lastMessage.fileUrl && conv.lastMessage.fileName
-                                ? `📎 ${conv.lastMessage.fileName}`
-                                : '📎 Fichier'))
+                              (isAudioFile(null, conv.lastMessage.fileUrl)
+                                ? '🎤 Message vocal'
+                                : conv.lastMessage.fileUrl && conv.lastMessage.fileName
+                                  ? `📎 ${conv.lastMessage.fileName}`
+                                  : '📎 Fichier'))
                           : conv.otherUser?.roleLabel ?? ''}
                       </span>
                       {conv.unreadCount > 0 && (
@@ -531,8 +619,19 @@ export function SchoolChat() {
                                 />
                               </a>
                             )}
-                            {/* Fichier non-image */}
-                            {msg.fileUrl && !isImageFile(msg.fileType, msg.fileUrl) && (
+                            {/* Message vocal */}
+                            {isAudioFile(msg.fileType, msg.fileUrl) && msg.fileUrl && (
+                              <div className="mb-1 flex items-center gap-2">
+                                <audio
+                                  src={msg.fileUrl}
+                                  controls
+                                  className="h-9 w-full max-w-[220px]"
+                                  preload="metadata"
+                                />
+                              </div>
+                            )}
+                            {/* Fichier non-image et non-audio */}
+                            {msg.fileUrl && !isImageFile(msg.fileType, msg.fileUrl) && !isAudioFile(msg.fileType, msg.fileUrl) && (
                               <a
                                 href={msg.fileUrl}
                                 download={msg.fileName || undefined}
@@ -583,48 +682,105 @@ export function SchoolChat() {
                 type="file"
                 onChange={handleFileSelect}
                 className="hidden"
-                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,video/mp4,audio/mpeg,audio/mp4"
+                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,video/mp4,audio/mpeg,audio/mp4,audio/webm,audio/ogg"
               />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#075E54] shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
-                aria-label="Joindre un fichier"
-              >
-                {uploading ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5 animate-spin">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                  </svg>
-                )}
-              </button>
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                placeholder="Tapez un message…"
-                className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#075E54]/20"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!inputText.trim() || loading}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#075E54] text-white transition hover:bg-[#064c43] disabled:opacity-40"
-                aria-label="Envoyer"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
-              </button>
+              {isRecording ? (
+                <>
+                  {/* Mode enregistrement */}
+                  <button
+                    onClick={cancelRecording}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-red-500 shadow-sm transition hover:bg-red-50"
+                    aria-label="Annuler l'enregistrement"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                  <div className="flex flex-1 items-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5">
+                    <span className="relative flex h-3 w-3 shrink-0">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                    </span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {formatDuration(recordingTime)}
+                    </span>
+                    <span className="text-xs text-slate-400">Enregistrement…</span>
+                  </div>
+                  <button
+                    onClick={stopAndSendRecording}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-sm transition hover:bg-[#1faa52]"
+                    aria-label="Envoyer le message vocal"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    </svg>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Mode normal */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#075E54] shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+                    aria-label="Joindre un fichier"
+                  >
+                    {uploading ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5 animate-spin">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                      </svg>
+                    )}
+                  </button>
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    placeholder="Tapez un message…"
+                    className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#075E54]/20"
+                  />
+                  {inputText.trim() ? (
+                    <button
+                      onClick={sendMessage}
+                      disabled={loading}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#075E54] text-white transition hover:bg-[#064c43] disabled:opacity-40"
+                      aria-label="Envoyer"
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={startRecording}
+                      disabled={uploading}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#075E54] text-white transition hover:bg-[#064c43] disabled:opacity-40"
+                      aria-label="Enregistrer un message vocal"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="22" />
+                      </svg>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
+            {recordingError && (
+              <div className="bg-red-50 px-4 py-1.5 text-center text-xs text-red-500">
+                {recordingError}
+              </div>
+            )}
           </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center bg-slate-100 p-8 text-center">

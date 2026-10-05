@@ -22,6 +22,9 @@ const ALLOWED_FILE_TYPES = [
   'video/mp4',
   'audio/mpeg',
   'audio/mp4',
+  'audio/webm',
+  'audio/ogg',
+  'audio/wav',
 ];
 
 export async function GET(
