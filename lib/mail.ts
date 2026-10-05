@@ -41,3 +41,58 @@ export async function sendValidationCode(email: string, code: string, nom: strin
     throw new Error("Impossible d'envoyer l'email de validation.");
   }
 }
+
+/**
+ * Envoie un email de rappel de saisie des cotes à un enseignant.
+ */
+export async function sendRappelCote(
+  email: string,
+  nom: string,
+  periode: string,
+  anneeScolaire: string,
+): Promise<void> {
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #1e3a5f; font-size: 22px; margin: 0;">School Manager RDC</h1>
+        <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Rappel de saisie des cotes</p>
+      </div>
+      <div style="background: #f8fafc; border-radius: 12px; padding: 24px;">
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">Bonjour ${nom},</p>
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">
+          Nous vous rappelons que la saisie des cotes pour la période
+          <strong>${periode}</strong> de l'année scolaire
+          <strong>${anneeScolaire}</strong> n'a pas encore été effectuée.
+        </p>
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 16px 0;">
+          <p style="color: #92400e; font-size: 14px; margin: 0;">
+            ⚠ Merci de vous connecter à votre espace School Manager RDC et de procéder à la saisie
+            des cotes de vos élèves dans les meilleurs délais.
+          </p>
+        </div>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/cahier-de-cote"
+           style="display: inline-block; background: #2563eb; color: white; text-decoration: none;
+                  padding: 12px 28px; border-radius: 9999px; font-size: 14px; font-weight: 600; margin-top: 8px;">
+          Accéder au Cahier de cote
+        </a>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">
+        Cet email est un rappel automatique. Si vous avez déjà saisi vos cotes, ignorez ce message.
+      </p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: `School Manager RDC — Rappel : saisie des cotes ${periode}`,
+      html,
+    });
+  } catch (error) {
+    console.error('Erreur envoi rappel:', error);
+    throw error;
+  }
+}

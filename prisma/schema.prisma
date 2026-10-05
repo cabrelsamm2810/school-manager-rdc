@@ -726,6 +726,29 @@ model CahierDeCoteHistory {
   @@map("cahier_de_cote_history")
 }
 
+model RappelCote {
+  id              String   @id @default(cuid())
+  enseignantNom   String
+  enseignantEmail String   @default("")
+  etablissement   String   @default("")
+  classe          String   @default("")
+  cours           String   @default("")
+  periode         String
+  anneeScolaire   String   @default("")
+  statut          String   @default("envoyé")  // envoyé | échec
+  messageErreur   String   @default("")
+  declenchePar    String   @default("")
+  declencheParId  String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([enseignantNom])
+  @@index([periode])
+  @@index([anneeScolaire])
+  @@index([statut])
+  @@index([createdAt])
+  @@map("rappels_cotes")
+}
+
 model Bulletin {
   id                String   @id @default(cuid())
   eleveId           String
