@@ -26,6 +26,7 @@ const ROUTE_MIN_ROLE: Record<string, string> = {
   '/carte-scolaire': 'DIRECTION_ECOLE',
   '/photo-passeport': 'DIRECTION_ECOLE',
   '/cartes-qr': 'DIRECTION_ECOLE',
+  '/dossiers-eleves': 'DIRECTION_ECOLE',
   '/provinces': 'COORDINATION_PROVINCIALE',
   '/ec-erc': 'COORDINATION_PROVINCIALE',
   '/coordination-nationale': 'COORDINATION_NATIONALE',

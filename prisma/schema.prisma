@@ -83,11 +83,69 @@ model Eleve {
   updatedAt       DateTime  @updatedAt
 
   presences  Presence[]
+  documents  DossierEleveDocument[]
+  resultats  DossierEleveResultat[]
+  interactions DossierEleveInteraction[]
 
   @@index([classe])
   @@index([nom])
   @@index([etablissementId])
   @@map("eleves")
+}
+
+model DossierEleveDocument {
+  id          String   @id @default(cuid())
+  eleveId     String
+  eleve       Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  type        String   @default("")
+  titre       String
+  fileUrl     String
+  fileName    String   @default("")
+  fileType    String   @default("")
+  description String   @default("")
+  uploadedBy  String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([eleveId])
+  @@index([type])
+  @@map("dossier_eleve_documents")
+}
+
+model DossierEleveResultat {
+  id          String   @id @default(cuid())
+  eleveId     String
+  eleve       Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  periode     String
+  matiere     String  @default("")
+  note        String  @default("")
+  moyenne     String  @default("")
+  mention     String  @default("")
+  appreciation String @default("")
+  anneeScolaire String @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([eleveId])
+  @@index([periode])
+  @@index([anneeScolaire])
+  @@map("dossier_eleve_resultats")
+}
+
+model DossierEleveInteraction {
+  id          String   @id @default(cuid())
+  eleveId     String
+  eleve       Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  type        String
+  sujet       String
+  description String   @default("")
+  date        DateTime @default(now())
+  intervenant String   @default("")
+  statut      String   @default("Enregistré")
+  createdAt   DateTime @default(now())
+
+  @@index([eleveId])
+  @@index([type])
+  @@index([date])
+  @@map("dossier_eleve_interactions")
 }
 
 model Presence {
