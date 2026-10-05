@@ -185,6 +185,32 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ECCATH section */}
+        <section className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
+          <div className="home-ecerc-card relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-950/40 via-slate-900/50 to-slate-900/60 p-6 backdrop-blur-sm md:p-10">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-amber-600/10 blur-3xl" />
+            <div className="relative flex flex-col items-center gap-5 text-center md:flex-row md:items-center md:justify-between md:text-left">
+              <div className="flex flex-col items-center gap-4 md:flex-row md:items-center md:gap-5">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/90 p-1 ring-1 ring-amber-500/30 md:h-20 md:w-20">
+                  <img src="/illustrations/eccath-logo.jpg" alt="ECCATH" className="h-full w-full rounded-xl object-contain" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white md:text-2xl">ECCATH</h2>
+                  <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-300 md:text-sm">
+                    Écoles Conventionnées Catholiques — Coordination Nationale
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/register"
+                className="home-btn-primary shrink-0 px-7 py-3 text-sm md:text-base"
+              >
+                Accéder à l'espace ECCATH
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* Pourquoi School Manager RDC */}
         <section className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
           <h2 className="home-section-title mb-8 text-center text-xl font-bold md:text-2xl">Pourquoi School Manager RDC ?</h2>
