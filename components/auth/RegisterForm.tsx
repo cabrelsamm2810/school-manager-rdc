@@ -112,7 +112,7 @@ function CheckBadge() {
 }
 
 function InstitutionIcon({ type, selected }: { type: string; selected: boolean }) {
-  if (type === 'EC-ERC') return (<img src="/illustrations/ec-erc-logo.png" alt="EC-ERC" className="h-16 w-16 object-contain" />);
+  if (type === 'EC-ERC') return (<img src="/illustrations/ec-erc-logo.png" alt="EC-ERC" className="h-14 w-14 object-contain" />);
   const bg = selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500';
   let path: ReactNode = null;
   if (type === 'PUBLIQUE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
@@ -430,7 +430,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                   className={`select-card rounded-2xl border-2 p-4 ${form.typeInstitution === inst.value ? 'selected' : 'border-slate-200'}`}>
                   {form.typeInstitution === inst.value && <CheckBadge />}
                   <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+                    <div className="flex shrink-0 items-center justify-center">
                       <InstitutionIcon type={inst.value} selected={form.typeInstitution === inst.value} />
                     </div>
                     <div className="min-w-0 flex-1 pt-0.5">
