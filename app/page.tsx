@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { SplashScreen } from '@/components/SplashScreen';
 import { Icon } from '@/components/ui/Icon';
+import { CurriculumSection } from '@/components/CurriculumSection';
 import { navigationGroups } from '@/lib/navigation';
 
 const groupDescriptions: Record<string, string> = {
@@ -141,6 +142,9 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Programme national */}
+        <CurriculumSection />
 
         {/* Presentation */}
         <section className="relative z-10 mx-auto max-w-5xl px-5 pb-10 md:px-10 md:pb-14">
