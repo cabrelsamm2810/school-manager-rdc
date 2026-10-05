@@ -1,41 +1,41 @@
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { StatutBadge } from '@/components/ui/StatutBadge';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrImportDialog } from '@/components/import/OcrImportDialog';
-import { StatutBadge } from '@/components/ui/StatutBadge';
+import { EtablissementForm, emptyForm, type EtablissementFormData } from '@/components/etablissements/EtablissementForm';
+import { EtablissementFiche } from '@/components/etablissements/EtablissementFiche';
+import { INSTITUTIONS, INSTITUTION_MAP, VALIDATION_STATUTS } from '@/lib/institutions';
 
 type Etablissement = {
   id: string;
   nom: string;
   type: string;
+  institution: string;
+  dinacope: string;
   province: string;
+  provinceEducationnelle: string;
+  commune: string;
   ville: string;
   adresse: string;
   telephone: string;
   email: string;
+  chefEtablissement: string;
+  identifiantSM: string | null;
   effectif: number;
   statut: string;
+  statutValidation: string;
   coordSousProvincialeId: string | null;
   coordSousProvinciale?: { id: string; nom: string } | null;
   ecErcId: string | null;
   ecErc?: { id: string; nom: string } | null;
+  _count?: { documents: number; validationLogs: number };
 };
 
-type CoordSousProvinciale = { id: string; nom: string; province: string };
-type EcErc = { id: string; nom: string; type: string; province: string };
-
-const inputClass = 'w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
-const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
-
-const emptyForm = {
-  nom: '', type: '', province: '', ville: '', adresse: '',
-  telephone: '', email: '', effectif: '', statut: 'Actif',
-  coordSousProvincialeId: '', ecErcId: '',
-};
+type View = 'list' | 'form' | 'fiche';
 
 export default function EtablissementsPage() {
   const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
@@ -43,35 +43,17 @@ export default function EtablissementsPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [provinceFilter, setProvinceFilter] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [institutionFilter, setInstitutionFilter] = useState('');
+  const [statutFilter, setStatutFilter] = useState('');
+  const [view, setView] = useState<View>('list');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [ficheId, setFicheId] = useState<string | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [showOcr, setShowOcr] = useState(false);
-  const [form, setForm] = useState(emptyForm);
-  const [formError, setFormError] = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [coordSousProvinciales, setCoordSousProvinciales] = useState<CoordSousProvinciale[]>([]);
-  const [ecErcs, setEcErcs] = useState<EcErc[]>([]);
-
-  async function loadInstitutions() {
-    try {
-      const [coordRes, ecRes] = await Promise.all([
-        fetch('/api/coordination-sous-provinciale'),
-        fetch('/api/ec-erc'),
-      ]);
-      const coordData = await coordRes.json();
-      const ecData = await ecRes.json();
-      if (coordRes.ok) setCoordSousProvinciales(coordData.items ?? coordData.coordSousProvinciales ?? []);
-      if (ecRes.ok) setEcErcs(ecData.items ?? ecData.ecErcs ?? []);
-    } catch {
-      // ignore
-    }
-  }
-
-  useEffect(() => {
-    loadInstitutions();
-  }, []);
+  const [initialFormData, setInitialFormData] = useState<Partial<EtablissementFormData> | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -80,6 +62,8 @@ export default function EtablissementsPage() {
       if (search) params.set('search', search);
       if (typeFilter) params.set('type', typeFilter);
       if (provinceFilter) params.set('province', provinceFilter);
+      if (institutionFilter) params.set('institution', institutionFilter);
+      if (statutFilter) params.set('statutValidation', statutFilter);
       const res = await fetch(`/api/etablissements?${params.toString()}`);
       const data = await res.json();
       if (res.ok) setEtablissements(data.etablissements ?? []);
@@ -94,49 +78,53 @@ export default function EtablissementsPage() {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, typeFilter, provinceFilter]);
-
-  function startEdit(et: Etablissement) {
-    setEditingId(et.id);
-    setForm({
-      nom: et.nom, type: et.type, province: et.province, ville: et.ville,
-      adresse: et.adresse, telephone: et.telephone, email: et.email,
-      effectif: String(et.effectif), statut: et.statut,
-      coordSousProvincialeId: et.coordSousProvincialeId ?? '',
-      ecErcId: et.ecErcId ?? '',
-    });
-    setShowForm(true);
-  }
+  }, [search, typeFilter, provinceFilter, institutionFilter, statutFilter]);
 
   function startCreate() {
     setEditingId(null);
-    setForm(emptyForm);
-    setShowForm(true);
+    setInitialFormData(null);
+    setView('form');
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function startEdit(et: Etablissement) {
+    setEditingId(et.id);
+    setInitialFormData({
+      nom: et.nom, type: et.type, institution: et.institution, dinacope: et.dinacope,
+      province: et.province, provinceEducationnelle: et.provinceEducationnelle,
+      ville: et.ville, commune: et.commune, adresse: et.adresse,
+      telephone: et.telephone, email: et.email, chefEtablissement: et.chefEtablissement,
+      effectif: String(et.effectif), statut: et.statut, statutValidation: et.statutValidation,
+      coordSousProvincialeId: et.coordSousProvincialeId ?? '',
+      ecErcId: et.ecErcId ?? '',
+      structureRattachementId: et.coordSousProvincialeId ?? '',
+      structureRattachementType: '',
+    });
+    setView('form');
+  }
+
+  function showFiche(id: string) {
+    setFicheId(id);
+    setView('fiche');
+  }
+
+  async function handleSubmit(data: EtablissementFormData) {
     setFormError('');
     setFormLoading(true);
-
     try {
       const url = editingId ? `/api/etablissements/${editingId}` : '/api/etablissements';
       const method = editingId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          effectif: form.effectif ? Number(form.effectif) : 0,
-        }),
+        body: JSON.stringify({ ...data, effectif: data.effectif ? Number(data.effectif) : 0 }),
       });
-      const data = await res.json();
+      const result = await res.json();
       if (!res.ok) {
-        setFormError(data.error ?? 'Erreur lors de l\'enregistrement.');
+        setFormError(result.error ?? 'Erreur lors de l\'enregistrement.');
       } else {
-        setForm(emptyForm);
+        setView('list');
         setEditingId(null);
-        setShowForm(false);
+        setInitialFormData(null);
         loadData();
       }
     } catch {
@@ -151,7 +139,12 @@ export default function EtablissementsPage() {
     setDeletingId(id);
     try {
       const res = await fetch(`/api/etablissements/${id}`, { method: 'DELETE' });
-      if (res.ok) loadData();
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error ?? 'Suppression impossible.');
+      } else {
+        loadData();
+      }
     } catch {
       // ignore
     } finally {
@@ -160,158 +153,61 @@ export default function EtablissementsPage() {
   }
 
   return (
-    <ModulePage icon="school" eyebrow="Gestion scolaire" title="Gestion des établissements" description="Création, édition et suivi des écoles, collèges, lycées et institutions.">
+    <ModulePage icon="school" eyebrow="Gestion scolaire" title="Gestion des établissements" description="Enregistrement, validation et suivi des écoles par institution.">
+      {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Établissements" value={String(etablissements.length)} hint="Total recensés" />
-        <StatCard label="Secondaires" value={String(etablissements.filter((e) => e.type === 'Secondaire').length)} />
-        <StatCard label="Primaires" value={String(etablissements.filter((e) => e.type === 'Primaire').length)} />
+        <StatCard label="Validés" value={String(etablissements.filter((e) => e.statutValidation === 'Validée').length)} />
+        <StatCard label="En attente" value={String(etablissements.filter((e) => e.statutValidation === 'En attente de vérification' || e.statutValidation === 'En cours de vérification').length)} />
         <StatCard label="Effectif total" value={etablissements.reduce((s, e) => s + e.effectif, 0).toLocaleString('fr-FR')} />
       </div>
 
-      <div className="mb-4 flex flex-wrap justify-end gap-2">
-        <button onClick={() => setShowImport(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
-          ⬆ Importer (Excel/CSV)
-        </button>
-        <button onClick={() => setShowOcr(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
-          📸 Importer (OCR)
-        </button>
-        <button onClick={startCreate} className="btn-primary px-4 py-2.5 text-sm">
-          + Nouvel établissement
-        </button>
-      </div>
-
-      {showForm ? (
-        <div className="rounded-2xl bg-white p-5 shadow-soft md:p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">
-              {editingId ? 'Modifier l\'établissement' : 'Enregistrer un nouvel établissement'}
-            </h2>
-            <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-sm text-slate-500 transition hover:text-slate-700">
-              ← Retour à la liste
+      {view === 'list' && (
+        <>
+          <div className="mb-4 flex flex-wrap justify-end gap-2">
+            <button onClick={() => setShowImport(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
+              ⬆ Importer (Excel/CSV)
+            </button>
+            <button onClick={() => setShowOcr(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
+              📸 Importer (OCR)
+            </button>
+            <button onClick={startCreate} className="btn-primary px-4 py-2.5 text-sm">
+              + Enregistrer une école
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelClass} htmlFor="etab-nom">Nom *</label>
-                <input id="etab-nom" type="text" required value={form.nom}
-                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                  className={inputClass} placeholder="Ex. Institut Tuendelee" />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-type">Type</label>
-                <select id="etab-type" value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className={inputClass}>
-                  <option value="">—</option>
-                  <option value="Primaire">Primaire</option>
-                  <option value="Secondaire">Secondaire</option>
-                  <option value="Supérieur">Supérieur</option>
-                  <option value="Professionnel">Professionnel</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-province">Province</label>
-                <input id="etab-province" type="text" value={form.province}
-                  onChange={(e) => setForm({ ...form, province: e.target.value })}
-                  className={inputClass} placeholder="Ex. Kinshasa" />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-ville">Ville</label>
-                <input id="etab-ville" type="text" value={form.ville}
-                  onChange={(e) => setForm({ ...form, ville: e.target.value })}
-                  className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-tel">Téléphone</label>
-                <input id="etab-tel" type="tel" value={form.telephone}
-                  onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-                  className={inputClass} placeholder="+243 ..." />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-email">Email</label>
-                <input id="etab-email" type="email" value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-effectif">Effectif</label>
-                <input id="etab-effectif" type="number" min="0" value={form.effectif}
-                  onChange={(e) => setForm({ ...form, effectif: e.target.value })}
-                  className={inputClass} placeholder="0" />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-statut">Statut</label>
-                <select id="etab-statut" value={form.statut}
-                  onChange={(e) => setForm({ ...form, statut: e.target.value })}
-                  className={inputClass}>
-                  <option value="Actif">Actif</option>
-                  <option value="En attente">En attente</option>
-                  <option value="Suspendu">Suspendu</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className={labelClass} htmlFor="etab-adresse">Adresse</label>
-                <input id="etab-adresse" type="text" value={form.adresse}
-                  onChange={(e) => setForm({ ...form, adresse: e.target.value })}
-                  className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-coord">Coordination sous-provinciale</label>
-                <select id="etab-coord" value={form.coordSousProvincialeId}
-                  onChange={(e) => setForm({ ...form, coordSousProvincialeId: e.target.value })}
-                  className={inputClass}>
-                  <option value="">— Aucune —</option>
-                  {coordSousProvinciales.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nom}{c.province ? ` (${c.province})` : ''}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="etab-ecerc">EC / ERC</label>
-                <select id="etab-ecerc" value={form.ecErcId}
-                  onChange={(e) => setForm({ ...form, ecErcId: e.target.value })}
-                  className={inputClass}>
-                  <option value="">— Aucune —</option>
-                  {ecErcs.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nom}{c.type ? ` (${c.type})` : ''}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
-            {formError && (
-              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>
-            )}
-
-            <button type="submit" disabled={formLoading}
-              className={`btn-primary px-8 py-3 text-sm ${formLoading ? 'btn-loading' : ''}`}>
-              {formLoading ? (<><span className="btn-spinner" /> Enregistrement…</>) : editingId ? 'Modifier l\'établissement' : 'Enregistrer l\'établissement'}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <>
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+          {/* Filtres */}
+          <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher un établissement…"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+              placeholder="Rechercher (nom, DINACOPE, ID)…"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+            <select value={institutionFilter} onChange={(e) => setInstitutionFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
+              <option value="">Toutes institutions</option>
+              {INSTITUTIONS.map((i) => <option key={i.code} value={i.code}>{i.label}</option>)}
+            </select>
             <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-48">
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
               <option value="">Tous les types</option>
               <option value="Primaire">Primaire</option>
               <option value="Secondaire">Secondaire</option>
               <option value="Supérieur">Supérieur</option>
               <option value="Professionnel">Professionnel</option>
             </select>
+            <select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
+              <option value="">Tous les statuts</option>
+              {VALIDATION_STATUTS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
             <select value={provinceFilter} onChange={(e) => setProvinceFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-48">
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
               <option value="">Toutes les provinces</option>
               {[...new Set(etablissements.map((e) => e.province).filter(Boolean))].sort().map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
           </div>
+
           {loading ? (
             <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
           ) : etablissements.length === 0 ? (
@@ -326,73 +222,126 @@ export default function EtablissementsPage() {
                   <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-4 py-3">Établissement</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Province</th>
                       <th className="px-4 py-3">Institution</th>
-                      <th className="px-4 py-3">Effectif</th>
+                      <th className="px-4 py-3">Province</th>
+                      <th className="px-4 py-3">Structure</th>
                       <th className="px-4 py-3">Statut</th>
                       <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {etablissements.map((et) => (
-                      <tr key={et.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-900">{et.nom}</td>
-                        <td className="px-4 py-3 text-slate-600">{et.type || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600">{et.province || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {et.coordSousProvinciale?.nom || et.ecErc?.nom || <span className="text-red-500">Non liée</span>}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">{et.effectif.toLocaleString('fr-FR')}</td>
-                        <td className="px-4 py-3">{<StatutBadge statut={et.statut} />}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1">
-                            <button onClick={() => startEdit(et)}
-                              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-50">
-                              Modifier
-                            </button>
-                            <button onClick={() => handleDelete(et.id)} disabled={deletingId === et.id}
-                              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50">
-                              {deletingId === et.id ? '…' : 'Supprimer'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {etablissements.map((et) => {
+                      const inst = INSTITUTION_MAP[et.institution];
+                      return (
+                        <tr key={et.id} className="cursor-pointer hover:bg-slate-50" onClick={() => showFiche(et.id)}>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-slate-900">{et.nom}</p>
+                            <p className="text-xs text-slate-400">{et.identifiantSM || '—'} · {et.dinacope || 'DINACOPE —'}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${inst?.bgColor || 'bg-slate-100'} ${inst?.color || 'text-slate-600'}`}>
+                              {inst?.label || et.institution}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">{et.province || '—'}</td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {et.coordSousProvinciale?.nom || et.ecErc?.nom || <span className="text-red-500">Non liée</span>}
+                          </td>
+                          <td className="px-4 py-3"><StatutBadge statut={et.statutValidation} /></td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-end gap-1">
+                              <button onClick={() => startEdit(et)}
+                                className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-50">
+                                Modifier
+                              </button>
+                              <button onClick={() => handleDelete(et.id)} disabled={deletingId === et.id}
+                                className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50">
+                                {deletingId === et.id ? '…' : 'Supprimer'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
+
               {/* Mobile cards */}
               <div className="space-y-3 md:hidden">
-                {etablissements.map((et) => (
-                  <div key={et.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="font-semibold text-slate-900">{et.nom}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">{et.type || '—'} · {et.province || '—'}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {et.coordSousProvinciale?.nom || et.ecErc?.nom
-                        ? `🏫 ${et.coordSousProvinciale?.nom || et.ecErc?.nom}`
-                        : <span className="text-red-500">Non liée à une institution</span>}
-                    </p>
-                    <div className="mt-1 flex items-center gap-2">
-                      {<StatutBadge statut={et.statut} />}
-                      <span className="text-xs text-slate-500">{et.effectif.toLocaleString('fr-FR')} élèves</span>
+                {etablissements.map((et) => {
+                  const inst = INSTITUTION_MAP[et.institution];
+                  return (
+                    <div key={et.id} className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4" onClick={() => showFiche(et.id)}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-900">{et.nom}</p>
+                          <p className="mt-0.5 text-xs text-slate-400">{et.identifiantSM || '—'}</p>
+                        </div>
+                        <StatutBadge statut={et.statutValidation} />
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${inst?.bgColor || 'bg-slate-100'} ${inst?.color || 'text-slate-600'}`}>
+                          {inst?.label || et.institution}
+                        </span>
+                        <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{et.type || '—'}</span>
+                        <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{et.province || '—'}</span>
+                      </div>
+                      <p className="mt-1.5 text-xs text-slate-500">
+                        {et.coordSousProvinciale?.nom || et.ecErc?.nom
+                          ? `🏫 ${et.coordSousProvinciale?.nom || et.ecErc?.nom}`
+                          : <span className="text-red-500">Non liée à une structure</span>}
+                      </p>
+                      <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => startEdit(et)}
+                          className="flex-1 rounded-lg border border-blue-200 px-3 py-2 text-xs font-medium text-blue-600 transition hover:bg-blue-50">
+                          Modifier
+                        </button>
+                        <button onClick={() => handleDelete(et.id)} disabled={deletingId === et.id}
+                          className="flex-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50">
+                          {deletingId === et.id ? '…' : 'Supprimer'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={() => startEdit(et)}
-                        className="flex-1 rounded-lg border border-blue-200 px-3 py-2 text-xs font-medium text-blue-600 transition hover:bg-blue-50">
-                        Modifier
-                      </button>
-                      <button onClick={() => handleDelete(et.id)} disabled={deletingId === et.id}
-                        className="flex-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50">
-                        {deletingId === et.id ? 'Suppression…' : 'Supprimer'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
         </>
+      )}
+
+      {view === 'form' && (
+        <div className="rounded-2xl bg-white p-5 shadow-soft md:p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">
+              {editingId ? 'Modifier l\'établissement' : 'Enregistrer une nouvelle école'}
+            </h2>
+            <button onClick={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
+              className="text-sm text-slate-500 transition hover:text-slate-700">
+              ← Retour à la liste
+            </button>
+          </div>
+          <EtablissementForm
+            initialData={initialFormData}
+            onSubmit={handleSubmit}
+            onCancel={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
+            submitLabel={editingId ? 'Modifier l\'établissement' : 'Enregistrer l\'école'}
+            loading={formLoading}
+            error={formError}
+          />
+        </div>
+      )}
+
+      {view === 'fiche' && ficheId && (
+        <EtablissementFiche
+          id={ficheId}
+          onEdit={() => {
+            const et = etablissements.find((e) => e.id === ficheId);
+            if (et) startEdit(et);
+          }}
+          onClose={() => { setView('list'); setFicheId(null); }}
+        />
       )}
 
       {showImport && (

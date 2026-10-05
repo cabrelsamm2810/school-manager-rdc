@@ -190,13 +190,24 @@ model Etablissement {
   id                   String   @id @default(cuid())
   nom                  String
   type                 String   @default("")
+  institution          String   @default("EC_ERC")
+  dinacope             String   @default("")
   province             String   @default("")
+  provinceEducationnelle String @default("")
   ville                String   @default("")
+  commune              String   @default("")
   adresse              String   @default("")
+  localisationGeo      String   @default("")
   telephone            String   @default("")
   email                String   @default("")
+  chefEtablissement    String   @default("")
+  logoUrl              String?
+  identifiantSM        String?  @unique
   effectif             Int      @default(0)
   statut               String   @default("Actif")
+  statutValidation     String   @default("Brouillon")
+  structureRattachementId   String?
+  structureRattachementType String   @default("")
   coordSousProvincialeId String?
   coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
   ecErcId              String?
@@ -204,14 +215,49 @@ model Etablissement {
   eleves               Eleve[]
   users                User[]
   chatGroups           ChatGroup[]
+  documents            EtablissementDocument[]
+  validationLogs       EtablissementValidationLog[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
   @@index([province])
   @@index([type])
+  @@index([institution])
+  @@index([statutValidation])
   @@index([coordSousProvincialeId])
   @@index([ecErcId])
   @@map("etablissements")
+}
+
+model EtablissementDocument {
+  id              String   @id @default(cuid())
+  etablissementId String
+  etablissement   Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  type            String   @default("")
+  titre           String
+  fileUrl         String
+  fileName        String   @default("")
+  fileType        String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([etablissementId])
+  @@index([type])
+  @@map("etablissement_documents")
+}
+
+model EtablissementValidationLog {
+  id              String   @id @default(cuid())
+  etablissementId String
+  etablissement   Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  statut          String
+  commentaire     String   @default("")
+  validateurId    String?
+  validateurNom   String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([etablissementId])
+  @@index([statut])
+  @@map("etablissement_validation_logs")
 }
 
 model Enseignant {
@@ -250,6 +296,7 @@ model EcErc {
   id        String   @id @default(cuid())
   nom       String
   type      String   @default("")
+  institution String @default("EC_ERC")
   province  String   @default("")
   ecoles    Int      @default(0)
   statut    String   @default("Actif")
@@ -258,12 +305,14 @@ model EcErc {
   updatedAt DateTime @updatedAt
 
   @@index([province])
+  @@index([institution])
   @@map("ec_erc")
 }
 
 model CoordNationale {
   id            String   @id @default(cuid())
   province      String
+  institution   String   @default("EC_ERC")
   coordonnateur String   @default("")
   ecoles        Int      @default(0)
   eleves        Int      @default(0)
@@ -272,12 +321,14 @@ model CoordNationale {
   updatedAt     DateTime @updatedAt
 
   @@index([province])
+  @@index([institution])
   @@map("coord_nationale")
 }
 
 model CoordProvinciale {
   id        String   @id @default(cuid())
   province  String
+  institution   String   @default("EC_ERC")
   bureaux   Int      @default(0)
   agents    Int      @default(0)
   dossiers  Int      @default(0)
@@ -287,6 +338,7 @@ model CoordProvinciale {
   updatedAt DateTime @updatedAt
 
   @@index([province])
+  @@index([institution])
   @@map("coord_provinciale")
 }
 
@@ -294,6 +346,7 @@ model CoordSousProvinciale {
   id                  String   @id @default(cuid())
   nom                 String
   province            String   @default("")
+  institution         String   @default("EC_ERC")
   bureaux             Int      @default(0)
   agents              Int      @default(0)
   statut              String   @default("Actif")
@@ -305,6 +358,7 @@ model CoordSousProvinciale {
   updatedAt           DateTime @updatedAt
 
   @@index([province])
+  @@index([institution])
   @@index([coordProvincialeId])
   @@map("coord_sous_provinciale")
 }

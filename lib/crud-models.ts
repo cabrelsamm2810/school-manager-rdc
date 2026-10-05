@@ -54,6 +54,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'type', type: 'string' },
+      { name: 'institution', type: 'string' },
       { name: 'province', type: 'string' },
       { name: 'ecoles', type: 'number' },
       { name: 'statut', type: 'string' },
@@ -70,6 +71,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     provinceField: 'province',
     fields: [
       { name: 'province', type: 'string', required: true },
+      { name: 'institution', type: 'string' },
       { name: 'coordonnateur', type: 'string' },
       { name: 'ecoles', type: 'number' },
       { name: 'eleves', type: 'number' },
@@ -87,6 +89,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     provinceField: 'province',
     fields: [
       { name: 'province', type: 'string', required: true },
+      { name: 'institution', type: 'string' },
       { name: 'bureaux', type: 'number' },
       { name: 'agents', type: 'number' },
       { name: 'dossiers', type: 'number' },
@@ -106,6 +109,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'province', type: 'string' },
+      { name: 'institution', type: 'string' },
       { name: 'bureaux', type: 'number' },
       { name: 'agents', type: 'number' },
       { name: 'statut', type: 'string' },
