@@ -174,14 +174,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       : 'pointer-events-none scale-95 opacity-0'
                   )}
                 >
-                  <div className="border-b border-slate-100 px-4 py-3">
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                      {user.prenom} {user.nom}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">{user.email}</p>
-                    <p className="mt-1.5 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
-                      {ROLE_LABELS[user.role] ?? user.role}
-                    </p>
+                  <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+                    {user.profilePhotoUrl ? (
+                      <img src={user.profilePhotoUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-slate-100" />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white ring-2 ring-slate-100">
+                        {initials}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {user.prenom} {user.nom}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">{user.email}</p>
+                      <p className="mt-1.5 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                        {ROLE_LABELS[user.role] ?? user.role}
+                      </p>
+                    </div>
                   </div>
                   <div className="py-1">
                     <Link
