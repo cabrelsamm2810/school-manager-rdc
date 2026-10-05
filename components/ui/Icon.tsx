@@ -31,6 +31,7 @@ const icons: Record<string, string> = {
   user: 'M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-8 3-8 8h16c0-5-3-8-8-8z',
   'chevron-down': 'M6 9l6 6 6-6',
   'chevron-right': 'M9 6l6 6-6 6',
+  upload: 'M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

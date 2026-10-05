@@ -34,6 +34,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Recherche d’élèves', href: '/recherche-eleves', icon: 'search' },
       { label: 'Photo passeport', href: '/photo-passeport', icon: 'photo', minRole: 'DIRECTION_ECOLE' },
       { label: 'QR & Cartes scolaires', href: '/cartes-qr', icon: 'qr', minRole: 'DIRECTION_ECOLE' },
+      { label: 'Importer mes données', href: '/import', icon: 'upload', minRole: 'DIRECTION_ECOLE' },
     ]
   },
   {
