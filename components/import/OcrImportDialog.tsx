@@ -23,6 +23,7 @@ const DELIMITERS: { label: string; value: string; regex: RegExp }[] = [
   { label: 'Auto', value: 'auto', regex: /\t|\s{2,}|[,;|]/ },
   { label: 'Tabulation', value: 'tab', regex: /\t/ },
   { label: '2+ espaces', value: 'spaces', regex: /\s{2,}/ },
+  { label: '1 espace', value: 'space', regex: / / },
   { label: 'Virgule', value: 'comma', regex: /,/ },
   { label: 'Point-virgule', value: 'semicolon', regex: /;/ },
   { label: 'Barre |', value: 'pipe', regex: /\|/ },
@@ -101,27 +102,66 @@ export function OcrImportDialog({ endpoint, moduleName, columns, onImported, onC
     }
   }
 
+  /** Find the best matching target column for a header field name */
+  function matchColumn(headerField: string): number {
+    const h = headerField.toLowerCase().trim();
+    // Exact match
+    let idx = columns.findIndex((c) => c.toLowerCase() === h);
+    if (idx >= 0) return idx;
+    // Partial match (header field contains column name or vice-versa)
+    idx = columns.findIndex((c) => c.toLowerCase().includes(h) || h.includes(c.toLowerCase()));
+    return idx; // -1 if no match
+  }
+
   function autoParse(text: string, delim: string) {
-    const delimConfig = DELIMITERS.find((d) => d.value === delim) ?? DELIMITERS[0];
     const lines = text
       .split('\n')
       .map((l) => l.trim())
       .filter((l) => l.length > 0);
 
-    // Skip lines that look like headers (matching many column names)
-    const parsed = lines
-      .filter((line) => {
-        const lower = line.toLowerCase();
-        const matches = columns.filter((c) => lower.includes(c.toLowerCase())).length;
-        return matches < columns.length / 2; // skip if more than half the columns match
-      })
-      .map((line) => {
-        const fields = parseLine(line, delimConfig.regex);
-        // Pad or trim to match column count
-        const padded = [...fields];
-        while (padded.length < columns.length) padded.push('');
-        return padded.slice(0, columns.length);
-      });
+    // Detect header line (2+ column names found in the line)
+    const headerLineIdx = lines.findIndex((line) => {
+      const lower = line.toLowerCase();
+      return columns.filter((c) => lower.includes(c.toLowerCase())).length >= 2;
+    });
+
+    let regex = (DELIMITERS.find((d) => d.value === delim) ?? DELIMITERS[0]).regex;
+
+    // Data lines = all lines except the header line
+    let dataLines = lines.filter((_, i) => i !== headerLineIdx);
+
+    // Auto mode: if the default regex yields only 1 field per line, fall back to single space
+    if (delim === 'auto' && dataLines.length > 0) {
+      const avgFields =
+        dataLines.reduce((sum, l) => sum + parseLine(l, regex).length, 0) / dataLines.length;
+      if (avgFields <= 1) {
+        regex = / /; // single space
+      }
+    }
+
+    // Build column mapping from header line if found
+    let colMap: number[] | null = null; // colMap[sourceIdx] = targetColIdx
+    if (headerLineIdx >= 0) {
+      const headerFields = parseLine(lines[headerLineIdx], regex);
+      colMap = headerFields.map(matchColumn);
+    }
+
+    const parsed = dataLines.map((line) => {
+      const fields = parseLine(line, regex);
+      if (colMap) {
+        // Map each source field to its target column
+        const mapped = Array(columns.length).fill('');
+        fields.forEach((val, srcIdx) => {
+          const tgtIdx = colMap[srcIdx];
+          if (tgtIdx >= 0 && tgtIdx < columns.length) mapped[tgtIdx] = val;
+        });
+        return mapped;
+      }
+      // No header detected — positional mapping
+      const padded = [...fields];
+      while (padded.length < columns.length) padded.push('');
+      return padded.slice(0, columns.length);
+    });
 
     setRows(parsed);
   }
