@@ -44,18 +44,14 @@ export const registrationInstitutionTypes = [
   { value: 'ISLAMIQUE', label: 'Islamique' },
 ];
 
-export const ecErcRoleOptions: RoleOption[] = [
+export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
-  { value: 'DIRECTION_ECOLE', label: 'École EC-ERC' },
-];
-
-export const nonEcErcRoleOptions: RoleOption[] = [
+  { value: 'DIRECTION_ECOLE', label: 'Direction d\u2019école' },
+  { value: 'ENSEIGNANT', label: 'Enseignant' },
   { value: 'ELEVE', label: 'Élève' },
   { value: 'PARENT', label: 'Parent' },
-  { value: 'ENSEIGNANT', label: 'Enseignant' },
-  { value: 'DIRECTION_ECOLE', label: 'Direction d\u2019école' },
 ];
 
 /** Les 26 provinces administratives de la RDC. */

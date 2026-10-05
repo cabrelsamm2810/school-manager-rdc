@@ -4,8 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   registrationInstitutionTypes,
-  ecErcRoleOptions,
-  nonEcErcRoleOptions,
+  allRegistrationRoleOptions,
   allProvinces,
   provincialBureaux,
   fonctionsByRole,
@@ -218,7 +217,7 @@ export function RegisterForm() {
 
   // Computed values
   const isEcErc = form.typeInstitution === 'EC-ERC';
-  const roleOptions: RoleOption[] = isEcErc ? ecErcRoleOptions : nonEcErcRoleOptions;
+  const roleOptions: RoleOption[] = allRegistrationRoleOptions;
   const availableEdProvinces = form.provinceAdministrative
     ? educationProvincesByAdminFromSousDivisions[form.provinceAdministrative] ?? []
     : [];
@@ -303,9 +302,7 @@ export function RegisterForm() {
           <div className="space-y-4">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Étape 1 — Institution</p>
             <p className="text-sm text-slate-500">
-              {isEcErc
-                ? 'Vous avez choisi le parcours EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo. Les niveaux spécifiques à ce parcours vous seront proposés à l\u2019étape suivante.'
-                : 'Sélectionnez votre type d\u2019institution. Le parcours EC-ERC dispose de rôles dédiés séparés des autres institutions.'}
+              Sélectionnez votre type d\u2019institution.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {registrationInstitutionTypes.map((inst) => (
@@ -317,7 +314,6 @@ export function RegisterForm() {
                       : <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold ${form.typeInstitution === inst.value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>◆</div>}
                     <div>
                       <p className="font-semibold text-slate-900">{inst.label}</p>
-                      {inst.value === 'EC-ERC' && <p className="text-xs text-blue-600">Parcours spécifique</p>}
                     </div>
                   </div>
                 </div>
@@ -330,13 +326,11 @@ export function RegisterForm() {
         {step === 1 && (
           <div className="space-y-4">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-              Étape 2 — Structure {isEcErc && '(Parcours EC-ERC)'}
+              Étape 2 — Structure
             </p>
-            {isEcErc && (
-              <p className="text-sm text-slate-500">
-                Sélectionnez votre niveau dans la hiérarchie EC-ERC. Chaque niveau donne accès à un espace indépendant.
-              </p>
-            )}
+            <p className="text-sm text-slate-500">
+              Sélectionnez votre niveau. Chaque niveau donne accès à un espace indépendant.
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {roleOptions.map((role) => (
                 <div key={role.value} onClick={() => handleRole(role.value)}
