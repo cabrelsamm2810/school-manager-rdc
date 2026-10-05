@@ -333,7 +333,7 @@ export function CahierDeCoteManager() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      setSuccess('Tous les bulletins ont été téléchargés dans un fichier ZIP.');
+      setSuccess('Tous les bulletins ont été téléchargés dans un PDF unique.');
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la génération des bulletins.');
     } finally {
