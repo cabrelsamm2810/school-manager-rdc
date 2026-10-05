@@ -63,6 +63,16 @@ export async function GET(
     data: { read: true },
   });
 
+  // Marque les appels manqués comme vus
+  await prisma.chatCall.updateMany({
+    where: {
+      conversationId: params.id,
+      calleeId: currentUser.id,
+      status: { in: ['ended', 'rejected'] },
+    },
+    data: { status: 'seen' },
+  });
+
   return NextResponse.json(
     messages.map((m) => ({
       id: m.id,

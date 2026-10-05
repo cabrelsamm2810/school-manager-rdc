@@ -56,11 +56,40 @@ export async function GET(request: NextRequest) {
 
   const unreadMap = new Map(unreadCounts.map((u) => [u.conversationId, u._count]));
 
+  // Récupère les derniers appels manqués (non vus) par conversation
+  const missedCalls = await prisma.chatCall.findMany({
+    where: {
+      calleeId: currentUser.id,
+      status: { in: ['ended', 'rejected'] },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Garde seulement le plus récent par conversation
+  const missedCallMap = new Map<
+    string,
+    { type: string; createdAt: Date; callerId: string }
+  >();
+  for (const call of missedCalls) {
+    if (!missedCallMap.has(call.conversationId)) {
+      missedCallMap.set(call.conversationId, {
+        type: call.type,
+        createdAt: call.createdAt,
+        callerId: call.callerId,
+      });
+    }
+  }
+
   return NextResponse.json(
     conversations.map((c) => {
       const otherId = c.user1Id === currentUser.id ? c.user2Id : c.user1Id;
       const other = userMap.get(otherId);
       const lastMsg = c.messages[0];
+      const missed = missedCallMap.get(c.id);
+      // N'affiche l'appel manqué que s'il est plus récent que le dernier message
+      const showMissed =
+        missed &&
+        (!lastMsg || new Date(missed.createdAt) > new Date(lastMsg.createdAt));
       return {
         id: c.id,
         otherUser: other
@@ -80,6 +109,9 @@ export async function GET(request: NextRequest) {
             }
           : null,
         unreadCount: unreadMap.get(c.id) ?? 0,
+        missedCall: showMissed
+          ? { type: missed.type, createdAt: missed.createdAt.toISOString() }
+          : null,
         updatedAt: c.updatedAt,
       };
     })
