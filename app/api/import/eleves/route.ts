@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
   }
 
   const buf = await file.arrayBuffer();
-  const workbook = XLSX.read(buf, { type: 'array' });
+  const workbook = XLSX.read(buf, { type: 'array', cellDates: true, codepage: 65001 });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   if (!sheet) {
     return NextResponse.json({ error: 'Le fichier est vide ou illisible.' }, { status: 400 });
   }
 
-  const rows = XLSX.utils.sheet_to_json<ParsedRow>(sheet, { defval: '' });
+  const rows = XLSX.utils.sheet_to_json<ParsedRow>(sheet, { defval: '', raw: false });
 
   if (rows.length === 0) {
     return NextResponse.json({ error: 'Aucune ligne de donn\u00e9es trouv\u00e9e dans le fichier.' }, { status: 400 });
@@ -83,11 +83,16 @@ export async function POST(request: NextRequest) {
 
     try {
       const sexe = String(row.sexe ?? '').trim().toUpperCase();
-      const dateStr = String(row.dateNaissance ?? '').trim();
+      const dateRaw = row.dateNaissance;
       let dateNaissance: Date | null = null;
-      if (dateStr) {
-        const parsed = new Date(dateStr);
-        if (!isNaN(parsed.getTime())) dateNaissance = parsed;
+      if (dateRaw instanceof Date) {
+        dateNaissance = dateRaw;
+      } else {
+        const dateStr = String(dateRaw ?? '').trim();
+        if (dateStr) {
+          const parsed = new Date(dateStr);
+          if (!isNaN(parsed.getTime())) dateNaissance = parsed;
+        }
       }
 
       await prisma.eleve.create({
