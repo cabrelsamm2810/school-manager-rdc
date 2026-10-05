@@ -312,7 +312,12 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   }
 
   const isEcErc = form.typeInstitution === 'EC-ERC';
-  const roleOptions: RoleOption[] = allRegistrationRoleOptions;
+  const COORDINATION_ROLES = new Set([
+    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE',
+  ]);
+  const roleOptions: RoleOption[] = isEcErc
+    ? allRegistrationRoleOptions
+    : allRegistrationRoleOptions.filter((r) => !COORDINATION_ROLES.has(r.value));
   const availableEdProvinces = form.provinceAdministrative
     ? educationProvincesByAdminFromSousDivisions[form.provinceAdministrative] ?? []
     : [];
