@@ -9,6 +9,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ authenticated: true, user: {
     id: user.id, nom: user.nom, postNom: user.postNom, prenom: user.prenom,
     email: user.email, telephone: user.telephone, role: user.role, profilePhotoUrl: user.profilePhotoUrl,
-    provinceAdministrative: user.provinceAdministrative
+    provinceAdministrative: user.provinceAdministrative,
+    etablissementId: user.etablissementId,
+    typeInstitution: user.typeInstitution,
+    institutionName: user.institutionName,
   }});
 }

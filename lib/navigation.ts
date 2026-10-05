@@ -29,7 +29,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Élèves', href: '/eleves', icon: 'users', minRole: 'DIRECTION_ECOLE' },
       { label: 'Enseignants', href: '/enseignants', icon: 'teacher', minRole: 'DIRECTION_ECOLE' },
       { label: 'Tableau de bord enseignant', href: '/enseignant/dashboard', icon: 'home', minRole: 'ENSEIGNANT' },
-      { label: 'Cahier de notes', href: '/cahier-de-notes', icon: 'notebook', minRole: 'ENSEIGNANT' },
+      { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', minRole: 'ENSEIGNANT' },
       { label: 'Carte scolaire', href: '/carte-scolaire', icon: 'map', minRole: 'DIRECTION_ECOLE' },
       { label: 'Recherche d’élèves', href: '/recherche-eleves', icon: 'search' },
       { label: 'Photo passeport', href: '/photo-passeport', icon: 'photo', minRole: 'DIRECTION_ECOLE' },

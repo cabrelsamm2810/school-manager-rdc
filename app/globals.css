@@ -295,3 +295,26 @@ body {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* ── Print styles for Cahier de cote and Bulletins ── */
+@media print {
+  body * { visibility: hidden; }
+  .bulletin-print, .bulletin-print *,
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  .bulletin-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .print\:hidden { display: none !important; }
+  @page { margin: 1.5cm; }
+}
