@@ -129,11 +129,15 @@ body {
   text-shadow: 0 1px 8px rgba(0, 40, 104, 0.3);
 }
 
-/* ── Homepage hero background glow ── */
-.home-hero-glow {
-  background:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 102, 255, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(0, 40, 104, 0.08) 0%, transparent 60%);
+/* ── Homepage logo background ── */
+.home-bg-logo {
+  opacity: 0.13;
+  z-index: 0;
+}
+@media (min-width: 768px) {
+  .home-bg-logo {
+    opacity: 0.15;
+  }
 }
 
 /* ── Homepage hero entrance animations ── */

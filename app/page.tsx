@@ -45,13 +45,18 @@ export default function HomePage() {
     <>
       <SplashScreen />
       <main className="relative min-h-screen overflow-x-hidden bg-slate-950 text-white">
-        {/* Background */}
+        {/* Background — logo officiel en grand */}
         <div
-          className="pointer-events-none fixed inset-0 bg-cover bg-center opacity-[0.07]"
-          style={{ backgroundImage: 'url(/school-background.svg)' }}
+          className="home-bg-logo pointer-events-none fixed inset-0"
+          style={{
+            backgroundImage: 'url(/logo.png)',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            backgroundSize: 'contain',
+          }}
         />
-        <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950" />
-        <div className="pointer-events-none fixed inset-0 home-hero-glow" />
+        {/* Voile de contraste pour la lisibilité des textes et boutons */}
+        <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/85" />
 
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-lg">
