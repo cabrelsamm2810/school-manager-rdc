@@ -1,9 +1,9 @@
-import { RegisterForm } from '@/components/auth/RegisterForm';
+import { RegisterLayout } from '@/components/auth/RegisterLayout';
 
 export default function RegisterPage() {
   return (
     <main className="register-bg flex min-h-screen items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6">
-      <div className="reg-card-in relative z-10 w-full max-w-3xl">
+      <div className="reg-card-in relative z-10 w-full max-w-5xl">
         {/* Branding header */}
         <div className="reg-header-in mb-5 flex flex-col items-center text-center">
           <div className="mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-white/30">
@@ -15,9 +15,9 @@ export default function RegisterPage() {
           <p className="mt-1 text-xs text-slate-400">Une plateforme numérique dédiée à la gestion scolaire en RDC.</p>
         </div>
 
-        {/* Main card */}
+        {/* Main card with illustration + form */}
         <div className="register-card rounded-[2rem] p-5 sm:p-8">
-          <RegisterForm />
+          <RegisterLayout />
 
           <p className="mt-6 text-center text-sm text-slate-600">
             Vous avez déjà un compte ?{' '}

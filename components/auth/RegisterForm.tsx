@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState, ReactNode } from 'react';
+import { FormEvent, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   registrationInstitutionTypes,
@@ -170,7 +170,7 @@ const PhoneIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 
 const MailIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-6.938 4.007a2.25 2.25 0 01-2.286 0L1.07 8.909A2.25 2.25 0 010 6.993V6.75" /></svg>);
 const LockIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>);
 
-export function RegisterForm() {
+export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) => void }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [step, setStep] = useState(0);
@@ -178,6 +178,10 @@ export function RegisterForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((cur) => ({ ...cur, [field]: value }));
