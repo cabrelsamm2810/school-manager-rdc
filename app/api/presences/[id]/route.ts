@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const data = parsed.data;
   const existing = await prisma.presence.findUnique({
     where: { id: params.id },
-    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, email: true, nomTuteur: true, etablissement: { select: { nom: true } } } } },
+    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, emailTuteur: true, nomTuteur: true, etablissement: { select: { nom: true } } } },
   });
   if (!existing) {
     return NextResponse.json({ error: 'Présence introuvable.' }, { status: 404 });
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   });
 
   // Envoyer un email au parent si l'élève passe de présent à absent
-  if (!data.present && existing.present && existing.eleve?.email) {
+  if (!data.present && existing.present && existing.eleve?.emailTuteur) {
     const dateStr = new Date(data.date).toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       year: 'numeric',
     });
     sendAbsenceNotification({
-      parentEmail: existing.eleve.email,
+      parentEmail: existing.eleve.emailTuteur,
       parentNom: existing.eleve.nomTuteur,
       eleveNom: `${existing.eleve.nom} ${existing.eleve.postNom} ${existing.eleve.prenom}`.trim(),
       classe: data.classe,

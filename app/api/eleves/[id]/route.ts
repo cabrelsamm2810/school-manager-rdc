@@ -17,6 +17,7 @@ const updateSchema = z.object({
   adresse: z.string().trim().optional().or(z.literal('')),
   nomTuteur: z.string().trim().optional().or(z.literal('')),
   telephoneTuteur: z.string().trim().optional().or(z.literal('')),
+  emailTuteur: z.string().trim().email('L\u2019email du parent est invalide.').optional().or(z.literal('')),
   etablissementId: z.string().trim().optional().or(z.literal(''))
 });
 
@@ -66,6 +67,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       adresse: data.adresse ?? '',
       nomTuteur: data.nomTuteur ?? '',
       telephoneTuteur: data.telephoneTuteur ?? '',
+      emailTuteur: data.emailTuteur ?? '',
       etablissement: data.etablissementId
         ? { connect: { id: data.etablissementId } }
         : { disconnect: true }

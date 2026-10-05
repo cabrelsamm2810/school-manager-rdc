@@ -18,6 +18,7 @@ const createSchema = z.object({
   adresse: z.string().trim().optional().or(z.literal('')),
   nomTuteur: z.string().trim().optional().or(z.literal('')),
   telephoneTuteur: z.string().trim().optional().or(z.literal('')),
+  emailTuteur: z.string().trim().email('L\u2019email du parent est invalide.').optional().or(z.literal('')),
   etablissementId: z.string().trim().optional().or(z.literal(''))
 });
 
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
       adresse: data.adresse ?? '',
       nomTuteur: data.nomTuteur ?? '',
       telephoneTuteur: data.telephoneTuteur ?? '',
+      emailTuteur: data.emailTuteur ?? '',
       etablissement: data.etablissementId
         ? { connect: { id: data.etablissementId } }
         : undefined
@@ -126,7 +128,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const updateData: Record<string, unknown> = {};
-  const allowedFields = ['classe', 'sexe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId'];
+  const allowedFields = ['classe', 'sexe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'emailTuteur', 'etablissementId'];
   for (const field of allowedFields) {
     if (body.data?.[field] === undefined || body.data[field] === '' || body.data[field] === null) continue;
     updateData[field] = field === 'etablissementId'

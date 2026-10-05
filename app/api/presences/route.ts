@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
   });
 
   // Envoyer un email au parent si l'élève est marqué absent
-  if (!data.present && eleve.email) {
+  if (!data.present && eleve.emailTuteur) {
     const dateStr = new Date(data.date).toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       year: 'numeric',
     });
     sendAbsenceNotification({
-      parentEmail: eleve.email,
+      parentEmail: eleve.emailTuteur,
       parentNom: eleve.nomTuteur,
       eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
       classe: data.classe,

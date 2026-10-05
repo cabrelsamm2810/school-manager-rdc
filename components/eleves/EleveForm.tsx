@@ -19,6 +19,7 @@ type EleveFormProps = {
     adresse: string;
     nomTuteur: string;
     telephoneTuteur: string;
+    emailTuteur: string;
     etablissementId: string | null;
   };
   onUpdated?: () => void;
@@ -43,6 +44,7 @@ const emptyForm = {
   adresse: '',
   nomTuteur: '',
   telephoneTuteur: '',
+  emailTuteur: '',
   etablissementId: ''
 };
 
@@ -84,6 +86,7 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
         adresse: eleve.adresse,
         nomTuteur: eleve.nomTuteur,
         telephoneTuteur: eleve.telephoneTuteur,
+        emailTuteur: eleve.emailTuteur ?? '',
         etablissementId: eleve.etablissementId ?? '',
       });
     }
@@ -302,6 +305,17 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
             onChange={(e) => updateField('telephoneTuteur', e.target.value)}
             className={inputClass}
             placeholder="+243 ..."
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="emailTuteur" className={labelClass}>Email du parent / tuteur</label>
+          <input
+            id="emailTuteur"
+            type="email"
+            value={form.emailTuteur}
+            onChange={(e) => updateField('emailTuteur', e.target.value)}
+            className={inputClass}
+            placeholder="parent@example.com"
           />
         </div>
       </div>
