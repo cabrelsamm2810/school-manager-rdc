@@ -32,6 +32,11 @@ const icons: Record<string, string> = {
   'chevron-down': 'M6 9l6 6 6-6',
   'chevron-right': 'M9 6l6 6-6 6',
   upload: 'M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2',
+  document: 'M6 2h9l5 5v15H6zM15 2v5h5M9 12h6M9 16h6',
+  send: 'M2 12l20-9-9 20-2-9-9-2z',
+  lock: 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4',
+  phone: 'M7 2h10l1 5-3 1c0 4-3 7-7 7l-1-3-5 1v10',
+  chart: 'M3 20h18M7 16v-6M12 16V8M17 16v-4',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {
