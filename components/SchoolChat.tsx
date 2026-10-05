@@ -588,7 +588,7 @@ export function SchoolChat() {
         )}
       >
         {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-slate-200 bg-[#075E54] px-4 py-3">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-[#1e3a8a] px-4 py-3">
           <div className="flex items-center gap-2">
             <Icon name="chat" className="h-5 w-5 text-white" />
             <h2 className="text-base font-semibold text-white">SchoolChat</h2>
@@ -631,7 +631,7 @@ export function SchoolChat() {
               placeholder="Rechercher une conversation…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-[#075E54]/30"
+              className="w-full rounded-lg bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-[#1e3a8a]/30"
             />
           </div>
         </div>
@@ -659,10 +659,10 @@ export function SchoolChat() {
                     onClick={() => openGroup(grp)}
                     className={clsx(
                       'flex w-full items-center gap-3 border-b border-slate-50 px-3 py-3 text-left transition hover:bg-slate-50',
-                      isActive && activeChatType === 'group' && 'bg-[#e1f0eb]'
+                      isActive && activeChatType === 'group' && 'bg-[#eff6ff]'
                     )}
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#128C7E] text-white">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0369a1] text-white">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                         <circle cx="9" cy="7" r="4" />
@@ -698,7 +698,7 @@ export function SchoolChat() {
                   onClick={() => openConversation(conv)}
                   className={clsx(
                     'flex w-full items-center gap-3 border-b border-slate-50 px-3 py-3 text-left transition hover:bg-slate-50',
-                    isActive && activeChatType === 'conversation' && 'bg-[#e1f0eb]'
+                    isActive && activeChatType === 'conversation' && 'bg-[#eff6ff]'
                   )}
                 >
                   {/* Avatar */}
@@ -709,7 +709,7 @@ export function SchoolChat() {
                       className="h-12 w-12 shrink-0 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#075E54] text-sm font-semibold text-white">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-sm font-semibold text-white">
                       {conv.otherUser ? getInitials(conv.otherUser.displayName) : '?'}
                     </div>
                   )}
@@ -748,7 +748,7 @@ export function SchoolChat() {
                         </span>
                       )}
                       {conv.unreadCount > 0 && (
-                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#25D366] px-1.5 text-xs font-bold text-white">
+                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#fbbf24] px-1.5 text-xs font-bold text-[#1e3a8a]">
                           {conv.unreadCount}
                         </span>
                       )}
@@ -771,7 +771,7 @@ export function SchoolChat() {
         {(activeConversation || activeGroup) ? (
           <>
             {/* En-tête du chat */}
-            <div className="flex items-center gap-3 border-b border-slate-200 bg-[#075E54] px-4 py-2.5">
+            <div className="flex items-center gap-3 border-b border-slate-200 bg-[#1e3a8a] px-4 py-2.5">
               <button
                 onClick={() => setMobileShowChat(false)}
                 className="rounded-full p-1.5 text-white transition hover:bg-white/20 md:hidden"
@@ -892,13 +892,13 @@ export function SchoolChat() {
                             className={clsx(
                               'relative max-w-[75%] rounded-lg px-3 py-2 shadow-sm md:max-w-[65%]',
                               isMe
-                                ? 'rounded-tr-none bg-[#dcf8c6] text-slate-900'
+                                ? 'rounded-tr-none bg-[#dbeafe] text-slate-900'
                                 : 'rounded-tl-none bg-white text-slate-900'
                             )}
                           >
                             {/* Nom de l'expéditeur pour les groupes */}
                             {activeChatType === 'group' && !isMe && msg.senderName && (
-                              <p className="mb-0.5 text-xs font-semibold text-[#075E54]">{msg.senderName}</p>
+                              <p className="mb-0.5 text-xs font-semibold text-[#1e3a8a]">{msg.senderName}</p>
                             )}
                             {/* Image */}
                             {isImageFile(msg.fileType, msg.fileUrl) && msg.fileUrl && (
@@ -999,7 +999,7 @@ export function SchoolChat() {
                   </div>
                   <button
                     onClick={stopAndSendRecording}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-sm transition hover:bg-[#1faa52]"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0369a1] text-white shadow-sm transition hover:bg-[#2563eb]"
                     aria-label="Envoyer le message vocal"
                   >
                     <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -1013,7 +1013,7 @@ export function SchoolChat() {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#075E54] shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#1e3a8a] shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
                     aria-label="Joindre un fichier"
                   >
                     {uploading ? (
@@ -1037,13 +1037,13 @@ export function SchoolChat() {
                       }
                     }}
                     placeholder="Tapez un message…"
-                    className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#075E54]/20"
+                    className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#1e3a8a]/20"
                   />
                   {inputText.trim() ? (
                     <button
                       onClick={sendMessage}
                       disabled={loading}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#075E54] text-white transition hover:bg-[#064c43] disabled:opacity-40"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-white transition hover:bg-[#172554] disabled:opacity-40"
                       aria-label="Envoyer"
                     >
                       <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -1054,7 +1054,7 @@ export function SchoolChat() {
                     <button
                       onClick={startRecording}
                       disabled={uploading}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#075E54] text-white transition hover:bg-[#064c43] disabled:opacity-40"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-white transition hover:bg-[#172554] disabled:opacity-40"
                       aria-label="Enregistrer un message vocal"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -1075,8 +1075,8 @@ export function SchoolChat() {
           </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center bg-slate-100 p-8 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#075E54]/10">
-              <Icon name="chat" className="h-10 w-10 text-[#075E54]" />
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#1e3a8a]/10">
+              <Icon name="chat" className="h-10 w-10 text-[#1e3a8a]" />
             </div>
             <p className="text-lg font-semibold text-slate-700">SchoolChat</p>
             <p className="mt-1 max-w-xs text-sm text-slate-500">
@@ -1105,7 +1105,7 @@ export function SchoolChat() {
       {showNewGroup && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-16 md:pt-24">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-[#075E54] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-[#1e3a8a] px-4 py-3">
               <h3 className="text-base font-semibold text-white">Nouveau groupe de classe</h3>
               <button
                 onClick={() => { setShowNewGroup(false); setNewGroupName(''); setNewGroupClasse(''); }}
@@ -1123,7 +1123,7 @@ export function SchoolChat() {
                   placeholder="Ex: Classe de 6e A"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#075E54]/20"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#1e3a8a]/20"
                 />
               </div>
               <div>
@@ -1134,7 +1134,7 @@ export function SchoolChat() {
                   placeholder="Ex: 6A"
                   value={newGroupClasse}
                   onChange={(e) => setNewGroupClasse(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#075E54]/20"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#1e3a8a]/20"
                 />
                 <datalist id="available-classes">
                   {availableClasses.map((c) => (
@@ -1148,7 +1148,7 @@ export function SchoolChat() {
               <button
                 onClick={createGroup}
                 disabled={!newGroupName.trim() || !newGroupClasse.trim() || creatingGroup}
-                className="w-full rounded-full bg-[#075E54] py-2.5 text-sm font-semibold text-white transition hover:bg-[#064c43] disabled:opacity-40"
+                className="w-full rounded-full bg-[#1e3a8a] py-2.5 text-sm font-semibold text-white transition hover:bg-[#172554] disabled:opacity-40"
               >
                 {creatingGroup ? 'Création…' : 'Créer le groupe'}
               </button>
@@ -1161,7 +1161,7 @@ export function SchoolChat() {
       {showNewChat && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-16 md:pt-24">
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-[#075E54] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-[#1e3a8a] px-4 py-3">
               <h3 className="text-base font-semibold text-white">Nouvelle conversation</h3>
               <button
                 onClick={() => setShowNewChat(false)}
@@ -1182,7 +1182,7 @@ export function SchoolChat() {
                   placeholder="Rechercher un utilisateur…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-[#075E54]/30"
+                  className="w-full rounded-lg bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-[#1e3a8a]/30"
                 />
               </div>
             </div>
@@ -1201,7 +1201,7 @@ export function SchoolChat() {
                     {user.profilePhotoUrl ? (
                       <img src={user.profilePhotoUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
                     ) : (
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#075E54] text-sm font-semibold text-white">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-sm font-semibold text-white">
                         {getInitials(user.displayName)}
                       </div>
                     )}
