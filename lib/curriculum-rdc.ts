@@ -141,6 +141,38 @@ export const MATIERES_RDC: MatiereRdc[] = [
   { nom: 'Construction mécanique', cycle: 'Secondaire Technique', domaine: 'Technique', coefficient: 4, statut: 'Actif' },
 ];
 
+export interface OptionRdc {
+  nom: string;
+  cycle: CycleRdc;
+  type: string; // 'Section' ou 'Option'
+  description: string;
+  statut: string;
+}
+
+/* ── Sections & Options du secondaire congolais ── */
+
+export const OPTIONS_RDC: OptionRdc[] = [
+  // ── Secondaire Général — Sections ──
+  { nom: 'Scientifique — Bio-Chimie', cycle: 'Secondaire Général', type: 'Section', description: 'Sciences naturelles : biologie et chimie', statut: 'Actif' },
+  { nom: 'Scientifique — Math-Physique', cycle: 'Secondaire Général', type: 'Section', description: 'Sciences exactes : mathématiques et physique', statut: 'Actif' },
+  { nom: 'Littéraire — Latin-Philosophie', cycle: 'Secondaire Général', type: 'Section', description: 'Lettres classiques et philosophie', statut: 'Actif' },
+  { nom: 'Littéraire — Langues vivantes', cycle: 'Secondaire Général', type: 'Section', description: 'Langues françaises, anglaises et nationales', statut: 'Actif' },
+  { nom: 'Pédagogique', cycle: 'Secondaire Général', type: 'Section', description: 'Sciences de l\'éducation et psychologie', statut: 'Actif' },
+  { nom: 'Sciences Sociales', cycle: 'Secondaire Général', type: 'Section', description: 'Sciences sociales, économie et sociologie', statut: 'Actif' },
+
+  // ── Secondaire Technique — Options ──
+  { nom: 'Commerciale et Gestion', cycle: 'Secondaire Technique', type: 'Option', description: 'Comptabilité, sciences commerciales et administratives', statut: 'Actif' },
+  { nom: 'Construction Mécanique', cycle: 'Secondaire Technique', type: 'Option', description: 'Fabrication et maintenance mécanique', statut: 'Actif' },
+  { nom: 'Électricité', cycle: 'Secondaire Technique', type: 'Option', description: 'Installations électriques et électroniques', statut: 'Actif' },
+  { nom: 'Électronique', cycle: 'Secondaire Technique', type: 'Option', description: 'Systèmes électroniques et télécommunications', statut: 'Actif' },
+  { nom: 'Mécanique Auto', cycle: 'Secondaire Technique', type: 'Option', description: 'Maintenance et réparation automobile', statut: 'Actif' },
+  { nom: 'Coupe et Couture', cycle: 'Secondaire Technique', type: 'Option', description: 'Arts textiles et modélisme', statut: 'Actif' },
+  { nom: 'Arts et Métiers', cycle: 'Secondaire Technique', type: 'Option', description: 'Métiers d\'art et artisanat', statut: 'Actif' },
+  { nom: 'Agriculture', cycle: 'Secondaire Technique', type: 'Option', description: 'Sciences agronomiques et élevage', statut: 'Actif' },
+  { nom: 'Pédagogique Technique', cycle: 'Secondaire Technique', type: 'Option', description: 'Formation pédagogique appliquée au technique', statut: 'Actif' },
+  { nom: 'Informatique de Gestion', cycle: 'Secondaire Technique', type: 'Option', description: 'Informatique appliquée et gestion de données', statut: 'Actif' },
+];
+
 export const CYCLES_RDC: CycleRdc[] = [
   'Maternel',
   'Primaire',

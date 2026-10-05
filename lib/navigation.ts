@@ -38,6 +38,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Dossiers des élèves', href: '/dossiers-eleves', icon: 'folder', minRole: 'DIRECTION_ECOLE' },
       { label: 'Classes & Niveaux', href: '/classes-rdc', icon: 'school', minRole: 'DIRECTION_ECOLE' },
       { label: 'Matières & Cours', href: '/matieres-rdc', icon: 'notebook', minRole: 'DIRECTION_ECOLE' },
+      { label: 'Options & Sections', href: '/options-rdc', icon: 'organization', minRole: 'DIRECTION_ECOLE' },
     ]
   },
   {

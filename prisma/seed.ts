@@ -1,6 +1,6 @@
 import { PrismaClient, Role } from '@prisma/client';
 import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
-import { CLASSES_RDC, MATIERES_RDC } from '@/lib/curriculum-rdc';
+import { CLASSES_RDC, MATIERES_RDC, OPTIONS_RDC } from '@/lib/curriculum-rdc';
 
 const prisma = new PrismaClient();
 
@@ -319,6 +319,19 @@ async function main() {
     }
   }
   console.log(`Seed terminé : ${MATIERES_RDC.length} matières du programme national insérées.`);
+
+  // ── Options & Sections du secondaire congolais ──
+  for (const o of OPTIONS_RDC) {
+    const existing = await prisma.optionRdc.findFirst({
+      where: { nom: o.nom, cycle: o.cycle },
+    });
+    if (!existing) {
+      await prisma.optionRdc.create({
+        data: { nom: o.nom, cycle: o.cycle, type: o.type, description: o.description, statut: o.statut },
+      });
+    }
+  }
+  console.log(`Seed terminé : ${OPTIONS_RDC.length} options et sections insérées.`);
 }
 
 main()

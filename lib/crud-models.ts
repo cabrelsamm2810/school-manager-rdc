@@ -311,6 +311,23 @@ export const crudModels: Record<string, CrudModelConfig> = {
     ],
   },
 
+  'options-rdc': {
+    delegate: prisma.optionRdc,
+    entityName: 'optionRdc',
+    entityNamePlural: 'optionsRdc',
+    minRole: 'DIRECTION_ECOLE',
+    searchFields: ['nom', 'cycle', 'type', 'description'],
+    defaultSort: { field: 'nom', order: 'asc' },
+    institutionField: false,
+    fields: [
+      { name: 'nom', type: 'string', required: true },
+      { name: 'cycle', type: 'string', required: true },
+      { name: 'type', type: 'string' },
+      { name: 'description', type: 'string' },
+      { name: 'statut', type: 'string' },
+    ],
+  },
+
   notes: {
     delegate: prisma.note,
     entityName: 'note',

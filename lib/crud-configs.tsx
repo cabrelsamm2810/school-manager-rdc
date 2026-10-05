@@ -3,6 +3,11 @@ import { StatutBadge } from '@/components/ui/StatutBadge';
 import { PROVINCE_EDUCATIONNELLE_NAMES } from '@/lib/provinces-rdc';
 import { CYCLES_RDC } from '@/lib/curriculum-rdc';
 
+const OPTION_TYPES = [
+  { value: 'Section', label: 'Section' },
+  { value: 'Option', label: 'Option' },
+];
+
 /**
  * Configurations frontend pour le CrudManager de chaque module.
  */
@@ -651,6 +656,45 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { label: 'Matières', value: (items: any[]) => String(items.length), hint: 'Total' },
       { label: 'Cycles', value: (items: any[]) => String(new Set(items.map((e) => e.cycle)).size) },
       { label: 'Domaines', value: (items: any[]) => String(new Set(items.map((e) => e.domaine)).size) },
+      { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
+    ],
+  },
+
+  'options-rdc': {
+    apiPath: '/api/options-rdc',
+    entityName: 'optionRdc',
+    entityNamePlural: 'optionsRdc',
+    icon: 'organization',
+    searchFields: ['nom', 'cycle', 'type', 'description'],
+    fields: [
+      { name: 'nom', label: 'Nom', type: 'text', required: true },
+      { name: 'cycle', label: 'Cycle', type: 'select', required: true, half: true, options: CYCLES_RDC.map((c) => ({ value: c, label: c })) },
+      { name: 'type', label: 'Type', type: 'select', half: true, default: 'Section', options: OPTION_TYPES },
+      { name: 'description', label: 'Description', type: 'text' },
+      { name: 'statut', label: 'Statut', type: 'select', half: true, default: 'Actif', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
+    columns: [
+      { key: 'nom', label: 'Nom', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
+      { key: 'cycle', label: 'Cycle' },
+      { key: 'type', label: 'Type' },
+      { key: 'description', label: 'Description' },
+      { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
+    ],
+    filters: [
+      { name: 'cycle', label: 'Tous les cycles', options: CYCLES_RDC.map((c) => ({ value: c, label: c })) },
+      { name: 'type', label: 'Tous les types', options: OPTION_TYPES },
+      { name: 'statut', label: 'Tous les statuts', options: [
+        { value: 'Actif', label: 'Actif' },
+        { value: 'Inactif', label: 'Inactif' },
+      ] },
+    ],
+    statCards: [
+      { label: 'Options & Sections', value: (items: any[]) => String(items.length), hint: 'Total' },
+      { label: 'Sections', value: (items: any[]) => String(items.filter((e) => e.type === 'Section').length) },
+      { label: 'Options', value: (items: any[]) => String(items.filter((e) => e.type === 'Option').length) },
       { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
     ],
   },

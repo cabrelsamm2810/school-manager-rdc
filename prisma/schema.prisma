@@ -358,6 +358,22 @@ model MatiereRdc {
   @@map("matieres_rdc")
 }
 
+model OptionRdc {
+  id          String   @id @default(cuid())
+  nom         String
+  cycle       String   @default("")
+  type        String   @default("Section")
+  description String   @default("")
+  statut      String   @default("Actif")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([nom, cycle])
+  @@index([cycle])
+  @@index([type])
+  @@map("options_rdc")
+}
+
 model EcErc {
   id        String   @id @default(cuid())
   nom       String
