@@ -5,6 +5,7 @@ import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ImportDialog } from '@/components/import/ImportDialog';
+import { OcrImportDialog } from '@/components/import/OcrImportDialog';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 
 type Etablissement = {
@@ -36,6 +37,7 @@ export default function EtablissementsPage() {
   const [provinceFilter, setProvinceFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showOcr, setShowOcr] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -138,6 +140,9 @@ export default function EtablissementsPage() {
       <div className="mb-4 flex flex-wrap justify-end gap-2">
         <button onClick={() => setShowImport(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
           ⬆ Importer (Excel/CSV)
+        </button>
+        <button onClick={() => setShowOcr(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
+          📸 Importer (OCR)
         </button>
         <button onClick={startCreate} className="btn-primary px-4 py-2.5 text-sm">
           + Nouvel établissement
@@ -337,6 +342,16 @@ export default function EtablissementsPage() {
           columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
           onImported={loadData}
           onClose={() => setShowImport(false)}
+        />
+      )}
+
+      {showOcr && (
+        <OcrImportDialog
+          endpoint="/api/import/etablissements"
+          moduleName="Établissements"
+          columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
+          onImported={loadData}
+          onClose={() => setShowOcr(false)}
         />
       )}
     </ModulePage>

@@ -5,10 +5,12 @@ import { ModulePage } from '@/components/ModulePage';
 import { EleveForm } from '@/components/eleves/EleveForm';
 import { EleveList } from '@/components/eleves/EleveList';
 import { ImportDialog } from '@/components/import/ImportDialog';
+import { OcrImportDialog } from '@/components/import/OcrImportDialog';
 
 export default function ElevesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showOcr, setShowOcr] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
@@ -24,6 +26,12 @@ export default function ElevesPage() {
           className="btn-secondary-light px-4 py-2.5 text-sm"
         >
           ⬆ Importer (Excel/CSV)
+        </button>
+        <button
+          onClick={() => setShowOcr(true)}
+          className="btn-secondary-light px-4 py-2.5 text-sm"
+        >
+          📸 Importer (OCR)
         </button>
         <button
           onClick={() => setShowForm((v) => !v)}
@@ -49,6 +57,16 @@ export default function ElevesPage() {
           columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowImport(false)}
+        />
+      )}
+
+      {showOcr && (
+        <OcrImportDialog
+          endpoint="/api/import/eleves"
+          moduleName="Élèves"
+          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId']}
+          onImported={() => setRefreshKey((k) => k + 1)}
+          onClose={() => setShowOcr(false)}
         />
       )}
     </ModulePage>

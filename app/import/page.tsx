@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/ui/Card';
 import { ImportDialog } from '@/components/import/ImportDialog';
+import { OcrImportDialog } from '@/components/import/OcrImportDialog';
 
 type ImportType = 'etablissements' | 'enseignants' | null;
+type OcrType = 'etablissements' | 'enseignants' | 'eleves' | null;
 
 export default function ImportPage() {
   const [activeImport, setActiveImport] = useState<ImportType>(null);
+  const [activeOcr, setActiveOcr] = useState<OcrType>(null);
 
   return (
     <AppShell>
@@ -57,6 +60,46 @@ export default function ImportPage() {
             </button>
           </div>
 
+          {/* Section OCR */}
+          <div className="mt-8">
+            <h3 className="mb-3 text-sm font-bold text-slate-800">📥 Import via OCR (photo / scan)</h3>
+            <p className="mb-4 text-sm text-slate-500">
+              Prenez en photo un document (liste d'élèves, registre d'enseignants, fiche d'école) et importez les données automatiquement.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <button
+                onClick={() => setActiveOcr('eleves')}
+                className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-soft transition hover:border-blue-300 hover:shadow-md"
+              >
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition group-hover:bg-indigo-100">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Élèves</h4>
+                <p className="mt-0.5 text-xs text-slate-500">Photo d'une liste d'élèves</p>
+              </button>
+              <button
+                onClick={() => setActiveOcr('enseignants')}
+                className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-soft transition hover:border-blue-300 hover:shadow-md"
+              >
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600 transition group-hover:bg-green-100">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Enseignants</h4>
+                <p className="mt-0.5 text-xs text-slate-500">Photo d'un registre</p>
+              </button>
+              <button
+                onClick={() => setActiveOcr('etablissements')}
+                className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-soft transition hover:border-blue-300 hover:shadow-md"
+              >
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-100">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" /></svg>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Établissements</h4>
+                <p className="mt-0.5 text-xs text-slate-500">Photo d'une fiche d'école</p>
+              </button>
+            </div>
+          </div>
+
           {/* Format attendu */}
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
             <h4 className="text-sm font-semibold text-slate-700">Format du fichier</h4>
@@ -87,6 +130,36 @@ export default function ImportPage() {
           columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
           onImported={() => {}}
           onClose={() => setActiveImport(null)}
+        />
+      )}
+
+      {activeOcr === 'eleves' && (
+        <OcrImportDialog
+          endpoint="/api/import/eleves"
+          moduleName="Élèves"
+          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId']}
+          onImported={() => {}}
+          onClose={() => setActiveOcr(null)}
+        />
+      )}
+
+      {activeOcr === 'enseignants' && (
+        <OcrImportDialog
+          endpoint="/api/import/enseignants"
+          moduleName="Enseignants"
+          columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
+          onImported={() => {}}
+          onClose={() => setActiveOcr(null)}
+        />
+      )}
+
+      {activeOcr === 'etablissements' && (
+        <OcrImportDialog
+          endpoint="/api/import/etablissements"
+          moduleName="Établissements"
+          columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
+          onImported={() => {}}
+          onClose={() => setActiveOcr(null)}
         />
       )}
     </AppShell>
