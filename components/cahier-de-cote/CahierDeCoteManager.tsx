@@ -72,6 +72,7 @@ export function CahierDeCoteManager() {
   const [success, setSuccess] = useState('');
   const [showBulletin, setShowBulletin] = useState(false);
   const [bulletinEleveId, setBulletinEleveId] = useState('');
+  const [batchDownloading, setBatchDownloading] = useState(false);
 
   const isDirection = user && (user.role === 'DIRECTION_ECOLE' || user.role === 'SUPER_ADMIN');
   const canValidate = user && (user.role === 'DIRECTION_ECOLE' || user.role === 'SUPER_ADMIN' ||
@@ -305,6 +306,41 @@ export function CahierDeCoteManager() {
     setShowBulletin(true);
   }
 
+  async function handleBatchDownloadPdf() {
+    if (!selectedClasse || !selectedPeriode) return;
+    setBatchDownloading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const params = new URLSearchParams({
+        classe: selectedClasse,
+        periode: selectedPeriode,
+        anneeScolaire: ANNEE_SCOLAIRE,
+      });
+      if (selectedEtab) params.set('etablissementId', selectedEtab);
+
+      const res = await fetch(`/api/cahier-de-cote/bulletin/pdf-batch?${params}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la génération des bulletins');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bulletins_${selectedClasse.replace(/\s+/g, '_')}_${selectedPeriode.replace(/\s+/g, '_')}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      setSuccess('Tous les bulletins ont été téléchargés dans un fichier ZIP.');
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la génération des bulletins.');
+    } finally {
+      setBatchDownloading(false);
+    }
+  }
+
   const allSelectorsReady = selectedClasse && selectedCours && selectedPeriode;
   const hasData = eleves.length > 0 && allSelectorsReady;
 
@@ -422,6 +458,25 @@ export function CahierDeCoteManager() {
             className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
             🖨️ Imprimer
+          </button>
+          <button
+            onClick={handleBatchDownloadPdf}
+            disabled={batchDownloading || eleves.length === 0}
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:shadow-lg disabled:opacity-50"
+          >
+            {batchDownloading ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Génération...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                Tous les bulletins (PDF)
+              </>
+            )}
           </button>
         </div>
       )}

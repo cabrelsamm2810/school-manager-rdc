@@ -68,6 +68,48 @@ export async function generateBulletinPdf(data: BulletinPdfData): Promise<Buffer
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
+      await renderBulletinPage(doc, data);
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+/** Génère un PDF unique multi-pages contenant plusieurs bulletins. */
+export async function generateBulletinsPdf(items: BulletinPdfData[]): Promise<Buffer> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Bulletins de classe`,
+          Author: 'School Manager RDC',
+          Subject: 'Bulletins de notes',
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      for (let i = 0; i < items.length; i++) {
+        if (i > 0) doc.addPage();
+        await renderBulletinPage(doc, items[i]);
+      }
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+/** Dessine un bulletin sur la page courante du document PDF. */
+async function renderBulletinPage(doc: PDFKit.PDFDocument, data: BulletinPdfData): Promise<void> {
+
       const pageWidth = doc.page.width - 100; // marges 50 de chaque côté
 
       // === En-tête ===
@@ -314,10 +356,4 @@ export async function generateBulletinPdf(data: BulletinPdfData): Promise<Buffer
           'Document généré par School Manager RDC — Plateforme nationale de gestion scolaire de la RDC',
           50, footerY + 8, { width: pageWidth, align: 'center' },
         );
-
-      doc.end();
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
+  }
