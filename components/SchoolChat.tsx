@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { Icon } from '@/components/ui/Icon';
 import { ROLE_LABELS } from '@/lib/rbac';
 import { CallOverlay } from '@/components/CallOverlay';
+import { VoiceMessagePlayer } from '@/components/chat/VoiceMessagePlayer';
 
 type ChatUser = {
   id: string;
@@ -912,13 +913,8 @@ export function SchoolChat() {
                             )}
                             {/* Message vocal */}
                             {isAudioFile(msg.fileType, msg.fileUrl) && msg.fileUrl && (
-                              <div className="mb-1 flex items-center gap-2">
-                                <audio
-                                  src={msg.fileUrl}
-                                  controls
-                                  className="h-9 w-full max-w-[220px]"
-                                  preload="metadata"
-                                />
+                              <div className="w-[200px] md:w-[240px]">
+                                <VoiceMessagePlayer src={msg.fileUrl} isMe={isMe} />
                               </div>
                             )}
                             {/* Fichier non-image et non-audio */}
