@@ -81,8 +81,32 @@ export function BulletinPreview({
 
   const donnees: BulletinData[] = bulletin ? JSON.parse(bulletin.donnees) : [];
 
+  const [downloading, setDownloading] = useState(false);
+
   function handlePrint() {
     window.print();
+  }
+
+  async function handleDownloadPdf() {
+    if (!bulletin) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/cahier-de-cote/bulletin/pdf?bulletinId=${bulletin.id}`);
+      if (!res.ok) throw new Error('Erreur lors de la génération du PDF');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bulletin_${bulletin.eleveNom.replace(/\s+/g, '_')}_${bulletin.periode.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // ignore
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -234,12 +258,35 @@ export function BulletinPreview({
 
             {/* Actions */}
             {bulletin && (
-              <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3 print:hidden">
+              <div className="flex flex-col gap-2 border-t border-slate-200 px-5 py-3 print:hidden sm:flex-row sm:justify-end">
                 <button
                   onClick={handlePrint}
-                  className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-blue-200 bg-white px-5 py-2 text-sm font-medium text-blue-700 shadow-sm transition hover:bg-blue-50"
                 >
-                  🖨️ Imprimer le bulletin
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Imprimer
+                </button>
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={downloading}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-700 to-blue-500 px-5 py-2 text-sm font-semibold text-white shadow-md transition hover:shadow-lg disabled:opacity-50"
+                >
+                  {downloading ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 13v6h6v-6M9 9l3 3 3-3" />
+                      </svg>
+                      Télécharger PDF
+                    </>
+                  )}
                 </button>
               </div>
             )}
