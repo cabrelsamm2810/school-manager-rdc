@@ -40,10 +40,6 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  if (cotes.length === 0) {
-    return NextResponse.json({ error: 'Aucune cote enregistrée pour cette période.' }, { status: 400 });
-  }
-
   // Construire les données du bulletin
   const donnees = cotes.map((c) => ({
     cours: c.cours,
@@ -60,13 +56,17 @@ export async function POST(request: NextRequest) {
   const moyenneGenerale = cotes.length > 0
     ? Math.round((cotes.reduce((sum, c) => sum + c.moyenne, 0) / cotes.length) * 100) / 100
     : 0;
-  const pourcentageGeneral = Math.round((moyenneGenerale / 20) * 100 * 100) / 100;
-  const mentionGenerale = getMention(pourcentageGeneral);
+  const pourcentageGeneral = cotes.length > 0
+    ? Math.round((moyenneGenerale / 20) * 100 * 100) / 100
+    : 0;
+  const mentionGenerale = cotes.length > 0 ? getMention(pourcentageGeneral) : 'Non évalué';
 
   // Récupérer l'établissement
   const etablissement = cotes[0]?.etablissementId
     ? await prisma.etablissement.findUnique({ where: { id: cotes[0].etablissementId } })
-    : null;
+    : (eleve.etablissementId
+      ? await prisma.etablissement.findUnique({ where: { id: eleve.etablissementId } })
+      : null);
 
   // Générer le token QR unique
   const qrToken = generateQrToken();
