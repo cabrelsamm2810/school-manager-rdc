@@ -1,0 +1,75 @@
+name: school-manager-rdc
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: on-failure
+    environment:
+      POSTGRES_USER: school
+      POSTGRES_PASSWORD: school_dev_password
+      POSTGRES_DB: school_manager
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U school -d school_manager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  migrate:
+    image: node:22-bookworm
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://school:school_dev_password@db:5432/school_manager
+      - DIRECT_URL=postgresql://school:school_dev_password@db:5432/school_manager
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -ec
+      - |
+        npm install --no-audit --no-fund
+        npx prisma migrate deploy
+
+  web:
+    image: node:22-bookworm
+    restart: on-failure
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://school:school_dev_password@db:5432/school_manager
+      - DIRECT_URL=postgresql://school:school_dev_password@db:5432/school_manager
+      - SESSION_COOKIE_NAME=school_manager_session
+      - SESSION_MAX_AGE=604800
+      - NEXT_PUBLIC_APP_NAME=School Manager RDC
+      - WATCHPACK_POLLING=true
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command:
+      - sh
+      - -ec
+      - |
+        npm install --no-audit --no-fund
+        exec npx next dev -H 0.0.0.0 -p 3000
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 90s
+
+volumes:
+  db_data:

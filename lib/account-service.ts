@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { User } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
+
+type AccountResult = { ok: true; user: User } | { ok: false; error: string };
 
 const publicRole = z.literal('ELEVE');
 
@@ -22,7 +25,7 @@ const loginSchema = z.object({
   password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caractères.')
 });
 
-export async function registerUser(payload: unknown) {
+export async function registerUser(payload: unknown): Promise<AccountResult> {
   const parsed = registerSchema.safeParse(payload);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Données invalides.' };
@@ -48,7 +51,7 @@ export async function registerUser(payload: unknown) {
   return { ok: true, user };
 }
 
-export async function loginUser(payload: unknown) {
+export async function loginUser(payload: unknown): Promise<AccountResult> {
   const parsed = loginSchema.safeParse(payload);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Identifiants invalides.' };

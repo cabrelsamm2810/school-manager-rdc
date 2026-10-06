@@ -7,28 +7,32 @@ export async function requireRole(request: NextRequest, requiredRole: string) {
     return { ok: false, redirect: '/login' };
   }
 
-  if (user.role !== requiredRole && !isRoleHigherOrEqual(user.role, requiredRole)) {
+  if (user.role !== requiredRole && !hasAtLeastRole(user.role, requiredRole)) {
     return { ok: false, redirect: '/dashboard' };
   }
 
   return { ok: true, user };
 }
 
-function isRoleHigherOrEqual(userRole: string, requiredRole: string): boolean {
-  const rank: Record<string, number> = {
-    SUPER_ADMIN: 10,
-    COORDINATION_NATIONALE: 9,
-    COORDINATION_PROVINCIALE: 8,
-    AGENT_PROVINCIAL: 7,
-    COORDINATION_SOUS_PROVINCIALE: 6,
-    AGENT_SOUS_PROVINCIAL: 5,
-    DIRECTION_ECOLE: 4,
-    ENSEIGNANT: 3,
-    PARENT: 2,
-    ELEVE: 1
-  };
+const ROLE_RANK: Record<string, number> = {
+  SUPER_ADMIN: 10,
+  COORDINATION_NATIONALE: 9,
+  COORDINATION_PROVINCIALE: 8,
+  AGENT_PROVINCIAL: 7,
+  COORDINATION_SOUS_PROVINCIALE: 6,
+  AGENT_SOUS_PROVINCIAL: 5,
+  DIRECTION_ECOLE: 4,
+  ENSEIGNANT: 3,
+  PARENT: 2,
+  ELEVE: 1
+};
 
-  return (rank[userRole] ?? 0) >= (rank[requiredRole] ?? 0);
+export function isSuperAdmin(role: string): boolean {
+  return role === 'SUPER_ADMIN';
+}
+
+export function hasAtLeastRole(userRole: string, requiredRole: string): boolean {
+  return (ROLE_RANK[userRole] ?? 0) >= (ROLE_RANK[requiredRole] ?? 0);
 }
 
 export function isProtectedRoute(pathname: string): boolean {
