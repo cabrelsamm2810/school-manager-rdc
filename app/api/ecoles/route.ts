@@ -18,7 +18,7 @@ const createSchema = z.object({
   localisationGeo: z.string().trim().optional().or(z.literal('')),
   telephone: z.string().trim().min(1, 'Le numéro de téléphone est obligatoire.'),
   email: z.string().trim().email('L\u2019email est invalide.').optional().or(z.literal('')),
-  chefEcole: z.string().trim().min(1, 'Le chef d\u2019école est obligatoire.'),
+  chefEcole: z.string().trim().min(1, 'Le chef d\u2019établissement est obligatoire.'),
   logoUrl: z.string().trim().optional().or(z.literal('')),
   effectif: z.number().int().min(0).optional(),
   statut: z.string().trim().optional().or(z.literal('')),

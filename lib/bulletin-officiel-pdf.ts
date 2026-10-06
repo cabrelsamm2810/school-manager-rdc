@@ -326,7 +326,7 @@ async function renderOfficialPage(doc: PDFKit.PDFDocument, data: OfficialBulleti
 
   doc.font('Helvetica').fontSize(7);
   doc.text(`Fait à ${data.ville || '…………'}, le ……/……/……`, ml + usableW * 0.5, y + 16, { width: usableW * 0.48, align: 'right' });
-  doc.font('Helvetica-Bold').text('Chef d\'École', ml + usableW * 0.5, y + 30, { width: usableW * 0.48, align: 'right' });
+  doc.font('Helvetica-Bold').text('Chef d\'Établissement', ml + usableW * 0.5, y + 30, { width: usableW * 0.48, align: 'right' });
   doc.font('Helvetica').text('(Noms & Signature)', ml + usableW * 0.5, y + 40, { width: usableW * 0.48, align: 'right' });
 
   y += 60;

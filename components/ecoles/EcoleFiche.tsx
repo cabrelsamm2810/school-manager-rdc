@@ -200,7 +200,7 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div><p className={labelClass}>Type</p><p className={valueClass}>{ecole.type || '—'}</p></div>
           <div><p className={labelClass}>DINACOPE</p><p className={valueClass}>{ecole.dinacope || '—'}</p></div>
-          <div><p className={labelClass}>Chef d'école</p><p className={valueClass}>{ecole.chefEcole || '—'}</p></div>
+          <div><p className={labelClass}>Chef d'établissement</p><p className={valueClass}>{ecole.chefEcole || '—'}</p></div>
           <div><p className={labelClass}>Téléphone</p><p className={valueClass}>{ecole.telephone || '—'}</p></div>
           <div><p className={labelClass}>Email</p><p className={valueClass}>{ecole.email || '—'}</p></div>
           <div><p className={labelClass}>Effectif</p><p className={valueClass}>{ecole.effectif.toLocaleString('fr-FR')}</p></div>

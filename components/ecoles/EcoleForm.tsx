@@ -307,7 +307,7 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
               </select>
             </div>
             <div>
-              <label className={labelClass} htmlFor="etab-chef">Chef d'école{requiredMark}</label>
+              <label className={labelClass} htmlFor="etab-chef">Chef d'établissement{requiredMark}</label>
               <input id="etab-chef" type="text" required value={form.chefEcole}
                 onChange={(e) => update('chefEcole', e.target.value)}
                 className={inputClass} placeholder="Nom du directeur" />
