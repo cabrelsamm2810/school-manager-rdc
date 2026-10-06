@@ -1,3 +1,5 @@
+name: school-manager-rdc
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -46,7 +48,6 @@ services:
       migrate:
         condition: service_completed_successfully
     env_file:
-      - ./.env.base44-defaults
       - /run/base44/app.env
     environment:
       DATABASE_URL: postgresql://school:schoolpass@postgres:5432/school?schema=public

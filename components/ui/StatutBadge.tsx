@@ -22,7 +22,6 @@ const STATUS_MAP: Record<string, { color: 'green' | 'red' | 'amber' | 'blue' | '
   'Brouillon': { color: 'slate', label: 'Brouillon' },
   'En attente de vérification': { color: 'amber', label: 'En attente de vérification' },
   'En cours de vérification': { color: 'blue', label: 'En cours de vérification' },
-  'Validée': { color: 'green', label: 'Validée' },
   'Rejetée': { color: 'red', label: 'Rejetée' },
   'Suspendue': { color: 'purple', label: 'Suspendue' },
 };

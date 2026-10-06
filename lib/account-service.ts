@@ -3,6 +3,17 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
 import { sendValidationCode } from '@/lib/mail';
+import type { User } from '@prisma/client';
+
+/**
+ * Résultat discriminé des helpers d'authentification.
+ * L'annotation explicite est requise : sans elle, `ok` s'élargit à `boolean`
+ * et les routes appelantes ne peuvent plus réduire l'union (`result.user`
+ * devient « possibly undefined » et `next build` échoue).
+ */
+type AccountResult =
+  | { ok: true; user: User; needsValidation?: boolean }
+  | { ok: false; error: string };
 
 const validRoles = [
   'ELEVE',
@@ -44,7 +55,7 @@ const loginSchema = z.object({
   password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caract\u00e8res.')
 });
 
-export async function registerUser(payload: unknown) {
+export async function registerUser(payload: unknown): Promise<AccountResult> {
   const parsed = registerSchema.safeParse(payload);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Donn\u00e9es invalides.' };
@@ -106,7 +117,7 @@ export async function registerUser(payload: unknown) {
   return { ok: true, user, needsValidation: true };
 }
 
-export async function loginUser(payload: unknown) {
+export async function loginUser(payload: unknown): Promise<AccountResult> {
   const parsed = loginSchema.safeParse(payload);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Identifiants invalides.' };

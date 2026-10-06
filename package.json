@@ -36,6 +36,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.12",
     "@types/pdfkit": "^0.13.9",
     "@types/qrcode": "^1.5.6",

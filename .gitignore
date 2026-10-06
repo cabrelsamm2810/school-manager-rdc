@@ -12,3 +12,5 @@ prisma/*.db
 prisma/*.db-journal
 dist/
 coverage/
+# TypeScript incremental build cache — never commit, it replays stale diagnostics
+*.tsbuildinfo

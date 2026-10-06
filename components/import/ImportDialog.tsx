@@ -144,7 +144,7 @@ export function ImportDialog({ endpoint, moduleName, columns, onImported, onClos
               type="file"
               accept=".csv,.xlsx,.xls"
               className="hidden"
-              onChange={(e) => handleFile(e.target.files[0] ?? null)}
+              onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
             {file ? (
               <div>
