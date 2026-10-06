@@ -6,9 +6,9 @@ import { clsx } from 'clsx';
 const SIZE_CLASSES = {
   xs: 'h-8 w-8 text-[11px]',
   sm: 'h-9 w-9 text-xs',
-  md: 'h-11 w-11 text-sm',
-  lg: 'h-16 w-16 text-lg',
-  xl: 'h-24 w-24 text-2xl sm:h-28 sm:w-28 sm:text-3xl'
+  md: 'h-10 w-10 text-[13px]',
+  lg: 'h-14 w-14 text-base',
+  xl: 'h-20 w-20 text-xl sm:h-24 sm:w-24 sm:text-2xl'
 } as const;
 
 export type AvatarSize = keyof typeof SIZE_CLASSES;

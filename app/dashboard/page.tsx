@@ -42,8 +42,8 @@ export default function DashboardPage() {
   if (error) {
     return (
       <AppShell>
-        <div className="p-4 md:p-6 lg:p-8">
-          <div className="mx-auto max-w-6xl">
+        <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
+          <div className="mx-auto max-w-5xl">
             <DashboardError onRetry={loadStats} />
           </div>
         </div>
@@ -54,8 +54,8 @@ export default function DashboardPage() {
   if (loading || !data || !user) {
     return (
       <AppShell>
-        <div className="p-4 md:p-6 lg:p-8">
-          <div className="mx-auto max-w-6xl">
+        <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
+          <div className="mx-auto max-w-5xl">
             <DashboardSkeleton />
           </div>
         </div>
@@ -72,8 +72,8 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="p-4 md:p-6 lg:p-8">
-        <div className="mx-auto max-w-6xl">
+      <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
+        <div className="mx-auto max-w-5xl">
           <WelcomeCard user={user} scope={data.scope} />
           <QuickActions role={user.role} />
           {data.scope === 'national' && <NationalDashboard {...dashProps} />}

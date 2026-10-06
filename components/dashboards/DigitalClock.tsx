@@ -40,7 +40,7 @@ export function DigitalClock({
   if (variant === 'compact') {
     return (
       <div className={clsx('flex flex-col items-end leading-tight', className)} aria-live="off">
-        <span className="tabular-nums text-[11px] font-semibold text-slate-900 sm:text-sm">{time}</span>
+        <span className="tabular-nums text-[11px] font-semibold text-slate-900 sm:text-[13px]">{time}</span>
         <span className="hidden text-[11px] text-slate-400 sm:block">{date || '\u00A0'}</span>
       </div>
     );
@@ -48,8 +48,8 @@ export function DigitalClock({
 
   return (
     <div className={clsx('text-center sm:text-right', className)} aria-live="off">
-      <p className="tabular-nums text-3xl font-bold tracking-tight text-white sm:text-4xl">{time}</p>
-      <p className="mt-1 text-xs font-medium text-blue-100 sm:text-sm">{date || '\u00A0'}</p>
+      <p className="tabular-nums text-2xl font-bold tracking-tight text-white sm:text-3xl">{time}</p>
+      <p className="mt-0.5 text-[11px] font-medium text-blue-100 sm:text-xs">{date || '\u00A0'}</p>
     </div>
   );
 }

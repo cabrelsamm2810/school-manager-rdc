@@ -8,7 +8,7 @@ const PALETTE = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#10b981', '#f43f5e
 
 type DonutSegment = { label: string; value: number };
 
-export function DonutChart({ data, size = 160, thickness = 28, centerLabel, centerValue }: {
+export function DonutChart({ data, size = 132, thickness = 24, centerLabel, centerValue }: {
   data: DonutSegment[];
   size?: number;
   thickness?: number;
@@ -76,7 +76,7 @@ export function DonutChart({ data, size = 160, thickness = 28, centerLabel, cent
 
 type BarItem = { label: string; value: number; color?: string };
 
-export function BarCompare({ items, unit = '', height = 180 }: {
+export function BarCompare({ items, unit = '', height = 150 }: {
   items: BarItem[];
   unit?: string;
   height?: number;

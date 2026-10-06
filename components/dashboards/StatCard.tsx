@@ -18,27 +18,27 @@ const colorMap: Record<string, { bg: string; text: string }> = {
   cyan: { bg: 'bg-cyan-50', text: 'text-cyan-600' }
 };
 
-/** Carte statistique moderne — les valeurs affichées proviennent toujours de l'API. */
+/** Carte statistique compacte — les valeurs affichées proviennent toujours de l'API. */
 export function StatCard({ label, value, hint, icon, color = 'blue', delay = 0 }: StatCardProps) {
   const c = colorMap[color] ?? colorMap.blue;
 
   return (
     <div
-      className="dash-card group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-shadow duration-300 hover:shadow-lg sm:p-5"
+      className="dash-card group rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm transition-shadow duration-300 hover:shadow-md sm:p-3.5"
       style={{ animationDelay: `${delay}s` }}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-          <p className="mt-2 tabular-nums text-2xl font-bold leading-none text-slate-900 sm:text-3xl">
+          <p className="truncate text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="mt-1.5 tabular-nums text-xl font-bold leading-none text-slate-900 sm:text-2xl">
             {value}
           </p>
-          {hint && <p className="mt-1.5 text-xs text-slate-400">{hint}</p>}
+          {hint && <p className="mt-1 truncate text-[11px] text-slate-400">{hint}</p>}
         </div>
         <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${c.bg} ${c.text}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${c.bg} ${c.text}`}
         >
-          <Icon name={icon} className="h-5 w-5" />
+          <Icon name={icon} className="h-[18px] w-[18px]" />
         </span>
       </div>
     </div>

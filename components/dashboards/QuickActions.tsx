@@ -92,20 +92,20 @@ export function QuickActions({ role }: { role: string }) {
   const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.DIRECTION_ECOLE;
 
   return (
-    <section className="mb-6">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Accès rapide</h2>
-      <p className="mt-1 text-sm text-slate-500">Les actions les plus utilisées dans votre espace.</p>
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="mb-5">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Accès rapide</h2>
+      <p className="mt-0.5 text-[13px] text-slate-500">Les actions les plus utilisées dans votre espace.</p>
+      <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
         {actions.map((action, index) => {
           const c = COLOR_MAP[action.color] ?? COLOR_MAP.blue;
           return (
             <Link
               key={`${action.href}-${action.label}`}
               href={action.href}
-              className="dash-card group flex min-h-[60px] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md active:bg-slate-50"
+              className="dash-card group flex min-h-[52px] items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3 text-[13px] font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md active:bg-slate-50"
               style={{ animationDelay: `${Math.min(index * 0.04, 0.3)}s` }}
             >
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${c.bg} ${c.text}`}>
                 <ActionIcon name={action.icon} />
               </span>
               <span className="min-w-0 flex-1 leading-snug">{action.label}</span>

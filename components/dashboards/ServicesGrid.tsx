@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/Icon';
  * La liste provient de la configuration centrale de navigation
  * (lib/navigation.ts), déjà utilisée par la barre latérale : un utilisateur ne
  * voit donc que les espaces auxquels son rôle donne accès, sans règle dupliquée.
+ * Grille compacte : mêmes liens, densité réduite.
  */
 export function ServicesGrid({ role }: { role: string }) {
   const groups = visibleNavigationGroups(role)
@@ -23,27 +24,27 @@ export function ServicesGrid({ role }: { role: string }) {
   if (groups.length === 0) return null;
 
   return (
-    <section className="mt-8">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+    <section className="mt-6">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
         Services et espaces de gestion
       </h2>
-      <p className="mt-1 text-sm text-slate-500">Tous les espaces ouverts à votre rôle.</p>
+      <p className="mt-0.5 text-[13px] text-slate-500">Tous les espaces ouverts à votre rôle.</p>
 
-      <div className="mt-3 space-y-5">
+      <div className="mt-3 space-y-4">
         {groups.map((group) => (
           <div key={group.title}>
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">
               {group.title}
             </h3>
-            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
               {group.items.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md active:bg-slate-50"
+                  className="flex min-h-[52px] items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3 text-[13px] font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md active:bg-slate-50"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <Icon name={item.icon} className="h-5 w-5" />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                    <Icon name={item.icon} className="h-[18px] w-[18px]" />
                   </span>
                   <span className="min-w-0 leading-snug">{item.label}</span>
                 </Link>
