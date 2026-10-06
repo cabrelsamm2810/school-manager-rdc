@@ -19,15 +19,16 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'matricule', 'ecole'],
     defaultSort: { field: 'nom', order: 'asc' },
-    // L'enseignant n'a pas de province ni de lien vers un école (le champ
-    // `ecole` est un simple libellé) : aucun filtre de périmètre n'est applicable.
+    // L'enseignant n'a pas de province : aucun filtre de périmètre n'est applicable.
     provinceField: false,
     institutionField: false,
+    include: { ecoleRattachee: { select: { id: true, nom: true } } },
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'matricule', type: 'string', required: true, unique: true },
       { name: 'grade', type: 'string' },
       { name: 'ecole', type: 'string' },
+      { name: 'ecoleId', type: 'string', nullable: true },
       { name: 'specialite', type: 'string' },
       { name: 'telephone', type: 'string' },
       { name: 'email', type: 'string' },

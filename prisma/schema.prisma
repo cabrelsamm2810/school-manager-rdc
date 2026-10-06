@@ -219,6 +219,7 @@ model Ecole {
   ecErc                EcErc?   @relation(fields: [ecErcId], references: [id], onDelete: SetNull)
   eleves               Eleve[]
   users                User[]
+  enseignants          Enseignant[] @relation("EnseignantEcole")
   chatGroups           ChatGroup[]
   documents            EcoleDocument[]
   validationLogs       EcoleValidationLog[]
@@ -273,6 +274,8 @@ model Enseignant {
   matricule     String   @unique
   grade         String   @default("")
   ecole String   @default("")
+  ecoleId       String?
+  ecoleRattachee Ecole?  @relation("EnseignantEcole", fields: [ecoleId], references: [id], onDelete: SetNull)
   specialite    String   @default("")
   telephone     String   @default("")
   email         String   @default("")
@@ -282,6 +285,7 @@ model Enseignant {
 
   @@index([nom])
   @@index([ecole])
+  @@index([ecoleId])
   @@map("enseignants")
 }
 

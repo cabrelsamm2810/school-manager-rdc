@@ -10,6 +10,7 @@ export type CrudFieldDef = {
   required?: boolean;
   unique?: boolean;
   min?: number;
+  nullable?: boolean; // empty string → null in payload (for optional FKs)
 };
 
 export type CrudModelConfig = {
@@ -24,6 +25,7 @@ export type CrudModelConfig = {
   sousProvincialeField?: string;
   ecoleField?: string;
   institutionField?: string | false;
+  include?: Record<string, unknown>; // Prisma relations to include in GET
 };
 
 function buildSchema(fields: CrudFieldDef[]) {
@@ -57,6 +59,7 @@ function toPayload(body: Record<string, any>, fields: CrudFieldDef[]) {
       payload[f.name] = val ? new Date(val) : null;
     } else {
       payload[f.name] = val ?? '';
+      if (f.nullable && !payload[f.name]) payload[f.name] = null;
     }
   }
   return payload;
@@ -108,7 +111,11 @@ export function createCrudHandlers(config: CrudModelConfig) {
       ? { [config.defaultSort.field]: config.defaultSort.order }
       : { createdAt: 'desc' as const };
 
-    const items = await config.delegate.findMany({ where, orderBy });
+    const items = await config.delegate.findMany({
+      where,
+      orderBy,
+      ...(config.include ? { include: config.include } : {}),
+    });
     return NextResponse.json({ [config.entityNamePlural]: items });
   }
 

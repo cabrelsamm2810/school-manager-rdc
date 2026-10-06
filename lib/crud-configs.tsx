@@ -23,7 +23,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { name: 'nom', label: 'Nom complet', type: 'text', required: true },
       { name: 'matricule', label: 'Matricule', type: 'text', required: true, half: true },
       { name: 'grade', label: 'Grade', type: 'text', half: true },
-      { name: 'ecole', label: 'École', type: 'text', half: true },
+      { name: 'ecoleId', label: 'École', type: 'select', half: true, optionsEndpoint: '/api/ecoles', optionsDataKey: 'ecoles' },
       { name: 'specialite', label: 'Spécialité', type: 'text', half: true },
       { name: 'telephone', label: 'Téléphone', type: 'text', half: true },
       { name: 'email', label: 'Email', type: 'text', half: true },
@@ -37,11 +37,11 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'nom', label: 'Nom', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
       { key: 'matricule', label: 'Matricule' },
       { key: 'grade', label: 'Grade' },
-      { key: 'ecole', label: 'École' },
+      { key: 'ecoleRattachee', label: 'École', render: (e: any) => e.ecoleRattachee?.nom || e.ecole || '—' },
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
-      { name: 'ecole', label: 'Tous les écoles' },
+      { name: 'ecoleId', label: 'Toutes les écoles', optionsEndpoint: '/api/ecoles', optionsDataKey: 'ecoles' },
       { name: 'statut', label: 'Tous les statuts', options: [
         { value: 'Actif', label: 'Actif' },
         { value: 'Congé', label: 'En congé' },
