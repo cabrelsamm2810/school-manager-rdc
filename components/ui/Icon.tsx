@@ -39,6 +39,9 @@ const icons: Record<string, string> = {
   chart: 'M3 20h18M7 16v-6M12 16V8M17 16v-4',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   refresh: 'M4 12a8 8 0 0 1 13.66-5.66L20 8.6M20 4.5V9h-4.5M20 12a8 8 0 0 1-13.66 5.66L4 15.4M4 19.5V15h4.5',
+  book: 'M4 4v16a2 2 0 0 0 2 2h14V4H6a2 2 0 0 0-2 2zM8 8h8M8 12h6',
+  scan: 'M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18',
+  calendar: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4M8 14h2M14 14h2',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

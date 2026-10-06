@@ -7,6 +7,8 @@ export type NavItem = {
   minRole?: string;
   /** Restriction à un ou plusieurs rôles exacts (prioritaire sur `minRole`). */
   roles?: string[];
+  /** Rôles exclus de l'affichage (même si `minRole` le permettrait). */
+  excludeRoles?: string[];
 };
 
 export type NavGroup = {
@@ -16,14 +18,31 @@ export type NavGroup = {
 
 /**
  * Configuration centrale de la navigation School Manager RDC.
- * Les 30 modules sont organisés par groupe fonctionnel.
+ * Les modules sont organisés par groupe fonctionnel.
  * `minRole` restreint l'affichage aux rôles suffisants (optionnel).
+ * `excludeRoles` masque un élément pour les rôles listés (utile quand un
+ * groupe dédié existe, par exemple l'espace enseignant).
  */
 export const navigationGroups: NavGroup[] = [
   {
     title: 'Accueil',
     items: [
-      { label: 'Tableau de bord', href: '/dashboard', icon: 'home' },
+      { label: 'Tableau de bord', href: '/dashboard', icon: 'home', excludeRoles: ['ENSEIGNANT'] },
+    ]
+  },
+  {
+    title: 'Espace enseignant',
+    items: [
+      { label: 'Tableau de bord', href: '/enseignant/dashboard', icon: 'home', roles: ['ENSEIGNANT'] },
+      { label: 'Mes cours', href: '/mes-cours', icon: 'notebook', roles: ['ENSEIGNANT'] },
+      { label: 'Journal de classe', href: '/journal-de-classe', icon: 'document', roles: ['ENSEIGNANT'] },
+      { label: 'Cahier de communication', href: '/cahier-de-communication', icon: 'book', roles: ['ENSEIGNANT'] },
+      { label: 'Présences / QR', href: '/presences-qr', icon: 'qr', roles: ['ENSEIGNANT'] },
+      { label: 'Cahiers de cotes', href: '/cahier-de-cote', icon: 'notebook', roles: ['ENSEIGNANT'] },
+      { label: 'Mes élèves', href: '/mes-eleves', icon: 'users', roles: ['ENSEIGNANT'] },
+      { label: 'Scanner un élève', href: '/scanner-eleve', icon: 'scan', roles: ['ENSEIGNANT'] },
+      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['ENSEIGNANT'] },
+      { label: 'Notifications', href: '/notifications', icon: 'bell', roles: ['ENSEIGNANT'] },
     ]
   },
   {
@@ -32,8 +51,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Écoles', href: '/ecoles', icon: 'school', minRole: 'DIRECTION_ECOLE' },
       { label: 'Élèves', href: '/eleves', icon: 'users', minRole: 'DIRECTION_ECOLE' },
       { label: 'Enseignants', href: '/enseignants', icon: 'teacher', minRole: 'DIRECTION_ECOLE' },
-      { label: 'Tableau de bord enseignant', href: '/enseignant/dashboard', icon: 'home', roles: ['ENSEIGNANT'] },
-      { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', minRole: 'ENSEIGNANT' },
+      { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', minRole: 'ENSEIGNANT', excludeRoles: ['ENSEIGNANT'] },
       { label: 'Rappels de cotes', href: '/rappels-cotes', icon: 'bell', minRole: 'DIRECTION_ECOLE' },
       { label: 'Bulletin numérique', href: '/bulletin-numerique', icon: 'notebook', minRole: 'DIRECTION_ECOLE' },
       { label: 'Carte scolaire', href: '/carte-scolaire', icon: 'map', minRole: 'DIRECTION_ECOLE' },
@@ -74,17 +92,23 @@ export const navigationGroups: NavGroup[] = [
   {
     title: 'Communication',
     items: [
-      { label: 'Notifications', href: '/notifications', icon: 'bell' },
-      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat' },
+      { label: 'Notifications', href: '/notifications', icon: 'bell', excludeRoles: ['ENSEIGNANT'] },
+      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', excludeRoles: ['ENSEIGNANT'] },
     ]
   },
   {
     title: 'Services',
     items: [
-      { label: 'Paiements & premium', href: '/paiements', icon: 'card' },
-      { label: 'Géolocalisation', href: '/geolocalisation', icon: 'location' },
-      { label: 'Config. géolocalisation', href: '/config-geolocalisation', icon: 'location' },
+      { label: 'Paiements & premium', href: '/paiements', icon: 'card', excludeRoles: ['ENSEIGNANT'] },
+      { label: 'Géolocalisation', href: '/geolocalisation', icon: 'location', excludeRoles: ['ENSEIGNANT'] },
+      { label: 'Config. géolocalisation', href: '/config-geolocalisation', icon: 'location', excludeRoles: ['ENSEIGNANT'] },
+    ]
+  },
+  {
+    title: 'Support',
+    items: [
       { label: 'Paramètres', href: '/parametres', icon: 'settings' },
+      { label: 'Profil', href: '/profile', icon: 'user' },
     ]
   },
 ];
@@ -101,11 +125,11 @@ export function visibleNavigationGroups(role?: string | null): NavGroup[] {
   return navigationGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) =>
-        item.roles
-          ? item.roles.includes(role)
-          : !item.minRole || (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[item.minRole] ?? 0)
-      )
+      items: group.items.filter((item) => {
+        if (item.roles) return item.roles.includes(role);
+        if (item.excludeRoles?.includes(role)) return false;
+        return !item.minRole || (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[item.minRole] ?? 0);
+      })
     }))
     .filter((group) => group.items.length > 0);
 }

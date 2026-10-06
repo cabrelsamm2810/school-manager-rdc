@@ -165,7 +165,7 @@ export function MobileNavDrawer({
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-bold leading-tight text-white">School Manager</p>
-            <p className="truncate text-[11px] leading-tight text-[#7d8798]">RDC · Gestion scolaire</p>
+            <p className="truncate text-[11px] leading-tight text-[#7d8798]">RDC · Skybox Business</p>
           </div>
           <button
             onClick={onClose}

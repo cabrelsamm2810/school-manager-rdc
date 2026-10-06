@@ -195,7 +195,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex">
         {/* ── Menu latéral (ordinateur) ── */}
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 flex-col bg-[#0c1421] lg:flex">
           <SidebarContent groups={groups} pathname={pathname} user={user} onLogout={handleLogout} />
         </aside>
 
@@ -232,40 +232,14 @@ function SidebarContent({
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Identité + photo de profil */}
-      {user && (
-        <div className="shrink-0 px-2.5 pt-3">
-          <Link
-            href="/profile"
-            className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 transition hover:border-blue-200 hover:bg-white hover:shadow-sm"
-          >
-            <Avatar
-              photoUrl={user.profilePhotoUrl}
-              prenom={user.prenom}
-              nom={user.nom}
-              size="sm"
-              className="ring-2 ring-white shadow-sm"
-            />
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-slate-900">
-                {user.prenom} {user.nom}
-              </p>
-              <p className="truncate text-[11px] font-medium text-blue-600">
-                {ROLE_LABELS[user.role] ?? user.role}
-              </p>
-            </div>
-          </Link>
-        </div>
-      )}
-
       {/* Navigation principale */}
-      <nav className="min-h-0 flex-1 overflow-y-auto px-2.5 py-3" aria-label="Navigation principale">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-3" aria-label="Navigation principale">
         {groups.map((group) => (
           <section key={group.title} className="mb-4 last:mb-0">
-            <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e7a8f]">
               {group.title}
             </h2>
-            <ul className="space-y-0.5">
+            <ul className="space-y-1">
               {group.items.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 return (
@@ -274,22 +248,21 @@ function SidebarContent({
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
                       className={clsx(
-                        'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition',
+                        'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition',
                         active
-                          ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100'
+                          ? 'bg-[#5346f5] text-white shadow-lg shadow-[#5346f5]/25'
+                          : 'text-[#a0a0a0] hover:bg-white/5 hover:text-white'
                       )}
                     >
                       {item.href === '/schoolchat' ? (
-                        <SchoolChatMark className="h-[21px] w-[21px]" />
+                        <SchoolChatMark className="h-[21px] w-[21px] rounded-[5px]" />
                       ) : (
                         <Icon
                           name={item.icon}
-                          className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-blue-600' : 'text-slate-400')}
+                          className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-[#7d8798]')}
                         />
                       )}
                       <span className="min-w-0 truncate">{item.label}</span>
-                      {active && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}
                     </Link>
                   </li>
                 );
@@ -299,16 +272,41 @@ function SidebarContent({
         ))}
       </nav>
 
-      {/* Déconnexion */}
-      <div className="shrink-0 border-t border-slate-200 p-2.5">
-        <button
-          onClick={onLogout}
-          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 active:bg-red-100"
-        >
-          <Icon name="logout" className="h-[18px] w-[18px]" />
-          Déconnexion
-        </button>
-      </div>
+      {/* Profil + déconnexion */}
+      {user && (
+        <div className="shrink-0 border-t border-white/10 px-3 py-3">
+          <div className="flex items-center gap-2">
+            <Link
+              href="/profile"
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg py-1 transition hover:opacity-90"
+            >
+              <Avatar
+                photoUrl={user.profilePhotoUrl}
+                prenom={user.prenom}
+                nom={user.nom}
+                size="sm"
+                className="ring-2 ring-white/15"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold leading-tight text-white">
+                  {user.prenom} {user.nom}
+                </p>
+                <p className="truncate text-[11px] leading-tight text-[#8b94a6]">
+                  {ROLE_LABELS[user.role] ?? user.role}
+                </p>
+              </div>
+            </Link>
+            <button
+              onClick={onLogout}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-semibold text-[#ff9b9b] transition hover:bg-red-500/10"
+              aria-label="Déconnexion"
+            >
+              <Icon name="logout" className="h-4 w-4" />
+              Déconnexion
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
