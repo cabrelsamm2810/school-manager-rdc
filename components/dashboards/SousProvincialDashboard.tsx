@@ -26,7 +26,7 @@ export function SousProvincialDashboard({ stats, breakdown, chartData, activite,
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard label="Établissements" value={fmt(stats.totalEtablissements)} hint="Dans la sous-division" icon="school" color="violet" delay={0} />
         <StatCard label="Élèves" value={fmt(stats.totalEleves)} hint="Inscrits" icon="users" color="blue" delay={0.06} />
         <StatCard label="Classes" value={fmt(stats.totalClasses)} hint="Tous niveaux" icon="notebook" color="amber" delay={0.12} />

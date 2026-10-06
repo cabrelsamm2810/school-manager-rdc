@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
-import { PageHeader, StatCard, Card } from '@/components/ui/Card';
+import { StatCard, Card } from '@/components/ui/Card';
+import { ClockCard } from '@/components/dashboards/ClockCard';
+import { WelcomeCard } from '@/components/dashboards/WelcomeCard';
+import { useSessionUser } from '@/lib/use-session-user';
+import { getInstitutionLabel } from '@/lib/institution';
 import { PresenceManager } from '@/components/enseignant/PresenceManager';
 import { PresenceStatsJour } from '@/components/enseignant/PresenceStatsJour';
 import { RapportAbsences } from '@/components/enseignant/RapportAbsences';
@@ -18,6 +22,7 @@ type DashboardData = {
 };
 
 export default function EnseignantDashboardPage() {
+  const user = useSessionUser();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,11 +44,12 @@ export default function EnseignantDashboardPage() {
     <AppShell>
       <div className="p-4 md:p-6">
         <div className="mx-auto max-w-5xl">
-          <PageHeader
-            eyebrow="Espace enseignant"
-            title="Tableau de bord"
-            description="Suivi des effectifs par classe et taux de présence des élèves."
-          />
+          {user && (
+            <>
+              <ClockCard institutionLabel={getInstitutionLabel(user)} />
+              <WelcomeCard user={user} scope="enseignant" />
+            </>
+          )}
 
           {loading && (
             <div className="flex items-center justify-center py-20">

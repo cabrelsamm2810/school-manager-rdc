@@ -28,7 +28,7 @@ export function ProvincialDashboard({ stats, breakdown, chartData, activite, pro
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard label="Sous-divisions" value={fmt(stats.totalSousProvinciales)} hint="Dans la province" icon="district" color="cyan" delay={0} />
         <StatCard label="Établissements" value={fmt(stats.totalEtablissements)} hint="Dans la province" icon="school" color="violet" delay={0.06} />
         <StatCard label="Élèves" value={fmt(stats.totalEleves)} hint="Inscrits dans la province" icon="users" color="blue" delay={0.12} />

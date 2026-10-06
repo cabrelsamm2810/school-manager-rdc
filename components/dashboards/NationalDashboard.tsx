@@ -25,7 +25,7 @@ export function NationalDashboard({ stats, breakdown, chartData, activite }: {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Provinces" value={fmt(stats.totalProvinces)} hint="Couverture nationale" icon="globe" color="blue" delay={0} />
         <StatCard label="Sous-divisions" value={fmt(stats.totalSousProvinciales)} hint="Coord. sous-provinciales" icon="district" color="cyan" delay={0.04} />
         <StatCard label="Établissements" value={fmt(stats.totalEtablissements)} hint="Toutes provinces" icon="school" color="violet" delay={0.08} />

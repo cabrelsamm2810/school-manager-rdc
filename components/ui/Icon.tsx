@@ -37,6 +37,7 @@ const icons: Record<string, string> = {
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4',
   phone: 'M7 2h10l1 5-3 1c0 4-3 7-7 7l-1-3-5 1v10',
   chart: 'M3 20h18M7 16v-6M12 16V8M17 16v-4',
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

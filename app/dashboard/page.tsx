@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { ClockCard } from '@/components/dashboards/ClockCard';
 import { WelcomeCard } from '@/components/dashboards/WelcomeCard';
 import { QuickActions } from '@/components/dashboards/QuickActions';
 import { ServicesGrid } from '@/components/dashboards/ServicesGrid';
@@ -12,6 +13,7 @@ import { SousProvincialDashboard } from '@/components/dashboards/SousProvincialD
 import { SchoolDashboard } from '@/components/dashboards/SchoolDashboard';
 import type { DashboardStatsResponse } from '@/components/dashboards/types';
 import { useSessionUser } from '@/lib/use-session-user';
+import { getInstitutionLabel } from '@/lib/institution';
 
 export default function DashboardPage() {
   const user = useSessionUser();
@@ -74,6 +76,7 @@ export default function DashboardPage() {
     <AppShell>
       <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
         <div className="mx-auto max-w-5xl">
+          <ClockCard institutionLabel={getInstitutionLabel(user)} />
           <WelcomeCard user={user} scope={data.scope} />
           <QuickActions role={user.role} />
           {data.scope === 'national' && <NationalDashboard {...dashProps} />}

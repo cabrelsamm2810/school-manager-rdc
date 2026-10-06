@@ -10,6 +10,7 @@ import { useSessionUser, type SessionUser } from '@/lib/use-session-user';
 import { Icon } from '@/components/ui/Icon';
 import { Avatar } from '@/components/ui/Avatar';
 import { DigitalClock } from '@/components/dashboards/DigitalClock';
+import { BottomNav } from '@/components/dashboards/BottomNav';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -231,8 +232,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         </aside>
 
+        {/* ── Barre de navigation du bas (mobile) ── */}
+        <BottomNav role={user?.role} onMore={() => setSidebarOpen(true)} />
+
         {/* ── Contenu principal ── */}
-        <main className="min-h-[calc(100vh-3.5rem)] min-w-0 flex-1">{children}</main>
+        <main className="min-h-[calc(100vh-3.5rem)] min-w-0 flex-1 pb-[68px] lg:pb-0">{children}</main>
       </div>
     </div>
   );
