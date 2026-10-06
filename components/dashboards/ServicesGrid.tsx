@@ -23,16 +23,16 @@ export function ServicesGrid({ role }: { role: string }) {
   if (groups.length === 0) return null;
 
   return (
-    <section className="mb-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+    <section className="mt-8">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         Services et espaces de gestion
       </h2>
       <p className="mt-1 text-sm text-slate-500">Tous les espaces ouverts à votre rôle.</p>
 
-      <div className="mt-4 space-y-5">
+      <div className="mt-3 space-y-5">
         {groups.map((group) => (
           <div key={group.title}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">
               {group.title}
             </h3>
             <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -40,10 +40,10 @@ export function ServicesGrid({ role }: { role: string }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+                  className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md active:bg-slate-50"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                    <Icon name={item.icon} />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <Icon name={item.icon} className="h-5 w-5" />
                   </span>
                   <span className="min-w-0 leading-snug">{item.label}</span>
                 </Link>

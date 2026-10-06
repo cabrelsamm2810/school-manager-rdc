@@ -681,6 +681,14 @@ body {
 }
 .nav-group-expand { animation: navGroupExpand 0.2s ease-out forwards; }
 
+/* Confort tactile (Android) : surbrillance discrète au tap */
+html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-card { animation: none; opacity: 1; }
+  .nav-group-expand { animation: none; opacity: 1; }
+}
+
 /* ── Login page ── */
 /* ── Login / verification background ── */
 .login-background {

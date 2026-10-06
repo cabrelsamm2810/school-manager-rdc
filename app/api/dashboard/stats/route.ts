@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   if (userInst) sousProvWhere.institution = userInst;
 
   // ── Stats de base (communes à tous les niveaux) ──
-  const [totalEleves, totalEtablissements, totalEnseignants, totalProvinces, totalClassesAgg, totalDossiers, totalVisites, totalSousProvinciales] = await Promise.all([
+  const [totalEleves, totalEtablissements, totalEnseignants, totalProvinces, totalClassesAgg, totalDossiers, totalVisites, totalSousProvinciales, totalDocuments, totalNotifications] = await Promise.all([
     prisma.eleve.count({ where: eleveWhere }),
     prisma.etablissement.count({ where: etabWhere }),
     prisma.enseignant.count(),
@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
     prisma.dossier.count(),
     prisma.visite.count(),
     prisma.coordSousProvinciale.count({ where: sousProvWhere }),
+    prisma.dossierEleveDocument.count({ where: { eleve: eleveWhere } }),
+    prisma.notification.count({ where: { lu: false } }),
   ]);
 
   const totalClasses = totalClassesAgg.length;
@@ -122,6 +124,8 @@ export async function GET(request: NextRequest) {
       totalDossiers,
       totalVisites,
       totalSousProvinciales,
+      totalDocuments,
+      totalNotifications,
     },
     breakdown,
     chartData,
