@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /* Étapes réelles du démarrage, affichées au fur et à mesure. */
 const STEPS = [
@@ -12,8 +12,8 @@ const STEPS = [
 /* Ressources nécessaires au premier écran (logo + logos institutionnels). */
 const CRITICAL_ASSETS = ['/logo.png', '/illustrations/ec-erc-logo.jpg', '/illustrations/eccath-logo.jpg'];
 
-const MIN_VISIBLE_MS = 650; /* évite un simple clignotement quand tout est déjà en cache */
-const MAX_VISIBLE_MS = 5000; /* garde-fou : l'écran ne peut jamais rester bloqué */
+const MIN_VISIBLE_MS = 5000; /* durée d'affichage demandée : 5 s, comptée depuis l'apparition de l'écran */
+const MAX_VISIBLE_MS = 8000; /* garde-fou : l'écran ne peut jamais rester bloqué */
 const STEP_DWELL_MS = 300; /* laisse chaque étape lisible */
 const FADE_MS = 550;
 const ASSET_TIMEOUT_MS = 1500; /* borne le décodage des images */
@@ -52,9 +52,18 @@ export function SplashScreen() {
   const [step, setStep] = useState(0);
   const [fading, setFading] = useState(false);
   const [visible, setVisible] = useState(true);
+  /* Vrai si l'écran était déjà présent dans la page pré-rendue (ouverture de l'application) :
+     il est alors visible dès le premier rendu. Faux après une navigation interne. */
+  const servedWithPage = useRef<boolean | null>(null);
+  if (servedWithPage.current === null && typeof document !== 'undefined') {
+    servedWithPage.current = !!document.querySelector('.splash-overlay');
+  }
 
   useEffect(() => {
-    const startedAt = Date.now();
+    /* La durée part de l'apparition de l'écran, pas de la fin du chargement. */
+    const paints = performance.getEntriesByName('first-contentful-paint');
+    const shownSince = servedWithPage.current && paints.length > 0 ? paints[0].startTime : performance.now();
+    const startedAt = performance.now();
     const timers: ReturnType<typeof setTimeout>[] = [];
     let cancelled = false;
     let finished = false;
@@ -66,17 +75,17 @@ export function SplashScreen() {
       });
 
     const showStep = async (index: number) => {
-      const dwell = STEP_DWELL_MS - (Date.now() - lastStepAt);
+      const dwell = STEP_DWELL_MS - (performance.now() - lastStepAt);
       if (dwell > 0) await wait(dwell);
       if (cancelled || finished) return;
-      lastStepAt = Date.now();
+      lastStepAt = performance.now();
       setStep(index);
     };
 
     const finish = () => {
       if (cancelled || finished) return;
       finished = true;
-      const remaining = MIN_VISIBLE_MS - (Date.now() - startedAt);
+      const remaining = MIN_VISIBLE_MS - (performance.now() - shownSince);
       const close = () => {
         if (cancelled) return;
         setStep(STEPS.length);
