@@ -1,55 +1,59 @@
 # School Manager RDC — dev environment notes
 
+## Stack
+
+Next.js 14 (App Router) + Prisma + PostgreSQL + Tailwind. Session-cookie auth (same-origin, `sameSite: lax`).
+
 ## How it runs here
 
-- `docker compose -f docker-compose.base44.yml up -d` is the whole setup: Postgres 16 (`db`), a one-shot
-  `migrate` service (`npm install` + `prisma migrate deploy`), then `web` running `next dev` on port 3000
-  from the bind-mounted source.
-- The `migrate` service must exit successfully before `web` starts (`depends_on: service_completed_successfully`).
-  Both app services run `npm install` on startup, and they never run concurrently — do not add a second
-  installer against the shared `node_modules` bind mount.
-- `DATABASE_URL` / `DIRECT_URL` point at the local `db` service. They are sandbox-local infrastructure
-  credentials set inline in Compose, not user secrets. `prisma/schema.prisma` requires both.
-- Node image must be `node:22-bookworm` (full), **not** `-slim`: Prisma's schema engine fails with
-  `Schema engine error` when OpenSSL is missing. `openssl` is what makes `prisma migrate deploy` work.
+```bash
+docker compose -f docker-compose.base44.yml up -d
+```
 
-## Sharp edges found on this branch
+- `postgres` — local PostgreSQL (user/pass `school`/`schoolpass`, db `school`), healthchecked with `pg_isready`.
+- `migrate` — one-shot, must exit 0 before `web` starts (`depends_on: service_completed_successfully`):
+  `npm install` → `prisma generate` → `prisma db push --accept-data-loss` → `tsx prisma/seed.ts`.
+  It uses `db push`, not `migrate deploy`, because the database was created with `db push` and is not baselined
+  for migrations.
+- `web` — `next dev -H 0.0.0.0 -p 3000` from the bind-mounted repo; live reload is active. `node_modules` and
+  `.next` live in container volumes, so installs do not spill into the host working tree.
 
-- Tailwind was declared in `package.json` and used everywhere, but on `main` the `tailwind.config.ts` and
-  `postcss.config.mjs` files were missing. Without a PostCSS config Next.js skips PostCSS entirely, so the
-  `@tailwind` directives in `app/globals.css` were never expanded and no utility classes were emitted.
-- `app/dashboard/page.tsx` imports `@/components/AppShell`; that component was missing from `main`, which
-  broke the `/dashboard` route with `Module not found`. The only real AppShell in the repo lives on
-  `origin/base44/setup-4ce80f11` and pulls in `@/lib/navigation`, `@/components/ui/Icon`, etc., none of which
-  exist on `main`; the local `components/AppShell.tsx` is a deliberately minimal shell that matches this
-  branch's simplified dashboard.
-- `app/globals.css` referenced `/school-background.png`, which does not exist in any branch. The public asset
-  that exists is `public/school-background.svg`. Any change to that CSS must point at a file that is actually
-  in `public/`, otherwise the login/register background silently renders empty.
-- `lib/account-service.ts` only accepts `role: 'ELEVE'` (or no role) on public registration, while
-  `components/auth/RegisterForm.tsx` offers every role in its select. Registering with any other role returns
-  400 `Données invalides.` This is intentional business logic, not a build problem.
-- `prisma/seed.ts` is not run by Compose; an empty database is normal, and accounts come from `/register`.
+Web entry point is host port 3000; the API is served by the same Next dev server (single-origin wiring).
+`/run/base44/app.env` (the platform-managed secrets file) is the only `env_file` — it carries the SMTP
+credentials. Nothing external is required to boot.
 
-## Type errors that broke `next build`
+## Sharp edges
 
-`next build` type-checks every file matched by `tsconfig.json` (`**/*.ts`), so a test file can break the build.
-Three problems were fixed on this branch:
-
-- `lib/account-service.ts` returned bare object literals, so `ok` widened to `boolean` and callers could not
-  narrow the union — `app/api/auth/login/route.ts` then failed on `'result.user' is possibly 'undefined'`.
-  Both helpers are now annotated with an explicit `AccountResult` discriminated union.
-- `bcryptjs` 2.x ships no type declarations, so `lib/auth.ts` failed with TS7016. `@types/bcryptjs` is now a
-  devDependency (`npm install` is enough — there is no lockfile in the repo).
-- `tests/auth.test.ts` imported `hasAtLeastRole` / `isSuperAdmin` from `lib/rbac.ts`; those are now exported
-  there (the role ranking map simply moved to module scope). Nothing about the RBAC behaviour changed.
-
-`vitest.config.ts` maps the `@/` alias, which Vitest does not read from `tsconfig.json` — without it every
-test file fails with `Failed to load url @/lib/auth`.
+- **Prisma needs OpenSSL.** `node:22-bookworm-slim` lacks it and Prisma fails with an empty "Schema engine error".
+  Both app services use `node:22-bookworm` (full Debian) — do not switch them to `-slim`.
+- **`migrate` and `web` each run `npm install`.** They never run concurrently, so they do not race each other;
+  do not add a third installer against the same `node_modules` volume.
+- **`package-lock.json` is tracked**, but the service commands still use `npm install` (not `npm ci`), so a
+  dependency change should be followed by an install to keep the lockfile in sync.
+- **Tailwind/PostCSS config must exist.** Without `postcss.config.mjs` Next.js skips PostCSS entirely, so the
+  `@tailwind` directives in `app/globals.css` are never expanded and no utility classes are emitted. Content
+  paths cover `app/`, `components/` and `lib/`.
+- **CSS backgrounds must point at a real asset.** `.login-background` (used by `app/verify/page.tsx`) uses
+  `public/school-background.svg`; there is no `school-background.png` in any branch, so pointing back at a `.png`
+  makes the background render empty.
+- **`lib/account-service.ts` returns an explicit `AccountResult` discriminated union.** That annotation is
+  load-bearing: without it `ok` widens to `boolean`, callers cannot narrow the union, and
+  `app/api/auth/login/route.ts` fails `next build` on `'result.user' is possibly 'undefined'`. Public
+  registration accepts every role listed in `validRoles`, and new accounts start inactive until the email code
+  is verified.
+- **CRUD pattern** — modules share one factory: `lib/crud-factory.ts` (API handlers), `lib/crud-models.ts`
+  (Prisma model configs), `lib/crud-configs.tsx` (frontend field/column/stat configs) and
+  `components/CrudManager.tsx` (list + form + delete UI). Route files are thin wrappers around
+  `createCrudHandlers()`. To add a module: add the Prisma model, add entries to `crud-models.ts` and
+  `crud-configs.tsx`, add the two route files, and render `<CrudManager config={crudConfigs.xxx} />`.
+- `.env.example` lists Supabase and S3 settings, but those integrations are **not implemented** — only
+  `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
+  is declared there but referenced nowhere in the code.
 
 ## Verifying it works
 
 ```bash
+docker compose -f docker-compose.base44.yml ps                           # web healthy, migrate exited 0
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/          # 200
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/login     # 200
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/register  # 200
@@ -59,16 +63,19 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/api/meta  # 200
 curl -s -o /dev/null -w "%{http_code}\n" -H "Cookie: school_manager_session=demo" http://localhost:3000/dashboard
 ```
 
-Full flow: `POST /api/auth/register` (role `ELEVE`) → `POST /api/auth/login` (sets the session cookie) →
-`GET /api/auth/session` → `GET /api/users/me`.
-
 The generated stylesheet must contain real Tailwind output:
 `curl -s http://localhost:3000/_next/static/css/app/layout.css | grep -c "min-h-screen"` should be ≥ 1.
 
+Full flow: register at `/register` (the account starts inactive and a 6-digit code is emailed) →
+activate with `POST /api/auth/verify` → log in at `/login` (sets the session cookie) →
+`GET /api/auth/session` → `GET /api/users/me`.
+
 ## Tests
 
-- `npm test` — vitest unit tests (`tests/auth.test.ts`), no database needed.
+- `npm test` — vitest unit tests (`tests/auth.test.ts`), no database needed. `vitest.config.ts` maps the `@/`
+  alias, which Vitest does not read from `tsconfig.json`.
 - `npm run test:db` — Postgres integration test; only runs when `RUN_DB_TESTS=true` and `DATABASE_URL` are set.
 - `npx prisma validate` / `npm run build` for schema and production-build checks.
 
-Never run `prisma migrate reset`, `db push --force-reset`, or anything that deletes tables or the `db_data` volume.
+Never run `prisma migrate reset`, `db push --force-reset`, or anything that deletes tables or the
+`postgres_data` volume.

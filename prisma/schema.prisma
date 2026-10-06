@@ -22,20 +22,764 @@ enum Role {
 }
 
 model User {
-  id              String   @id @default(cuid())
-  nom             String
-  postNom        String   @default("")
-  prenom          String
-  email           String   @unique
-  telephone       String   @default("")
-  passwordHash    String
-  role            Role     @default(ELEVE)
-  profilePhotoUrl String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  nom                   String
+  postNom               String   @default("")
+  prenom                String
+  sexe                  String   @default("")
+  email                 String   @unique
+  telephone             String   @default("")
+  passwordHash          String
+  role                  Role     @default(ELEVE)
+  typeInstitution       String   @default("")
+  institutionName      String   @default("")
+  provinceAdministrative String  @default("")
+  provinceEducationnelle String  @default("")
+  bureauAffectation     String   @default("")
+  fonction              String   @default("")
+  grade                 String   @default("")
+  dinacope              String   @default("")
+  profilePhotoUrl       String?
+  validationCode        String?
+  isActive              Boolean  @default(false)
+  coordSousProvincialeId String?
+  coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
+  etablissementId       String?
+  etablissement         Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  classe                String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  chatGroupsCreated     ChatGroup[]
+  chatGroupMemberships  ChatGroupMember[]
+  chatGroupMessages     ChatGroupMessage[]
 
   @@index([role])
   @@index([isActive])
+  @@index([coordSousProvincialeId])
+  @@index([etablissementId])
+  @@index([classe])
   @@map("users")
+}
+
+model Eleve {
+  id              String    @id @default(cuid())
+  matricule       String    @unique
+  nom             String
+  postNom         String    @default("")
+  prenom          String
+  sexe            String    @default("")
+  dateNaissance   DateTime?
+  lieuNaissance   String    @default("")
+  classe          String
+  telephone       String    @default("")
+  email           String    @default("")
+  adresse         String    @default("")
+  nomTuteur       String    @default("")
+  telephoneTuteur String    @default("")
+  emailTuteur     String    @default("")
+  etablissementId String?
+  etablissement   Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  presences  Presence[]
+  documents  DossierEleveDocument[]
+  resultats  DossierEleveResultat[]
+  interactions DossierEleveInteraction[]
+  cours      Cours[]
+  cahierDeCotes CahierDeCote[]
+  bulletins  Bulletin[]
+
+  @@index([classe])
+  @@index([nom])
+  @@index([etablissementId])
+  @@map("eleves")
+}
+
+model Cours {
+  id          String   @id @default(cuid())
+  titre       String
+  type        String   @default("cours")
+  classe      String
+  eleveId     String?
+  eleve       Eleve?   @relation(fields: [eleveId], references: [id], onDelete: SetNull)
+  date        DateTime
+  heureDebut  String   @default("")
+  heureFin    String   @default("")
+  salle       String   @default("")
+  enseignant  String   @default("")
+  description String   @default("")
+  couleur     String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([classe])
+  @@index([eleveId])
+  @@map("cours")
+}
+
+model DossierEleveDocument {
+  id          String   @id @default(cuid())
+  eleveId     String
+  eleve       Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  type        String   @default("")
+  titre       String
+  fileUrl     String
+  fileName    String   @default("")
+  fileType    String   @default("")
+  description String   @default("")
+  uploadedBy  String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([eleveId])
+  @@index([type])
+  @@map("dossier_eleve_documents")
+}
+
+model DossierEleveResultat {
+  id          String   @id @default(cuid())
+  eleveId     String
+  eleve       Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  periode     String
+  matiere     String  @default("")
+  note        String  @default("")
+  moyenne     String  @default("")
+  mention     String  @default("")
+  appreciation String @default("")
+  anneeScolaire String @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([eleveId])
+  @@index([periode])
+  @@index([anneeScolaire])
+  @@map("dossier_eleve_resultats")
+}
+
+model DossierEleveInteraction {
+  id          String   @id @default(cuid())
+  eleveId     String
+  eleve       Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  type        String
+  sujet       String
+  description String   @default("")
+  date        DateTime @default(now())
+  intervenant String   @default("")
+  statut      String   @default("Enregistré")
+  createdAt   DateTime @default(now())
+
+  @@index([eleveId])
+  @@index([type])
+  @@index([date])
+  @@map("dossier_eleve_interactions")
+}
+
+model Presence {
+  id        String   @id @default(cuid())
+  eleveId   String
+  eleve     Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  present   Boolean  @default(true)
+  classe    String
+  latitude  Float?
+  longitude Float?
+
+  @@index([eleveId])
+  @@index([date])
+  @@index([classe])
+  @@map("presences")
+}
+
+model Etablissement {
+  id                   String   @id @default(cuid())
+  nom                  String
+  type                 String   @default("")
+  institution          String   @default("EC_ERC")
+  dinacope             String   @default("")
+  province             String   @default("")
+  provinceEducationnelle String @default("")
+  ville                String   @default("")
+  commune              String   @default("")
+  adresse              String   @default("")
+  localisationGeo      String   @default("")
+  telephone            String   @default("")
+  email                String   @default("")
+  chefEtablissement    String   @default("")
+  logoUrl              String?
+  identifiantSM        String?  @unique
+  effectif             Int      @default(0)
+  statut               String   @default("Actif")
+  statutValidation     String   @default("Brouillon")
+  structureRattachementId   String?
+  structureRattachementType String   @default("")
+  coordSousProvincialeId String?
+  coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
+  ecErcId              String?
+  ecErc                EcErc?   @relation(fields: [ecErcId], references: [id], onDelete: SetNull)
+  eleves               Eleve[]
+  users                User[]
+  chatGroups           ChatGroup[]
+  documents            EtablissementDocument[]
+  validationLogs       EtablissementValidationLog[]
+  cahierDeCotes        CahierDeCote[]
+  bulletins            Bulletin[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([province])
+  @@index([type])
+  @@index([institution])
+  @@index([statutValidation])
+  @@index([coordSousProvincialeId])
+  @@index([ecErcId])
+  @@map("etablissements")
+}
+
+model EtablissementDocument {
+  id              String   @id @default(cuid())
+  etablissementId String
+  etablissement   Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  type            String   @default("")
+  titre           String
+  fileUrl         String
+  fileName        String   @default("")
+  fileType        String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([etablissementId])
+  @@index([type])
+  @@map("etablissement_documents")
+}
+
+model EtablissementValidationLog {
+  id              String   @id @default(cuid())
+  etablissementId String
+  etablissement   Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  statut          String
+  commentaire     String   @default("")
+  validateurId    String?
+  validateurNom   String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([etablissementId])
+  @@index([statut])
+  @@map("etablissement_validation_logs")
+}
+
+model Enseignant {
+  id            String   @id @default(cuid())
+  nom           String
+  matricule     String   @unique
+  grade         String   @default("")
+  etablissement String   @default("")
+  specialite    String   @default("")
+  telephone     String   @default("")
+  email         String   @default("")
+  statut        String   @default("Actif")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([nom])
+  @@index([etablissement])
+  @@map("enseignants")
+}
+
+model Province {
+  id            String   @id @default(cuid())
+  nom           String   @unique
+  chefLieu      String   @default("")
+  etablissements Int     @default(0)
+  eleves        Int      @default(0)
+  statut        String   @default("Actif")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([nom])
+  @@map("provinces")
+}
+
+model ProvinceEducationnelle {
+  id                    String   @id @default(cuid())
+  nom                   String   @unique
+  provinceAdministrative String  @default("")
+  chefLieu              String   @default("")
+  sousDivisions         Int      @default(0)
+  etablissements        Int      @default(0)
+  eleves                Int      @default(0)
+  statut                String   @default("Actif")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([nom])
+  @@index([provinceAdministrative])
+  @@map("provinces_educationnelles")
+}
+
+model SousDivisionEducationnelle {
+  id                    String   @id @default(cuid())
+  nom                   String
+  provinceEducationnelle String  @default("")
+  provinceAdministrative String  @default("")
+  lieuImplantation      String   @default("")
+  etablissements        Int      @default(0)
+  eleves                Int      @default(0)
+  statut                String   @default("Actif")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([nom, provinceEducationnelle])
+  @@index([provinceEducationnelle])
+  @@index([provinceAdministrative])
+  @@map("sous_divisions_educationnelles")
+}
+
+model ClasseRdc {
+  id        String   @id @default(cuid())
+  nom       String   @unique
+  cycle     String   @default("")
+  ordre     Int      @default(0)
+  diplome   String   @default("")
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cycle])
+  @@index([ordre])
+  @@map("classes_rdc")
+}
+
+model MatiereRdc {
+  id          String   @id @default(cuid())
+  nom         String
+  cycle       String   @default("")
+  domaine     String   @default("")
+  coefficient Int      @default(1)
+  statut      String   @default("Actif")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([nom, cycle])
+  @@index([cycle])
+  @@index([domaine])
+  @@map("matieres_rdc")
+}
+
+model OptionRdc {
+  id          String   @id @default(cuid())
+  nom         String
+  cycle       String   @default("")
+  type        String   @default("Section")
+  description String   @default("")
+  statut      String   @default("Actif")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([nom, cycle])
+  @@index([cycle])
+  @@index([type])
+  @@map("options_rdc")
+}
+
+model EcErc {
+  id        String   @id @default(cuid())
+  nom       String
+  type      String   @default("")
+  institution String @default("EC_ERC")
+  province  String   @default("")
+  ecoles    Int      @default(0)
+  statut    String   @default("Actif")
+  etablissements Etablissement[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([province])
+  @@index([institution])
+  @@map("ec_erc")
+}
+
+model CoordNationale {
+  id            String   @id @default(cuid())
+  province      String
+  institution   String   @default("EC_ERC")
+  coordonnateur String   @default("")
+  ecoles        Int      @default(0)
+  eleves        Int      @default(0)
+  statut        String   @default("Actif")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([province])
+  @@index([institution])
+  @@map("coord_nationale")
+}
+
+model CoordProvinciale {
+  id        String   @id @default(cuid())
+  province  String
+  institution   String   @default("EC_ERC")
+  bureaux   Int      @default(0)
+  agents    Int      @default(0)
+  dossiers  Int      @default(0)
+  statut    String   @default("Actif")
+  sousProvinciales CoordSousProvinciale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([province])
+  @@index([institution])
+  @@map("coord_provinciale")
+}
+
+model CoordSousProvinciale {
+  id                  String   @id @default(cuid())
+  nom                 String
+  province            String   @default("")
+  institution         String   @default("EC_ERC")
+  bureaux             Int      @default(0)
+  agents              Int      @default(0)
+  statut              String   @default("Actif")
+  coordProvincialeId  String?
+  coordProvinciale    CoordProvinciale? @relation(fields: [coordProvincialeId], references: [id], onDelete: SetNull)
+  etablissements      Etablissement[]
+  users               User[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([province])
+  @@index([institution])
+  @@index([coordProvincialeId])
+  @@map("coord_sous_provinciale")
+}
+
+model Bureau {
+  id           String   @id @default(cuid())
+  bureau       String
+  fonction     String   @default("")
+  titulaire    String   @default("")
+  localisation String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([bureau])
+  @@map("bureaux")
+}
+
+model Grade {
+  id        String   @id @default(cuid())
+  grade     String
+  categorie String   @default("")
+  effectif  Int      @default(0)
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([grade])
+  @@map("grades")
+}
+
+model Dossier {
+  id        String   @id @default(cuid())
+  reference String   @unique
+  objet     String
+  demandeur String   @default("")
+  statut    String   @default("En attente")
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reference])
+  @@index([statut])
+  @@map("dossiers")
+}
+
+model Visite {
+  id           String   @id @default(cuid())
+  date         DateTime @default(now())
+  etablissement String
+  visiteur     String   @default("")
+  objet        String   @default("")
+  statut       String   @default("Planifiée")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([etablissement])
+  @@index([date])
+  @@map("visites")
+}
+
+model ServiceAdmin {
+  id         String   @id @default(cuid())
+  service    String
+  procedures Int      @default(0)
+  dossiers   Int      @default(0)
+  statut     String   @default("Actif")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([service])
+  @@map("services_admin")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  titre     String
+  message   String   @default("")
+  type      String   @default("")
+  lu        Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([lu])
+  @@index([type])
+  @@map("notifications")
+}
+
+model Paiement {
+  id          String   @id @default(cuid())
+  reference   String   @unique
+  description String
+  montant     String   @default("")
+  date        DateTime @default(now())
+  statut      String   @default("En attente")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([reference])
+  @@index([statut])
+  @@map("paiements")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  eleve     String
+  classe    String   @default("")
+  devoir1   String   @default("")
+  devoir2   String   @default("")
+  examen    String   @default("")
+  moyenne   String   @default("")
+  mention   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eleve])
+  @@index([classe])
+  @@map("notes")
+}
+
+model ChatConversation {
+  id        String        @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id              String           @id @default(cuid())
+  conversationId  String
+  senderId        String
+  content         String           @default("")
+  fileUrl         String?
+  fileName        String?
+  fileType        String?
+  replyToId       String?
+  read            Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([read])
+  @@map("chat_messages")
+}
+
+model ChatCall {
+  id              String   @id @default(cuid())
+  conversationId  String
+  callerId        String
+  calleeId        String
+  type            String   @default("audio")
+  status          String   @default("ringing")
+  offer           String   @default("")
+  answer          String   @default("")
+  callerIce       String   @default("[]")
+  calleeIce       String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([conversationId])
+  @@index([calleeId])
+  @@index([status])
+  @@map("chat_calls")
+}
+
+model ChatGroup {
+  id              String   @id @default(cuid())
+  name            String
+  classe          String
+  etablissementId String?
+  etablissement   Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  createdById     String
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members         ChatGroupMember[]
+  messages        ChatGroupMessage[]
+
+  @@index([classe])
+  @@index([etablissementId])
+  @@index([createdById])
+  @@map("chat_groups")
+}
+
+model ChatGroupMember {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("chat_group_members")
+}
+
+model ChatGroupMessage {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String   @default("")
+  fileUrl   String?
+  fileName  String?
+  fileType  String?
+  replyToId String?
+  createdAt DateTime @default(now())
+
+  @@index([groupId])
+  @@index([senderId])
+  @@map("chat_group_messages")
+}
+
+model CahierDeCote {
+  id                String   @id @default(cuid())
+  etablissementId   String?
+  etablissement     Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  etablissementNom  String   @default("")
+  classe            String
+  cours             String
+  enseignantNom     String   @default("")
+  periode           String
+  anneeScolaire     String   @default("")
+  eleveId           String
+  eleve             Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  eleveMatricule    String   @default("")
+  eleveNom          String
+  devoir1           Float    @default(0)
+  devoir2           Float    @default(0)
+  examen            Float    @default(0)
+  total             Float    @default(0)
+  moyenne           Float    @default(0)
+  pourcentage       Float    @default(0)
+  mention           String   @default("")
+  statut            String   @default("Brouillon")
+  saisiePar         String   @default("")
+  saisieParId       String   @default("")
+  validePar         String   @default("")
+  valideParId       String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  historique        CahierDeCoteHistory[]
+
+  @@unique([eleveId, cours, periode, anneeScolaire])
+  @@index([etablissementId])
+  @@index([classe])
+  @@index([cours])
+  @@index([periode])
+  @@index([anneeScolaire])
+  @@index([eleveId])
+  @@index([statut])
+  @@map("cahier_de_cote")
+}
+
+model CahierDeCoteHistory {
+  id              String   @id @default(cuid())
+  cahierDeCoteId  String
+  cahierDeCote    CahierDeCote @relation(fields: [cahierDeCoteId], references: [id], onDelete: Cascade)
+  action          String   @default("")
+  champModifie    String   @default("")
+  ancienneValeur  String   @default("")
+  nouvelleValeur  String   @default("")
+  modifiePar      String   @default("")
+  modifieParId    String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([cahierDeCoteId])
+  @@index([action])
+  @@map("cahier_de_cote_history")
+}
+
+model RappelCote {
+  id              String   @id @default(cuid())
+  enseignantNom   String
+  enseignantEmail String   @default("")
+  etablissement   String   @default("")
+  classe          String   @default("")
+  cours           String   @default("")
+  periode         String
+  anneeScolaire   String   @default("")
+  statut          String   @default("envoyé")  // envoyé | échec
+  messageErreur   String   @default("")
+  declenchePar    String   @default("")
+  declencheParId  String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([enseignantNom])
+  @@index([periode])
+  @@index([anneeScolaire])
+  @@index([statut])
+  @@index([createdAt])
+  @@map("rappels_cotes")
+}
+
+model Bulletin {
+  id                String   @id @default(cuid())
+  eleveId           String
+  eleve             Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  eleveMatricule    String   @default("")
+  eleveNom          String
+  classe            String
+  etablissementId   String?
+  etablissement     Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  etablissementNom  String   @default("")
+  periode           String
+  anneeScolaire     String   @default("")
+  donnees           String   @default("[]")
+  moyenneGenerale   Float    @default(0)
+  pourcentageGeneral Float   @default(0)
+  mentionGenerale   String   @default("")
+  qrToken           String   @unique
+  qrDataUrl         String   @default("")
+  generePar         String   @default("")
+  genereParId       String   @default("")
+  createdAt         DateTime @default(now())
+
+  @@index([eleveId])
+  @@index([periode])
+  @@index([anneeScolaire])
+  @@index([etablissementId])
+  @@index([qrToken])
+  @@map("bulletins")
 }

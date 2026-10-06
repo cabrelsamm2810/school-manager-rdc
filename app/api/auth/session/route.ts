@@ -8,6 +8,10 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ authenticated: false }, { status: 401 });
   return NextResponse.json({ authenticated: true, user: {
     id: user.id, nom: user.nom, postNom: user.postNom, prenom: user.prenom,
-    email: user.email, telephone: user.telephone, role: user.role, profilePhotoUrl: user.profilePhotoUrl
+    email: user.email, telephone: user.telephone, role: user.role, profilePhotoUrl: user.profilePhotoUrl,
+    provinceAdministrative: user.provinceAdministrative,
+    etablissementId: user.etablissementId,
+    typeInstitution: user.typeInstitution,
+    institutionName: user.institutionName,
   }});
 }
