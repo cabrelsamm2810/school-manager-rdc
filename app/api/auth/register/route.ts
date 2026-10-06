@@ -12,6 +12,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, user: result.user }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Une erreur est survenue lors de l’inscription.' }, { status: 500 });
+    return NextResponse.json({ error: 'Une erreur est survenue lors de l\u2019inscription.' }, { status: 500 });
   }
 }

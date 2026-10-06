@@ -2,19 +2,40 @@ import { LoginForm } from '@/components/auth/LoginForm';
 
 export default function LoginPage() {
   return (
-    <main className="login-background flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white/95 p-8 shadow-soft backdrop-blur-sm">
-        <div className="mb-8 text-center">
-          <p className="text-sm uppercase tracking-[0.2em] text-blue-600">School Manager RDC</p>
-          <h1 className="mt-4 text-3xl font-bold text-slate-900">Connexion</h1>
+    <main className="login-page relative flex min-h-screen flex-col overflow-x-hidden">
+      {/* Formes décoratives abstraites en arrière-plan */}
+      <div className="login-bg-shape login-bg-shape-1" />
+      <div className="login-bg-shape login-bg-shape-2" />
+      <div className="login-bg-shape login-bg-shape-3" />
+
+      {/* Contenu */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10">
+        {/* Logo */}
+        <div className="login-logo-wrap">
+          <div className="login-logo-box">
+            <img src="/logo.png" alt="School Manager RDC" className="h-full w-full object-contain" />
+          </div>
         </div>
 
-        <LoginForm />
+        {/* Titre */}
+        <div className="login-title-area">
+          <p className="login-eyebrow">School Manager RDC</p>
+          <h1 className="login-title">Connexion</h1>
+          <p className="login-subtitle">Accédez à votre espace de gestion scolaire</p>
+        </div>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Vous n’avez pas de compte ?{' '}
-          <a href="/register" className="font-medium text-blue-600 hover:underline">Créer un compte</a>
-        </p>
+        {/* Carte formulaire */}
+        <div className="login-card">
+          <LoginForm />
+        </div>
+
+        {/* Bouton secondaire */}
+        <div className="login-secondary-area">
+          <p className="login-secondary-text">Vous n'avez pas de compte ?</p>
+          <a href="/register" className="login-btn-secondary">
+            Créer un compte
+          </a>
+        </div>
       </div>
     </main>
   );

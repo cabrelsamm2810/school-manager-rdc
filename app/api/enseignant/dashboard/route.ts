@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { getSessionUser } from '@/lib/session-user';
+import { getScopeLevel } from '@/lib/territory-filter';
+
+export async function GET(request: NextRequest) {
+  const user = await getSessionUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  }
+
+  // Filtre hiérarchique : un enseignant ne voit que les élèves de son établissement
+  const scope = getScopeLevel(user.role);
+  const etabId = (user as any).etablissementId || '';
+  const sousProvId = (user as any).coordSousProvincialeId || '';
+  const prov = (user as any).provinceAdministrative || '';
+
+  let eleveWhere: Record<string, unknown> = {};
+  if (scope === 'school' && etabId) {
+    eleveWhere = { etablissementId: etabId };
+  } else if (scope === 'sousProvincial' && sousProvId) {
+    eleveWhere = { etablissement: { coordSousProvincialeId: sousProvId } };
+  } else if (scope !== 'national' && prov) {
+    eleveWhere = { etablissement: { province: prov } };
+  }
+
+  // Compter les élèves par classe
+  const eleves = await prisma.eleve.findMany({
+    where: eleveWhere,
+    select: { id: true, classe: true },
+  });
+
+  const parClasseMap = new Map<string, number>();
+  for (const e of eleves) {
+    parClasseMap.set(e.classe, (parClasseMap.get(e.classe) ?? 0) + 1);
+  }
+
+  const classes = Array.from(parClasseMap.entries())
+    .map(([classe, effectif]) => ({ classe, effectif }))
+    .sort((a, b) => a.classe.localeCompare(b.classe));
+
+  // Calculer le taux de présence par classe (30 derniers jours)
+  const trenteJours = new Date();
+  trenteJours.setDate(trenteJours.getDate() - 30);
+
+  const presences = await prisma.presence.findMany({
+    where: { date: { gte: trenteJours }, eleve: eleveWhere },
+    select: { classe: true, present: true },
+  });
+
+  const presenceParClasse = new Map<string, { total: number; present: number }>();
+  for (const p of presences) {
+    const entry = presenceParClasse.get(p.classe) ?? { total: 0, present: 0 };
+    entry.total++;
+    if (p.present) entry.present++;
+    presenceParClasse.set(p.classe, entry);
+  }
+
+  const tauxPresence = classes.map((c) => {
+    const stats = presenceParClasse.get(c.classe);
+    const taux = stats && stats.total > 0
+      ? Math.round((stats.present / stats.total) * 100)
+      : null;
+    return { classe: c.classe, taux, totalRecords: stats?.total ?? 0 };
+  });
+
+  const tauxGlobal = presences.length > 0
+    ? Math.round((presences.filter((p) => p.present).length / presences.length) * 100)
+    : null;
+
+  return NextResponse.json({
+    totalEleves: eleves.length,
+    totalClasses: classes.length,
+    tauxGlobal,
+    classes,
+    tauxPresence,
+  });
+}

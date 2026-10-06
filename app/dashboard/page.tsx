@@ -1,35 +1,118 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { DashboardHeader } from '@/components/dashboards/DashboardHeader';
+import { QuickActions } from '@/components/dashboards/QuickActions';
+import { NationalDashboard } from '@/components/dashboards/NationalDashboard';
+import { ProvincialDashboard } from '@/components/dashboards/ProvincialDashboard';
+import { SousProvincialDashboard } from '@/components/dashboards/SousProvincialDashboard';
+import { SchoolDashboard } from '@/components/dashboards/SchoolDashboard';
+
+type SessionUser = {
+  id: string;
+  nom: string;
+  postNom?: string | null;
+  prenom: string;
+  email: string;
+  role: string;
+  profilePhotoUrl?: string | null;
+  provinceAdministrative?: string | null;
+  typeInstitution?: string | null;
+  institutionName?: string | null;
+};
+
+type DashboardStats = {
+  totalEleves: number;
+  totalEtablissements: number;
+  totalEnseignants: number;
+  totalClasses: number;
+  totalProvinces: number;
+  totalDossiers: number;
+  totalVisites: number;
+  totalSousProvinciales: number;
+};
+
+type BreakdownItem = { label: string; value: number; sublabel: string };
+type ChartItem = { label: string; value: number };
+
+type StatsResponse = {
+  stats: DashboardStats;
+  breakdown: BreakdownItem[];
+  chartData: ChartItem[];
+  activite: string[];
+  scope: 'national' | 'provincial' | 'sousProvincial' | 'school';
+  provinceLabel: string | null;
+};
 
 export default function DashboardPage() {
-  return (
-    <AppShell>
-      <main className="min-h-screen bg-slate-100 p-4 md:p-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-blue-600">Tableau de bord</p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Vue d’ensemble</h1>
-            </div>
-            <button className="rounded-xl bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-500">
-              Nouveau rapport
-            </button>
-          </div>
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [data, setData] = useState<StatsResponse | null>(null);
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: 'Élèves', value: '2,640' },
-              { label: 'Enseignants', value: '184' },
-              { label: 'Classes', value: '48' },
-              { label: 'Documents', value: '1,289' }
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl bg-white p-5 shadow-soft">
-                <p className="text-sm text-slate-500">{item.label}</p>
-                <p className="mt-3 text-3xl font-bold text-slate-900">{item.value}</p>
-              </div>
-            ))}
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.authenticated) setUser(d.user);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/dashboard/stats')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: StatsResponse | null) => {
+        if (d?.stats) setData(d);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Affichage de chargement
+  if (!data || !user) {
+    return (
+      <AppShell>
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-6 h-24 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
+              ))}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
+              ))}
+            </div>
           </div>
         </div>
-      </main>
+      </AppShell>
+    );
+  }
+
+  const dashProps = {
+    stats: data.stats,
+    breakdown: data.breakdown,
+    chartData: data.chartData,
+    activite: data.activite,
+  };
+
+  return (
+    <AppShell>
+      <div className="p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-6xl">
+          <DashboardHeader user={user} scope={data.scope} />
+          <QuickActions role={user.role} />
+          {data.scope === 'national' && <NationalDashboard {...dashProps} />}
+          {data.scope === 'provincial' && (
+            <ProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />
+          )}
+          {data.scope === 'sousProvincial' && (
+            <SousProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />
+          )}
+          {data.scope === 'school' && <SchoolDashboard {...dashProps} />}
+        </div>
+      </div>
     </AppShell>
   );
 }
