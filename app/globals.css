@@ -741,13 +741,10 @@ body {
   opacity: 0;
 }
 
+/* Le logo officiel est présenté tel quel : aucun cadre n'est ajouté par l'application. */
 .login-logo-box {
   width: 5rem;
   height: 5rem;
-  border-radius: 1.25rem;
-  background: #ffffff;
-  overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0, 40, 104, 0.18), 0 0 0 1px rgba(0, 40, 104, 0.08);
 }
 @media (min-width: 768px) {
   .login-logo-box {
