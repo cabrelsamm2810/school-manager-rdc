@@ -605,7 +605,7 @@ export function SchoolChat() {
         )}
       >
         <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-100 bg-white px-3">
-          <SchoolChatMark className="h-[26px] w-[26px]" />
+          <SchoolChatMark className="h-[30px] w-[30px]" />
           <h2 className="min-w-0 flex-1 truncate text-[19px] font-bold tracking-tight text-slate-900">SchoolChat</h2>
 
           {currentUser && (
