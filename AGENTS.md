@@ -65,12 +65,26 @@ unrelated to each other:
 - With `NODE_ENV=development` the build uses the development React server bundle and every page prerender
   dies with `<Html> should not be imported outside of pages/_document`.
 
-Known-good, verified command (`✓ Compiled successfully`, 107/107 static pages, exit 0) — inside the `web`
-container the devDependencies are already installed, so only the build itself needs the override:
+**Never build against the live dev server.** `exec`-ing the build into `web` while `next dev` is running
+fails non-deterministically against the shared `.next` volume — `PageNotFoundError: Cannot find module for
+page: /api/auth/…` during "Collecting page data", because the dev server clobbers build output mid-run.
+
+Verified command (`✓ Compiled successfully`, type-check step passed, exit 0): stop `web`, build in a
+throwaway container that **reuses `web`'s volumes**, then start `web` again.
 
 ```bash
-docker compose -f docker-compose.base44.yml exec web sh -c 'NODE_ENV=production npm run build'
+NET=$(docker inspect school-manager-rdc-web-1 -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}')
+docker compose -f docker-compose.base44.yml stop web
+docker run --rm --volumes-from school-manager-rdc-web-1 --network "$NET" --env-file /run/base44/app.env \
+  -e NODE_ENV=production \
+  -e DATABASE_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
+  -e DIRECT_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
+  -w /app node:22-bookworm sh -c 'find .next -mindepth 1 -maxdepth 1 -exec rm -rf {} + ; npm run build'
+docker compose -f docker-compose.base44.yml start web
 ```
+
+`--volumes-from` reuses `web`'s already-installed `node_modules` and its bind mount (no reinstall); the network
+name lets the build resolve `postgres`. `next build` type-checks every file, so this is also the type gate.
 
 From a clean checkout, keep devDependencies in the install step too:
 
