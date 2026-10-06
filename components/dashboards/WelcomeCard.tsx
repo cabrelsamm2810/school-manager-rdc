@@ -62,7 +62,7 @@ export function WelcomeCard({ user, scope }: { user: WelcomeUser; scope: string 
               {SCOPE_LABELS[scope] ?? 'Tableau de bord'}
             </p>
             <h1 className="mt-1 truncate text-xl font-bold leading-tight">Bonjour, {user.prenom}</h1>
-            <p className="mt-1 text-xs text-blue-100">Votre espace School Manager RDC</p>
+            <p className="mt-1 text-xs text-blue-100">Bienvenue sur votre espace School Manager RDC</p>
           </div>
         </div>
 
