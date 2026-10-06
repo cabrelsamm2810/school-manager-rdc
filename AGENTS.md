@@ -16,7 +16,8 @@ docker compose -f docker-compose.base44.yml up -d
   It uses `db push`, not `migrate deploy`, because the database was created with `db push` and is not baselined
   for migrations.
 - `web` — `next dev -H 0.0.0.0 -p 3000` from the bind-mounted repo; live reload is active. `node_modules` and
-  `.next` live in container volumes, so installs do not spill into the host working tree.
+  `.next` live in container volumes, so installs do not spill into the host working tree. It clears the contents
+  of `.next` on startup, so a stale dev cache from an unclean shutdown cannot break the boot.
 
 Web entry point is host port 3000; the API is served by the same Next dev server (single-origin wiring).
 `/run/base44/app.env` (the platform-managed secrets file) is the only `env_file` — it carries the SMTP

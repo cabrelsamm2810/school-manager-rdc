@@ -69,6 +69,11 @@ services:
       - |
         npm install --no-audit --no-fund
         npx prisma generate
+        # Clear the Next dev build cache on start: the persistent /app/.next volume keeps
+        # chunks left by an unclean shutdown or a production build, which surface as
+        # 'Cannot find module ./NNNN.js' 500s on /_next/static/chunks/fallback/*.
+        # .next is a mount point, so clear its contents, not the directory itself.
+        find .next -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
         exec npx next dev -H 0.0.0.0 -p 3000
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
