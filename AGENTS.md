@@ -69,6 +69,20 @@ credentials. Nothing external is required to boot.
   `lib/territory-filter.ts` (utilisé par `/api/eleves` et `/api/cahier-de-cote/options`).
   Vérification : `GET /api/<module>` avec un compte DIRECTION_ECOLE actif doit répondre 200, jamais 500.
 
+## Comptes de démonstration
+
+- **Enseignant** : `enseignant.demo@schoolmanager-rdc.cd` / `Enseignant2026`, rattaché à l'« École de
+  démonstration » (`etablissementId` du compte DIRECTION_ECOLE de démo). Créé et remis à jour par
+  `npm run seed:demo-enseignant` (`scripts/seed-demo-enseignant.ts`) : le script est idempotent
+  (upsert par email), force `role=ENSEIGNANT`, `isActive=true`, l'établissement de démo, et génère
+  les présences des 30 derniers jours (jours ouvrables) **uniquement si la table `presences` est
+  vide** — ce sont elles qui alimentent les taux de présence du tableau de bord. Sans ce seed, le
+  tableau de bord enseignant n'affiche que les effectifs par classe (280 élèves, 10 classes).
+  À relancer après une remise à zéro des données.
+- Connexion : `POST /api/auth/login` avec `{email, password}` pose les cookies
+  `school_manager_session` + `school_manager_role`, puis `GET /api/enseignant/dashboard` doit
+  répondre 200 (403 pour tout autre rôle).
+
 ## Ouverture de l'application
 
 `components/StartupGate.tsx` (monté sur `/`) enchaîne : splash → `GET /api/auth/session` → destination du
