@@ -604,7 +604,11 @@ export function SchoolChat() {
         )}
       >
         <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-100 bg-white px-3">
-          <Icon name="chat" className="h-[21px] w-[21px] shrink-0 text-slate-900" />
+          <img
+            src="https://media.base44.com/images/public/6ac23ac4d49d203bbea35885/304f59fea_generated_1ba02996.png"
+            alt=""
+            className="h-[26px] w-[26px] shrink-0 object-contain"
+          />
           <h2 className="min-w-0 flex-1 truncate text-[19px] font-bold tracking-tight text-slate-900">SchoolChat</h2>
 
           {currentUser && (
