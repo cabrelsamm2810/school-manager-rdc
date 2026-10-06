@@ -6,12 +6,12 @@ import { StatCard } from '@/components/ui/Card';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrImportDialog } from '@/components/import/OcrImportDialog';
-import { EtablissementForm, emptyForm, type EtablissementFormData } from '@/components/etablissements/EtablissementForm';
-import { EtablissementFiche } from '@/components/etablissements/EtablissementFiche';
-import { NiveauScolaireSelector } from '@/components/etablissements/NiveauScolaireSelector';
+import { EcoleForm, emptyForm, type EcoleFormData } from '@/components/ecoles/EcoleForm';
+import { EcoleFiche } from '@/components/ecoles/EcoleFiche';
+import { NiveauScolaireSelector } from '@/components/ecoles/NiveauScolaireSelector';
 import { INSTITUTIONS, INSTITUTION_MAP, VALIDATION_STATUTS } from '@/lib/institutions';
 
-type Etablissement = {
+type Ecole = {
   id: string;
   nom: string;
   type: string;
@@ -24,7 +24,7 @@ type Etablissement = {
   adresse: string;
   telephone: string;
   email: string;
-  chefEtablissement: string;
+  chefEcole: string;
   identifiantSM: string | null;
   effectif: number;
   statut: string;
@@ -38,8 +38,8 @@ type Etablissement = {
 
 type View = 'list' | 'form' | 'fiche';
 
-export default function EtablissementsPage() {
-  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
+export default function EcolesPage() {
+  const [ecoles, setEcoles] = useState<Ecole[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -54,7 +54,7 @@ export default function EtablissementsPage() {
   const [showImport, setShowImport] = useState(false);
   const [showOcr, setShowOcr] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [initialFormData, setInitialFormData] = useState<Partial<EtablissementFormData> | null>(null);
+  const [initialFormData, setInitialFormData] = useState<Partial<EcoleFormData> | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -65,9 +65,9 @@ export default function EtablissementsPage() {
       if (provinceFilter) params.set('province', provinceFilter);
       if (institutionFilter) params.set('institution', institutionFilter);
       if (statutFilter) params.set('statutValidation', statutFilter);
-      const res = await fetch(`/api/etablissements?${params.toString()}`);
+      const res = await fetch(`/api/ecoles?${params.toString()}`);
       const data = await res.json();
-      if (res.ok) setEtablissements(data.etablissements ?? []);
+      if (res.ok) setEcoles(data.ecoles ?? []);
     } catch {
       // ignore
     } finally {
@@ -87,13 +87,13 @@ export default function EtablissementsPage() {
     setView('form');
   }
 
-  function startEdit(et: Etablissement) {
+  function startEdit(et: Ecole) {
     setEditingId(et.id);
     setInitialFormData({
       nom: et.nom, type: et.type, institution: et.institution, dinacope: et.dinacope,
       province: et.province, provinceEducationnelle: et.provinceEducationnelle,
       ville: et.ville, commune: et.commune, adresse: et.adresse,
-      telephone: et.telephone, email: et.email, chefEtablissement: et.chefEtablissement,
+      telephone: et.telephone, email: et.email, chefEcole: et.chefEcole,
       effectif: String(et.effectif), statut: et.statut, statutValidation: et.statutValidation,
       coordSousProvincialeId: et.coordSousProvincialeId ?? '',
       ecErcId: et.ecErcId ?? '',
@@ -108,11 +108,11 @@ export default function EtablissementsPage() {
     setView('fiche');
   }
 
-  async function handleSubmit(data: EtablissementFormData) {
+  async function handleSubmit(data: EcoleFormData) {
     setFormError('');
     setFormLoading(true);
     try {
-      const url = editingId ? `/api/etablissements/${editingId}` : '/api/etablissements';
+      const url = editingId ? `/api/ecoles/${editingId}` : '/api/ecoles';
       const method = editingId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -136,10 +136,10 @@ export default function EtablissementsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Voulez-vous vraiment supprimer cet établissement ?')) return;
+    if (!confirm('Voulez-vous vraiment supprimer cet école ?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/etablissements/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/ecoles/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
         alert(data.error ?? 'Suppression impossible.');
@@ -154,13 +154,13 @@ export default function EtablissementsPage() {
   }
 
   return (
-    <ModulePage icon="school" eyebrow="Gestion scolaire" title="Gestion des établissements" description="Enregistrement, validation et suivi des écoles par institution.">
+    <ModulePage icon="school" eyebrow="Gestion scolaire" title="Gestion des écoles" description="Enregistrement, validation et suivi des écoles par institution.">
       {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Établissements" value={String(etablissements.length)} hint="Total recensés" />
-        <StatCard label="Validés" value={String(etablissements.filter((e) => e.statutValidation === 'Validée').length)} />
-        <StatCard label="En attente" value={String(etablissements.filter((e) => e.statutValidation === 'En attente de vérification' || e.statutValidation === 'En cours de vérification').length)} />
-        <StatCard label="Effectif total" value={etablissements.reduce((s, e) => s + e.effectif, 0).toLocaleString('fr-FR')} />
+        <StatCard label="Écoles" value={String(ecoles.length)} hint="Total recensés" />
+        <StatCard label="Validés" value={String(ecoles.filter((e) => e.statutValidation === 'Validée').length)} />
+        <StatCard label="En attente" value={String(ecoles.filter((e) => e.statutValidation === 'En attente de vérification' || e.statutValidation === 'En cours de vérification').length)} />
+        <StatCard label="Effectif total" value={ecoles.reduce((s, e) => s + e.effectif, 0).toLocaleString('fr-FR')} />
       </div>
 
       {view === 'list' && (
@@ -196,7 +196,7 @@ export default function EtablissementsPage() {
             <select value={provinceFilter} onChange={(e) => setProvinceFilter(e.target.value)}
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
               <option value="">Toutes les provinces</option>
-              {[...new Set(etablissements.map((e) => e.province).filter(Boolean))].sort().map((p) => (
+              {[...new Set(ecoles.map((e) => e.province).filter(Boolean))].sort().map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
@@ -204,9 +204,9 @@ export default function EtablissementsPage() {
 
           {loading ? (
             <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
-          ) : etablissements.length === 0 ? (
+          ) : ecoles.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-              <p className="text-sm text-slate-500">Aucun établissement enregistré pour le moment.</p>
+              <p className="text-sm text-slate-500">Aucun école enregistré pour le moment.</p>
             </div>
           ) : (
             <>
@@ -215,7 +215,7 @@ export default function EtablissementsPage() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
-                      <th className="px-4 py-3">Établissement</th>
+                      <th className="px-4 py-3">École</th>
                       <th className="px-4 py-3">Institution</th>
                       <th className="px-4 py-3">Province</th>
                       <th className="px-4 py-3">Structure</th>
@@ -224,7 +224,7 @@ export default function EtablissementsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {etablissements.map((et) => {
+                    {ecoles.map((et) => {
                       const inst = INSTITUTION_MAP[et.institution];
                       return (
                         <tr key={et.id} className="cursor-pointer hover:bg-slate-50" onClick={() => showFiche(et.id)}>
@@ -263,7 +263,7 @@ export default function EtablissementsPage() {
 
               {/* Mobile cards */}
               <div className="space-y-3 md:hidden">
-                {etablissements.map((et) => {
+                {ecoles.map((et) => {
                   const inst = INSTITUTION_MAP[et.institution];
                   return (
                     <div key={et.id} className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4" onClick={() => showFiche(et.id)}>
@@ -309,18 +309,18 @@ export default function EtablissementsPage() {
         <div className="rounded-2xl bg-white p-5 shadow-soft md:p-6">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900">
-              {editingId ? 'Modifier l\'établissement' : 'Enregistrer une nouvelle école'}
+              {editingId ? 'Modifier l\'école' : 'Enregistrer une nouvelle école'}
             </h2>
             <button onClick={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
               className="text-sm text-slate-500 transition hover:text-slate-700">
               ← Retour à la liste
             </button>
           </div>
-          <EtablissementForm
+          <EcoleForm
             initialData={initialFormData}
             onSubmit={handleSubmit}
             onCancel={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
-            submitLabel={editingId ? 'Modifier l\'établissement' : 'Enregistrer l\'école'}
+            submitLabel={editingId ? 'Modifier l\'école' : 'Enregistrer l\'école'}
             loading={formLoading}
             error={formError}
           />
@@ -328,10 +328,10 @@ export default function EtablissementsPage() {
       )}
 
       {view === 'fiche' && ficheId && (
-        <EtablissementFiche
+        <EcoleFiche
           id={ficheId}
           onEdit={() => {
-            const et = etablissements.find((e) => e.id === ficheId);
+            const et = ecoles.find((e) => e.id === ficheId);
             if (et) startEdit(et);
           }}
           onClose={() => { setView('list'); setFicheId(null); }}
@@ -340,8 +340,8 @@ export default function EtablissementsPage() {
 
       {showImport && (
         <ImportDialog
-          endpoint="/api/import/etablissements"
-          moduleName="Établissements"
+          endpoint="/api/import/ecoles"
+          moduleName="Écoles"
           columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
           onImported={loadData}
           onClose={() => setShowImport(false)}
@@ -350,8 +350,8 @@ export default function EtablissementsPage() {
 
       {showOcr && (
         <OcrImportDialog
-          endpoint="/api/import/etablissements"
-          moduleName="Établissements"
+          endpoint="/api/import/ecoles"
+          moduleName="Écoles"
           columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
           onImported={loadData}
           onClose={() => setShowOcr(false)}

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   const data = parsed.data;
   const eleve = await prisma.eleve.findUnique({
     where: { id: data.eleveId },
-    include: { etablissement: { select: { nom: true } } },
+    include: { ecole: { select: { nom: true } } },
   });
   if (!eleve) {
     return NextResponse.json({ error: 'Élève introuvable.' }, { status: 404 });
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         parentNom: eleve.nomTuteur,
         eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
         classe: data.classe,
-        etablissementNom: eleve.etablissement?.nom || 'Établissement',
+        ecoleNom: eleve.ecole?.nom || 'École',
         dateAbsence: dateStr,
       }).catch(() => {});
     } else {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         parentNom: eleve.nomTuteur,
         eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
         classe: data.classe,
-        etablissementNom: eleve.etablissement?.nom || 'Établissement',
+        ecoleNom: eleve.ecole?.nom || 'École',
         datePresence: dateStr,
         heurePresence: new Date(data.date).toLocaleTimeString('fr-FR'),
         localisation: data.latitude != null && data.longitude != null ? `${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}` : undefined,

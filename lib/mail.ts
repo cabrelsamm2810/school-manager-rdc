@@ -50,7 +50,7 @@ export async function sendAbsenceNotification(opts: {
   parentNom: string;
   eleveNom: string;
   classe: string;
-  etablissementNom: string;
+  ecoleNom: string;
   dateAbsence: string;
 }): Promise<void> {
   const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
@@ -68,20 +68,20 @@ export async function sendAbsenceNotification(opts: {
         <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">
           Nous vous informons que votre enfant <strong>${opts.eleveNom}</strong>,
           élève en classe de <strong>${opts.classe}</strong> à
-          <strong>${opts.etablissementNom}</strong>, a été marqué
+          <strong>${opts.ecoleNom}</strong>, a été marqué
           <span style="color: #dc2626; font-weight: bold;">absent(e)</span> le
           <strong>${opts.dateAbsence}</strong>.
         </p>
         <div style="background: white; border-radius: 8px; padding: 14px; margin: 16px 0;">
           <p style="color: #64748b; font-size: 13px; margin: 0;">
-            Si cette absence est justifiée, merci d'en informer l'établissement.
+            Si cette absence est justifiée, merci d'en informer l'école.
             Pour toute question, contactez l'administration scolaire.
           </p>
         </div>
       </div>
       <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">
         Cet email a été envoyé automatiquement par School Manager RDC.
-        Si vous recevez ce message par erreur, contactez l'établissement.
+        Si vous recevez ce message par erreur, contactez l'école.
       </p>
     </div>
   `;
@@ -107,7 +107,7 @@ export async function sendPresenceNotification(opts: {
   parentNom: string;
   eleveNom: string;
   classe: string;
-  etablissementNom: string;
+  ecoleNom: string;
   datePresence: string;
   heurePresence: string;
   localisation?: string;
@@ -131,7 +131,7 @@ export async function sendPresenceNotification(opts: {
         <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">
           Nous vous informons que votre enfant <strong>${opts.eleveNom}</strong>,
           élève en classe de <strong>${opts.classe}</strong> à
-          <strong>${opts.etablissementNom}</strong>, a été marqué
+          <strong>${opts.ecoleNom}</strong>, a été marqué
           <span style="color: #16a34a; font-weight: bold;">présent(e)</span> le
           <strong>${opts.datePresence}</strong> à <strong>${opts.heurePresence}</strong>.
         </p>

@@ -5,7 +5,7 @@ export type AuthUser = {
   role: string;
   provinceAdministrative?: string;
   coordSousProvincialeId?: string | null;
-  etablissementId?: string | null;
+  ecoleId?: string | null;
   typeInstitution?: string;
   institutionName?: string;
 };
@@ -17,8 +17,8 @@ export type ScopeConfig = {
   provinceField?: string | false;
   /** Champ du modèle correspondant à coordSousProvincialeId (FK). Utiliser 'id' si le modèle EST CoordSousProvinciale. */
   sousProvincialeField?: string;
-  /** Champ du modèle correspondant à etablissementId (FK). Utiliser 'id' si le modèle EST Etablissement. */
-  etablissementField?: string;
+  /** Champ du modèle correspondant à ecoleId (FK). Utiliser 'id' si le modèle EST Ecole. */
+  ecoleField?: string;
   /** Champ du modèle correspondant à l'institution (défaut: 'institution'). Mettre à false pour désactiver le filtre. */
   institutionField?: string | false;
 };
@@ -28,7 +28,7 @@ export type ScopeConfig = {
  * - national : SUPER_ADMIN, COORDINATION_NATIONALE → voient tout
  * - provincial : COORDINATION_PROVINCIALE, AGENT_PROVINCIAL → voient leur province
  * - sousProvincial : COORDINATION_SOUS_PROVINCIALE, AGENT_SOUS_PROVINCIAL → voient leur sous-division
- * - school : DIRECTION_ECOLE, ENSEIGNANT → voient leur établissement
+ * - school : DIRECTION_ECOLE, ENSEIGNANT → voient leur école
  */
 export function getScopeLevel(role: string): ScopeLevel {
   const rank = ROLE_RANK[role] ?? 0;
@@ -91,10 +91,10 @@ export function buildScopeWhere(
   }
 
   // school : DIRECTION_ECOLE, ENSEIGNANT
-  if (config.etablissementField && user.etablissementId) {
-    where[config.etablissementField] = user.etablissementId;
+  if (config.ecoleField && user.ecoleId) {
+    where[config.ecoleField] = user.ecoleId;
   } else {
-    // Repli sur la province pour les modèles sans lien direct à un établissement
+    // Repli sur la province pour les modèles sans lien direct à un école
     const prov = user.provinceAdministrative;
     if (provinceField && prov) where[provinceField] = prov;
   }
@@ -116,7 +116,7 @@ export function mergeScopeFilter(
 
 /**
  * Filtre de périmètre pour les modèles élèves (`Eleve`) : ils n'ont ni `province`
- * ni `institution`, la province passe donc par la relation `etablissement`.
+ * ni `institution`, la province passe donc par la relation `ecole`.
  *
  * @returns Un objet `where` Prisma valide pour `prisma.eleve`.
  */
@@ -129,11 +129,11 @@ export function buildEleveScopeWhere(user: AuthUser | null): Record<string, unkn
   if (scope === 'national') return where;
 
   if (scope === 'sousProvincial' && user.coordSousProvincialeId) {
-    where.etablissement = { coordSousProvincialeId: user.coordSousProvincialeId };
-  } else if (scope === 'school' && user.etablissementId) {
-    where.etablissementId = user.etablissementId;
+    where.ecole = { coordSousProvincialeId: user.coordSousProvincialeId };
+  } else if (scope === 'school' && user.ecoleId) {
+    where.ecoleId = user.ecoleId;
   } else if (user.provinceAdministrative) {
-    where.etablissement = { province: user.provinceAdministrative };
+    where.ecole = { province: user.provinceAdministrative };
   }
 
   return where;

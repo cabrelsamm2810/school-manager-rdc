@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       eleveNom: bulletin.eleveNom,
       eleveMatricule: bulletin.eleveMatricule,
       classe: bulletin.classe,
-      etablissementNom: bulletin.etablissementNom,
+      ecoleNom: bulletin.ecoleNom,
       periode: bulletin.periode,
       anneeScolaire: bulletin.anneeScolaire,
       moyenneGenerale: bulletin.moyenneGenerale,

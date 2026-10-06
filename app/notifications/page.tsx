@@ -15,7 +15,7 @@ type Notification = {
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string; href?: string }> = {
   'Inscription': { icon: 'user', color: 'text-blue-600', bg: 'bg-blue-50', href: '/eleves' },
-  'Visite': { icon: 'visit', color: 'text-purple-600', bg: 'bg-purple-50', href: '/etablissements' },
+  'Visite': { icon: 'visit', color: 'text-purple-600', bg: 'bg-purple-50', href: '/ecoles' },
   'Évaluation': { icon: 'chart', color: 'text-amber-600', bg: 'bg-amber-50', href: '/cahier-de-cote' },
   'Dossier': { icon: 'folder', color: 'text-teal-600', bg: 'bg-teal-50', href: '/dossiers-eleves' },
   'Personnel': { icon: 'shield', color: 'text-slate-600', bg: 'bg-slate-100', href: '/profile' },

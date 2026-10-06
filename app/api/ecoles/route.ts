@@ -18,7 +18,7 @@ const createSchema = z.object({
   localisationGeo: z.string().trim().optional().or(z.literal('')),
   telephone: z.string().trim().min(1, 'Le numéro de téléphone est obligatoire.'),
   email: z.string().trim().email('L\u2019email est invalide.').optional().or(z.literal('')),
-  chefEtablissement: z.string().trim().min(1, 'Le chef d\u2019établissement est obligatoire.'),
+  chefEcole: z.string().trim().min(1, 'Le chef d\u2019école est obligatoire.'),
   logoUrl: z.string().trim().optional().or(z.literal('')),
   effectif: z.number().int().min(0).optional(),
   statut: z.string().trim().optional().or(z.literal('')),
@@ -29,7 +29,7 @@ const createSchema = z.object({
   structureRattachementType: z.string().trim().optional().or(z.literal('')),
 });
 
-/** GET /api/etablissements */
+/** GET /api/ecoles */
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
   if (!auth.ok) {
@@ -70,14 +70,14 @@ export async function GET(request: NextRequest) {
   const scope = getScopeLevel(auth.user.role);
   if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
     where.coordSousProvincialeId = (auth.user as any).coordSousProvincialeId;
-  } else if (scope === 'school' && (auth.user as any).etablissementId) {
-    where.id = (auth.user as any).etablissementId;
+  } else if (scope === 'school' && (auth.user as any).ecoleId) {
+    where.id = (auth.user as any).ecoleId;
   } else if (scope !== 'national') {
     const userProv = (auth.user as any).provinceAdministrative;
     if (userProv) where.province = userProv;
   }
 
-  const etablissements = await prisma.etablissement.findMany({
+  const ecoles = await prisma.ecole.findMany({
     where,
     orderBy: [{ nom: 'asc' }],
     include: {
@@ -87,10 +87,10 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ etablissements });
+  return NextResponse.json({ ecoles });
 }
 
-/** POST /api/etablissements */
+/** POST /api/ecoles */
 export async function POST(request: NextRequest) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
   if (!auth.ok) {
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
   const userInst = (auth.user as any).typeInstitution;
   if (auth.user.role !== 'SUPER_ADMIN' && userInst && userInst !== data.institution) {
     return NextResponse.json(
-      { error: 'Vous ne pouvez créer un établissement que pour votre propre institution.' },
+      { error: 'Vous ne pouvez créer un école que pour votre propre institution.' },
       { status: 403 },
     );
   }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
   let identifiantSM = generateIdentifiantSM(data.institution);
   let attempts = 0;
   while (attempts < 10) {
-    const exists = await prisma.etablissement.findFirst({ where: { identifiantSM } });
+    const exists = await prisma.ecole.findFirst({ where: { identifiantSM } });
     if (!exists) break;
     identifiantSM = generateIdentifiantSM(data.institution);
     attempts++;
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
   const structureRattachementId = data.structureRattachementId || data.coordSousProvincialeId || '';
   const structureRattachementType = data.structureRattachementType || validInstitution.structureCompetente;
 
-  const etablissement = await prisma.etablissement.create({
+  const ecole = await prisma.ecole.create({
     data: {
       nom: data.nom,
       type: data.type ?? '',
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       localisationGeo: data.localisationGeo ?? '',
       telephone: data.telephone,
       email: data.email ?? '',
-      chefEtablissement: data.chefEtablissement,
+      chefEcole: data.chefEcole,
       logoUrl: data.logoUrl || null,
       identifiantSM,
       effectif: data.effectif ?? 0,
@@ -166,10 +166,10 @@ export async function POST(request: NextRequest) {
   });
 
   // Si le statut est "En attente de vérification", créer un log de validation
-  if (etablissement.statutValidation === 'En attente de vérification') {
-    await prisma.etablissementValidationLog.create({
+  if (ecole.statutValidation === 'En attente de vérification') {
+    await prisma.ecoleValidationLog.create({
       data: {
-        etablissementId: etablissement.id,
+        ecoleId: ecole.id,
         statut: 'En attente de vérification',
         commentaire: 'Dossier soumis pour vérification.',
         validateurId: (auth.user as any).id,
@@ -178,5 +178,5 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ etablissement }, { status: 201 });
+  return NextResponse.json({ ecole }, { status: 201 });
 }

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const scope = getScopeLevel(user.role);
   const prov = (user as any).provinceAdministrative || '';
   const sousProvId = (user as any).coordSousProvincialeId || '';
-  const etabId = (user as any).etablissementId || '';
+  const etabId = (user as any).ecoleId || '';
 
   // ── Filtres de périmètre hiérarchique ──
   let etabWhere: Record<string, unknown> = {};
@@ -22,13 +22,13 @@ export async function GET(request: NextRequest) {
     // Pas de filtre territorial — accès national
   } else if (scope === 'sousProvincial' && sousProvId) {
     etabWhere = { coordSousProvincialeId: sousProvId };
-    eleveWhere = { etablissement: { coordSousProvincialeId: sousProvId } };
+    eleveWhere = { ecole: { coordSousProvincialeId: sousProvId } };
   } else if (scope === 'school' && etabId) {
     etabWhere = { id: etabId };
-    eleveWhere = { etablissementId: etabId };
+    eleveWhere = { ecoleId: etabId };
   } else if (prov) {
     etabWhere = { province: prov };
-    eleveWhere = { etablissement: { province: prov } };
+    eleveWhere = { ecole: { province: prov } };
   }
 
   // ── Isolation par institution (appliquée après les filtres territoriaux) ──
@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
   const userInst = (user as any).typeInstitution;
   if (user.role !== 'SUPER_ADMIN' && userInst) {
     etabWhere = { AND: [etabWhere, { institution: userInst }] };
-    const existingEtabFilter = (eleveWhere.etablissement as Record<string, unknown>) || {};
-    eleveWhere = { AND: [eleveWhere, { etablissement: { ...existingEtabFilter, institution: userInst } }] };
+    const existingEtabFilter = (eleveWhere.ecole as Record<string, unknown>) || {};
+    eleveWhere = { AND: [eleveWhere, { ecole: { ...existingEtabFilter, institution: userInst } }] };
   }
 
   // Filtre du compteur de sous-divisions (mêmes règles que les autres stats)
@@ -46,9 +46,9 @@ export async function GET(request: NextRequest) {
   if (userInst) sousProvWhere.institution = userInst;
 
   // ── Stats de base (communes à tous les niveaux) ──
-  const [totalEleves, totalEtablissements, totalEnseignants, totalProvinces, totalClassesAgg, totalDossiers, totalVisites, totalSousProvinciales, totalDocuments, totalNotifications] = await Promise.all([
+  const [totalEleves, totalEcoles, totalEnseignants, totalProvinces, totalClassesAgg, totalDossiers, totalVisites, totalSousProvinciales, totalDocuments, totalNotifications] = await Promise.all([
     prisma.eleve.count({ where: eleveWhere }),
-    prisma.etablissement.count({ where: etabWhere }),
+    prisma.ecole.count({ where: etabWhere }),
     prisma.enseignant.count(),
     prisma.province.count(),
     prisma.eleve.groupBy({ by: ['classe'], where: eleveWhere, _count: true }),
@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
   let chartData: { label: string; value: number }[] = [];
 
   if (scope === 'national') {
-    const provinces = await prisma.province.findMany({ select: { nom: true, etablissements: true, eleves: true }, orderBy: { nom: 'asc' } });
-    breakdown = provinces.map((p) => ({ label: p.nom, value: p.etablissements, sublabel: `${p.eleves} élèves` }));
+    const provinces = await prisma.province.findMany({ select: { nom: true, ecoles: true, eleves: true }, orderBy: { nom: 'asc' } });
+    breakdown = provinces.map((p) => ({ label: p.nom, value: p.ecoles, sublabel: `${p.eleves} élèves` }));
     chartData = provinces.map((p) => ({ label: p.nom, value: p.eleves }));
   } else if (scope === 'provincial' && prov) {
     const sousProvs = await prisma.coordSousProvinciale.findMany({
@@ -77,23 +77,23 @@ export async function GET(request: NextRequest) {
     });
     const results = await Promise.all(
       sousProvs.map(async (sp) => {
-        const nbEtab = await prisma.etablissement.count({ where: { coordSousProvincialeId: sp.id, ...(userInst ? { institution: userInst } : {}) } });
-        const nbEleves = await prisma.eleve.count({ where: { etablissement: { coordSousProvincialeId: sp.id, ...(userInst ? { institution: userInst } : {}) } } });
+        const nbEtab = await prisma.ecole.count({ where: { coordSousProvincialeId: sp.id, ...(userInst ? { institution: userInst } : {}) } });
+        const nbEleves = await prisma.eleve.count({ where: { ecole: { coordSousProvincialeId: sp.id, ...(userInst ? { institution: userInst } : {}) } } });
         return { label: sp.nom, nbEtab, nbEleves };
       }),
     );
     breakdown = results.map((r) => ({ label: r.label, value: r.nbEtab, sublabel: `${r.nbEleves} élèves` }));
     chartData = results.map((r) => ({ label: r.label, value: r.nbEleves }));
   } else if (scope === 'sousProvincial' && sousProvId) {
-    const etabs = await prisma.etablissement.findMany({
+    const etabs = await prisma.ecole.findMany({
       where: { coordSousProvincialeId: sousProvId, ...(userInst ? { institution: userInst } : {}) },
       select: { id: true, nom: true, type: true },
       orderBy: { nom: 'asc' },
     });
     const results = await Promise.all(
       etabs.map(async (e) => {
-        const nbEleves = await prisma.eleve.count({ where: { etablissementId: e.id } });
-        return { label: e.nom, nbEleves, type: e.type || 'Établissement' };
+        const nbEleves = await prisma.eleve.count({ where: { ecoleId: e.id } });
+        return { label: e.nom, nbEleves, type: e.type || 'École' };
       }),
     );
     breakdown = results.map((r) => ({ label: r.label, value: r.nbEleves, sublabel: r.type }));
@@ -106,18 +106,18 @@ export async function GET(request: NextRequest) {
   // ── Activité récente ──
   const [recentDossiers, recentVisites] = await Promise.all([
     prisma.dossier.findMany({ take: 3, orderBy: { createdAt: 'desc' }, select: { objet: true, statut: true } }),
-    prisma.visite.findMany({ take: 2, orderBy: { createdAt: 'desc' }, select: { etablissement: true, objet: true } }),
+    prisma.visite.findMany({ take: 2, orderBy: { createdAt: 'desc' }, select: { ecole: true, objet: true } }),
   ]);
 
   const activite = [
     ...recentDossiers.map((d) => `Dossier — ${d.objet} (${d.statut})`),
-    ...recentVisites.map((v) => `Visite — ${v.etablissement}${v.objet ? ' : ' + v.objet : ''}`),
+    ...recentVisites.map((v) => `Visite — ${v.ecole}${v.objet ? ' : ' + v.objet : ''}`),
   ];
 
   return NextResponse.json({
     stats: {
       totalEleves,
-      totalEtablissements,
+      totalEcoles,
       totalEnseignants,
       totalClasses,
       totalProvinces,

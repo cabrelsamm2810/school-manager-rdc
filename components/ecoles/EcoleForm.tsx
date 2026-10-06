@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { INSTITUTIONS, DOCUMENT_TYPES, VALIDATION_STATUTS } from '@/lib/institutions';
 import { allProvinces, educationProvincesByAdmin } from '@/lib/meta-data';
 
-export type EtablissementFormData = {
+export type EcoleFormData = {
   nom: string;
   type: string;
   institution: string;
@@ -17,7 +17,7 @@ export type EtablissementFormData = {
   localisationGeo: string;
   telephone: string;
   email: string;
-  chefEtablissement: string;
+  chefEcole: string;
   logoUrl: string;
   effectif: string;
   statut: string;
@@ -28,10 +28,10 @@ export type EtablissementFormData = {
   structureRattachementType: string;
 };
 
-export const emptyForm: EtablissementFormData = {
+export const emptyForm: EcoleFormData = {
   nom: '', type: '', institution: '', dinacope: '', province: '',
   provinceEducationnelle: '', ville: '', commune: '', adresse: '',
-  localisationGeo: '', telephone: '', email: '', chefEtablissement: '',
+  localisationGeo: '', telephone: '', email: '', chefEcole: '',
   logoUrl: '', effectif: '', statut: 'Actif', statutValidation: 'Brouillon',
   coordSousProvincialeId: '', ecErcId: '', structureRattachementId: '',
   structureRattachementType: '',
@@ -44,17 +44,17 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
 const requiredMark = <span className="text-red-500"> *</span>;
 
 type Props = {
-  initialData?: Partial<EtablissementFormData> | null;
-  onSubmit: (data: EtablissementFormData) => Promise<void>;
+  initialData?: Partial<EcoleFormData> | null;
+  onSubmit: (data: EcoleFormData) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
   loading?: boolean;
   error?: string;
 };
 
-export function EtablissementForm({ initialData, onSubmit, onCancel, submitLabel = 'Enregistrer', loading, error }: Props) {
+export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enregistrer', loading, error }: Props) {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<EtablissementFormData>({ ...emptyForm, ...initialData });
+  const [form, setForm] = useState<EcoleFormData>({ ...emptyForm, ...initialData });
   const [structures, setStructures] = useState<Structure[]>([]);
   const [structuresLoading, setStructuresLoading] = useState(false);
 
@@ -77,7 +77,7 @@ export function EtablissementForm({ initialData, onSubmit, onCancel, submitLabel
       .finally(() => setStructuresLoading(false));
   }, [form.institution]);
 
-  function update<K extends keyof EtablissementFormData>(key: K, value: EtablissementFormData[K]) {
+  function update<K extends keyof EcoleFormData>(key: K, value: EcoleFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -273,7 +273,7 @@ export function EtablissementForm({ initialData, onSubmit, onCancel, submitLabel
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Informations de l'établissement</h3>
+              <h3 className="text-base font-bold text-slate-900">Informations de l'école</h3>
               <p className="mt-1 text-sm text-slate-500">Renseignez les informations obligatoires.</p>
             </div>
             <span className={`rounded-lg px-3 py-1 text-xs font-medium ${selectedInstitution?.bgColor} ${selectedInstitution?.color}`}>
@@ -295,7 +295,7 @@ export function EtablissementForm({ initialData, onSubmit, onCancel, submitLabel
                 className={inputClass} placeholder="Numéro DINACOPE" />
             </div>
             <div>
-              <label className={labelClass} htmlFor="etab-type">Type d'établissement{requiredMark}</label>
+              <label className={labelClass} htmlFor="etab-type">Type d'école{requiredMark}</label>
               <select id="etab-type" value={form.type}
                 onChange={(e) => update('type', e.target.value)}
                 className={inputClass} required>
@@ -307,9 +307,9 @@ export function EtablissementForm({ initialData, onSubmit, onCancel, submitLabel
               </select>
             </div>
             <div>
-              <label className={labelClass} htmlFor="etab-chef">Chef d'établissement{requiredMark}</label>
-              <input id="etab-chef" type="text" required value={form.chefEtablissement}
-                onChange={(e) => update('chefEtablissement', e.target.value)}
+              <label className={labelClass} htmlFor="etab-chef">Chef d'école{requiredMark}</label>
+              <input id="etab-chef" type="text" required value={form.chefEcole}
+                onChange={(e) => update('chefEcole', e.target.value)}
                 className={inputClass} placeholder="Nom du directeur" />
             </div>
             <div>

@@ -6,7 +6,7 @@
 
 export type DashboardStats = {
   totalEleves: number;
-  totalEtablissements: number;
+  totalEcoles: number;
   totalEnseignants: number;
   totalClasses: number;
   totalProvinces: number;

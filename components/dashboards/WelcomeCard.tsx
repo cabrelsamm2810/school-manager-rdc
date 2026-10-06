@@ -20,7 +20,7 @@ const SCOPE_LABELS: Record<string, string> = {
   national: 'Vue nationale',
   provincial: 'Vue provinciale',
   sousProvincial: 'Vue sous-provinciale',
-  school: 'Mon établissement',
+  school: 'Mon école',
   enseignant: 'Espace enseignant'
 };
 

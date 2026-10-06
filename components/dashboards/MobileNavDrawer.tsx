@@ -25,7 +25,7 @@ type EleveResult = {
   nom: string;
   prenom: string;
   classe: string;
-  etablissement?: { nom: string } | null;
+  ecole?: { nom: string } | null;
 };
 
 type EnseignantResult = {
@@ -33,7 +33,7 @@ type EnseignantResult = {
   nom: string;
   matricule: string;
   grade?: string;
-  etablissement?: string;
+  ecole?: string;
   specialite?: string;
 };
 
@@ -223,7 +223,7 @@ export function MobileNavDrawer({
                           {eleve.nom} {eleve.prenom}
                         </span>
                         <span className="block truncate text-[11px] text-[#8b94a6]">
-                          {details([eleve.matricule, eleve.classe, eleve.etablissement?.nom])}
+                          {details([eleve.matricule, eleve.classe, eleve.ecole?.nom])}
                         </span>
                       </span>
                     </Link>
@@ -251,7 +251,7 @@ export function MobileNavDrawer({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-medium text-white">{enseignant.nom}</span>
                         <span className="block truncate text-[11px] text-[#8b94a6]">
-                          {details([enseignant.matricule, enseignant.grade, enseignant.etablissement])}
+                          {details([enseignant.matricule, enseignant.grade, enseignant.ecole])}
                         </span>
                       </span>
                     </Link>

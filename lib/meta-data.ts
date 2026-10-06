@@ -25,7 +25,7 @@ export const defaultRoleOptions: RoleOption[] = [
   { value: 'ELEVE', label: 'Élève' },
   { value: 'PARENT', label: 'Parent' },
   { value: 'ENSEIGNANT', label: 'Enseignant' },
-  { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
+  { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019école' },
   { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent sous provincial' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
   { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
@@ -48,7 +48,7 @@ export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
-  { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
+  { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019école' },
   { value: 'ENSEIGNANT', label: 'Enseignant' },
   { value: 'ELEVE', label: 'Élève' },
   { value: 'PARENT', label: 'Parent' },
@@ -123,7 +123,7 @@ export const provincialBureaux = [
   'Bureau de la formation',
   'Bureau de gestion',
   'Bureau de planification',
-  'Bureau des établissements scolaires',
+  'Bureau des écoles scolaires',
   'Bureau pédagogique',
   'Bureau des ressources humaines',
   'Bureau financier',
@@ -162,7 +162,7 @@ export const fonctionsByBureau: Record<string, string[]> = {
   'Bureau de la formation': ['Coordinateur de formation', 'Formateur principal', 'Formateur', 'Animateur'],
   'Bureau de gestion': ['Gestionnaire principal', 'Gestionnaire', 'Comptable', 'Agent de gestion'],
   'Bureau de planification': ['Planificateur principal', 'Planificateur', 'Analyste', 'Agent de planification'],
-  'Bureau des établissements scolaires': ['Superviseur des établissements', 'Agent de suivi', 'Inspecteur scolaire', 'Animateur scolaire'],
+  'Bureau des écoles scolaires': ['Superviseur des écoles', 'Agent de suivi', 'Inspecteur scolaire', 'Animateur scolaire'],
   'Bureau pédagogique': ['Conseiller pédagogique', 'Animateur pédagogique', 'Inspecteur pédagogique'],
   'Bureau des ressources humaines': ['Directeur RH', 'Agent RH', 'Chargé du personnel'],
   'Bureau financier': ['Directeur financier', 'Comptable principal', 'Agent financier'],
@@ -175,7 +175,7 @@ export const gradesByBureau: Record<string, string[]> = {
   'Bureau de la formation': ['Principal', 'Adjoint', 'Formateur principal', 'Formateur'],
   'Bureau de gestion': ['Principal', 'Adjoint', 'Gestionnaire principal', 'Gestionnaire'],
   'Bureau de planification': ['Principal', 'Adjoint', 'Planificateur principal', 'Planificateur'],
-  'Bureau des établissements scolaires': ['Superviseur principal', 'Superviseur', 'Agent principal', 'Agent'],
+  'Bureau des écoles scolaires': ['Superviseur principal', 'Superviseur', 'Agent principal', 'Agent'],
   'Bureau pédagogique': ['Conseiller principal', 'Conseiller', 'Animateur'],
   'Bureau des ressources humaines': ['Directeur', 'Agent principal', 'Agent'],
   'Bureau financier': ['Directeur', 'Comptable principal', 'Agent'],
@@ -245,7 +245,7 @@ export const sousDivisionsByEducationProvince: Record<string, string[]> = (() =>
   return map;
 })();
 
-/** Types d'établissement pour le formulaire École. */
+/** Types d'école pour le formulaire École. */
 export const ecoleTypes = [
   'Maternelle',
   'Primaire',

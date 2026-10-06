@@ -12,7 +12,7 @@ export type SessionUser = {
   role: string;
   profilePhotoUrl?: string | null;
   provinceAdministrative?: string | null;
-  etablissementId?: string | null;
+  ecoleId?: string | null;
   typeInstitution?: string | null;
   institutionName?: string | null;
 };

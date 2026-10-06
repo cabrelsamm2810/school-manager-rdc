@@ -53,8 +53,8 @@ credentials. Nothing external is required to boot.
 - `.env.example` lists Supabase and S3 settings, but those integrations are **not implemented** — only
   `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
   is declared there but referenced nowhere in the code.
-- **Le modèle `Enseignant` n'a aucun champ territorial.** `etablissement` y est un simple libellé (pas de FK),
-  et il n'existe ni province ni `etablissementId`. `crud-models.ts` marque donc `provinceField: false` pour ce
+- **Le modèle `Enseignant` n'a aucun champ territorial.** `ecole` y est un simple libellé (pas de FK),
+  et il n'existe ni province ni `ecoleId`. `crud-models.ts` marque donc `provinceField: false` pour ce
   module : sans cela `buildScopeWhere()` ajoutait un `where.province` inexistant et `/api/enseignants` répondait
   500 (`PrismaClientValidationError`) à tout rôle non national — y compris le compte de démonstration
   DIRECTION_ECOLE. Conséquence assumée : la liste des enseignants n'est pas filtrée par périmètre.
@@ -64,17 +64,17 @@ credentials. Nothing external is required to boot.
   « Unknown argument `province` ». Les modules CRUD concernés (`bureaux-fonctions`, `grades`, `dossiers`,
   `visites`, `services`, `notifications`, `paiements`, `classes-rdc`, `matieres-rdc`, `options-rdc`, `notes`)
   portent désormais ces deux drapeaux. Les routes `cahier-de-cote` passent `institutionField: false` et
-  utilisent `etablissementNom` (libellé réel) comme repli provincial ; `Eleve`, qui n'a ni `province` ni
-  `institution`, passe par la relation `etablissement` via le helper `buildEleveScopeWhere()` de
+  utilisent `ecoleNom` (libellé réel) comme repli provincial ; `Eleve`, qui n'a ni `province` ni
+  `institution`, passe par la relation `ecole` via le helper `buildEleveScopeWhere()` de
   `lib/territory-filter.ts` (utilisé par `/api/eleves` et `/api/cahier-de-cote/options`).
   Vérification : `GET /api/<module>` avec un compte DIRECTION_ECOLE actif doit répondre 200, jamais 500.
 
 ## Comptes de démonstration
 
 - **Enseignant** : `enseignant.demo@schoolmanager-rdc.cd` / `Enseignant2026`, rattaché à l'« École de
-  démonstration » (`etablissementId` du compte DIRECTION_ECOLE de démo). Créé et remis à jour par
+  démonstration » (`ecoleId` du compte DIRECTION_ECOLE de démo). Créé et remis à jour par
   `npm run seed:demo-enseignant` (`scripts/seed-demo-enseignant.ts`) : le script est idempotent
-  (upsert par email), force `role=ENSEIGNANT`, `isActive=true`, l'établissement de démo, et génère
+  (upsert par email), force `role=ENSEIGNANT`, `isActive=true`, l'école de démo, et génère
   les présences des 30 derniers jours (jours ouvrables) **uniquement si la table `presences` est
   vide** — ce sont elles qui alimentent les taux de présence du tableau de bord. Sans ce seed, le
   tableau de bord enseignant n'affiche que les effectifs par classe (280 élèves, 10 classes).
@@ -198,7 +198,7 @@ Toute divergence = page ouverte à tort ou lien mort.
 Le tableau de bord enseignant lit `/api/enseignant/eleves` (lecture seule, `user.role !== 'ENSEIGNANT'` → 403)
 pour les listes de classes/élèves de `components/enseignant/PresenceManager.tsx` : `/api/eleves` reste fermé à
 ENSEIGNANT (module de gestion `DIRECTION_ECOLE`) — ne pas y rebrancher ces composants, ils resteraient vides.
-Le périmètre vient de `buildEleveScopeWhere()` (établissement, repli province), partagé avec
+Le périmètre vient de `buildEleveScopeWhere()` (école, repli province), partagé avec
 `/api/enseignant/dashboard`.
 
 Vérification : `curl` sur `/enseignant/dashboard` avec `school_manager_role=DIRECTION_ECOLE` → 307 vers

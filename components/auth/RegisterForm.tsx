@@ -86,16 +86,16 @@ const INSTITUTION_SHORT: Record<string, string> = {
 };
 const INSTITUTION_DESC: Record<string, string> = {
   'EC-ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
-  'PUBLIQUE': 'Établissement public',
+  'PUBLIQUE': 'École public',
   'CATHOLIQUE': 'Conventionné catholique',
-  'ISLAMIQUE': 'Établissement islamique',
-  'INDEPENDANTE': 'Établissement indépendant',
+  'ISLAMIQUE': 'École islamique',
+  'INDEPENDANTE': 'École indépendant',
 };
 const ROLE_DESC: Record<string, string> = {
   'COORDINATION_NATIONALE': 'Administration nationale',
   'COORDINATION_PROVINCIALE': 'Administration provinciale',
   'COORDINATION_SOUS_PROVINCIALE': 'Administration sous-provinciale',
-  'DIRECTION_ECOLE': 'Gestion d’établissement',
+  'DIRECTION_ECOLE': 'Gestion d’école',
   'ENSEIGNANT': 'Corps enseignant',
   'ELEVE': 'Espace élève',
   'PARENT': 'Espace parent',
@@ -601,7 +601,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
             {/* School form for École EC-ERC */}
             {needsSchoolForm && (
               <div className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50/30 p-4">
-                <p className="text-sm font-semibold text-slate-700">Établissement EC-ERC</p>
+                <p className="text-sm font-semibold text-slate-700">École EC-ERC</p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className={labelClass}>Nom de l’école *</label>
@@ -616,7 +616,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                     <input className={inputClass} value={form.ecoleCommune} onChange={(e) => updateField('ecoleCommune', e.target.value)} />
                   </div>
                   <div>
-                    <label className={labelClass}>Type d’établissement</label>
+                    <label className={labelClass}>Type d’école</label>
                     <select className={inputClass} value={form.ecoleType} onChange={(e) => updateField('ecoleType', e.target.value)}>
                       <option value="">— Sélectionner —</option>
                       {ecoleTypes.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -698,7 +698,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                 {form.provinceAdministrative && <SummaryRow label="Province" value={form.provinceAdministrative} onEdit={() => goToStep(3)} />}
                 {form.provinceEducationnelle && <SummaryRow label="Province éduc." value={form.provinceEducationnelle} onEdit={() => goToStep(3)} />}
                 {form.coordSousProvinciale && <SummaryRow label="Coord. sous-prov." value={form.coordSousProvinciale} onEdit={() => goToStep(3)} />}
-                {(form.ecoleNom || form.institutionName) && <SummaryRow label="Établissement" value={form.ecoleNom || form.institutionName} onEdit={() => goToStep(3)} />}
+                {(form.ecoleNom || form.institutionName) && <SummaryRow label="École" value={form.ecoleNom || form.institutionName} onEdit={() => goToStep(3)} />}
                 {form.ecoleType && <SummaryRow label="Type école" value={form.ecoleType} onEdit={() => goToStep(3)} />}
                 <SummaryRow label="Nom complet" value={`${form.nom} ${form.postNom} ${form.prenom}`.trim()} onEdit={() => goToStep(3)} />
                 {form.sexe && <SummaryRow label="Sexe" value={form.sexe === 'M' ? 'Masculin' : 'Féminin'} onEdit={() => goToStep(3)} />}

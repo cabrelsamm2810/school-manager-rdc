@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     id: user.id, nom: user.nom, postNom: user.postNom, prenom: user.prenom,
     email: user.email, telephone: user.telephone, role: user.role, profilePhotoUrl: user.profilePhotoUrl,
     provinceAdministrative: user.provinceAdministrative,
-    etablissementId: user.etablissementId,
+    ecoleId: user.ecoleId,
     typeInstitution: user.typeInstitution,
     institutionName: user.institutionName,
   }});

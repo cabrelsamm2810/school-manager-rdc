@@ -12,7 +12,7 @@ type SessionUser = {
   nom: string;
   prenom: string;
   role: string;
-  etablissementId?: string | null;
+  ecoleId?: string | null;
   typeInstitution?: string;
 };
 
@@ -59,7 +59,7 @@ const MENTION_COLORS: Record<string, string> = {
 export function CahierDeCoteManager() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [classes, setClasses] = useState<string[]>([]);
-  const [etablissements, setEtablissements] = useState<{ id: string; nom: string }[]>([]);
+  const [ecoles, setEcoles] = useState<{ id: string; nom: string }[]>([]);
   const [selectedEtab, setSelectedEtab] = useState<string>('');
   const [selectedClasse, setSelectedClasse] = useState('');
   const [selectedCours, setSelectedCours] = useState('');
@@ -90,8 +90,8 @@ export function CahierDeCoteManager() {
       .then((data) => {
         if (data?.authenticated) {
           setUser(data.user);
-          if (data.user.etablissementId) {
-            setSelectedEtab(data.user.etablissementId);
+          if (data.user.ecoleId) {
+            setSelectedEtab(data.user.ecoleId);
           }
         }
       })
@@ -101,7 +101,7 @@ export function CahierDeCoteManager() {
       .then((r) => r.json())
       .then((data) => {
         if (data.classes) setClasses(data.classes);
-        if (data.etablissements) setEtablissements(data.etablissements);
+        if (data.ecoles) setEcoles(data.ecoles);
       })
       .catch(() => {});
   }, []);
@@ -113,7 +113,7 @@ export function CahierDeCoteManager() {
       return;
     }
     const params = new URLSearchParams({ classe: selectedClasse });
-    if (selectedEtab) params.set('etablissementId', selectedEtab);
+    if (selectedEtab) params.set('ecoleId', selectedEtab);
 
     fetch(`/api/eleves?${params}`)
       .then((r) => r.json())
@@ -140,7 +140,7 @@ export function CahierDeCoteManager() {
       periode: selectedPeriode,
       anneeScolaire: ANNEE_SCOLAIRE,
     });
-    if (selectedEtab) params.set('etablissementId', selectedEtab);
+    if (selectedEtab) params.set('ecoleId', selectedEtab);
 
     try {
       const res = await fetch(`/api/cahier-de-cote?${params}`);
@@ -253,8 +253,8 @@ export function CahierDeCoteManager() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          etablissementId: selectedEtab || null,
-          etablissementNom: etablissements.find((e) => e.id === selectedEtab)?.nom || '',
+          ecoleId: selectedEtab || null,
+          ecoleNom: ecoles.find((e) => e.id === selectedEtab)?.nom || '',
           classe: selectedClasse,
           cours: selectedCours,
           enseignantNom: user ? `${user.prenom} ${user.nom}`.trim() : '',
@@ -356,7 +356,7 @@ export function CahierDeCoteManager() {
         periode: selectedPeriode,
         anneeScolaire: ANNEE_SCOLAIRE,
       });
-      if (selectedEtab) params.set('etablissementId', selectedEtab);
+      if (selectedEtab) params.set('ecoleId', selectedEtab);
 
       const res = await fetch(`/api/cahier-de-cote/bulletin/pdf-batch?${params}`);
       if (!res.ok) {
@@ -389,17 +389,17 @@ export function CahierDeCoteManager() {
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft md:p-5">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Sélection</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Établissement (si applicable) */}
-          {etablissements.length > 0 && (
+          {/* École (si applicable) */}
+          {ecoles.length > 0 && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-500">Établissement</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500">École</label>
               <select
                 value={selectedEtab}
                 onChange={(e) => setSelectedEtab(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
                 <option value="">Tous</option>
-                {etablissements.map((e) => (
+                {ecoles.map((e) => (
                   <option key={e.id} value={e.id}>{e.nom}</option>
                 ))}
               </select>
@@ -821,7 +821,7 @@ export function CahierDeCoteManager() {
           classe={selectedClasse}
           periode={selectedPeriode}
           anneeScolaire={ANNEE_SCOLAIRE}
-          etablissementId={selectedEtab}
+          ecoleId={selectedEtab}
           onClose={() => setShowBatchPreview(false)}
           onDownload={handleBatchDownloadPdf}
         />

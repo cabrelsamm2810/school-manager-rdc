@@ -15,7 +15,7 @@ interface ParsedRow {
   statut?: string;
 }
 
-/** POST /api/import/etablissements — import en masse depuis un fichier Excel/CSV */
+/** POST /api/import/ecoles — import en masse depuis un fichier Excel/CSV */
 export async function POST(request: NextRequest) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
   if (!auth.ok) {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     const effectifNum = Number(row.effectif);
     try {
-      await prisma.etablissement.create({
+      await prisma.ecole.create({
         data: {
           nom,
           type: String(row.type ?? '').trim(),

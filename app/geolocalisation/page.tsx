@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
 
-type Etablissement = {
+type Ecole = {
   id: string;
   nom: string;
   province: string;
@@ -13,32 +13,32 @@ type Etablissement = {
 };
 
 export default function GeolocalisationPage() {
-  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
+  const [ecoles, setEcoles] = useState<Ecole[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch('/api/etablissements')
+    fetch('/api/ecoles')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.etablissements) setEtablissements(data.etablissements);
+        if (data?.ecoles) setEcoles(data.ecoles);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const data = etablissements.filter((e) =>
+  const data = ecoles.filter((e) =>
     e.nom.toLowerCase().includes(search.toLowerCase()) ||
     (e.province || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const provinces = new Set(etablissements.map((e) => e.province).filter(Boolean));
-  const totalEleves = etablissements.reduce((s, e) => s + (e.effectif || 0), 0);
+  const provinces = new Set(ecoles.map((e) => e.province).filter(Boolean));
+  const totalEleves = ecoles.reduce((s, e) => s + (e.effectif || 0), 0);
 
   return (
-    <ModulePage icon="location" eyebrow="Services" title="Géolocalisation" description="Localisation des établissements et des utilisateurs sur la carte.">
+    <ModulePage icon="location" eyebrow="Services" title="Géolocalisation" description="Localisation des écoles et des utilisateurs sur la carte.">
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Établissements localisés" value={loading ? '—' : String(etablissements.length)} />
+        <StatCard label="Écoles localisés" value={loading ? '—' : String(ecoles.length)} />
         <StatCard label="Provinces couvertes" value={loading ? '—' : String(provinces.size)} />
         <StatCard label="Élèves total" value={loading ? '—' : totalEleves.toLocaleString('fr-FR')} />
         <StatCard label="Position moyenne" value="RDC" hint="Centre national" />
@@ -62,14 +62,14 @@ export default function GeolocalisationPage() {
           ))}
         </div>
 
-        {/* Liste des établissements */}
+        {/* Liste des écoles */}
         <div>
-          <input type="text" value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Rechercher un établissement…" className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <input type="text" value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Rechercher un école…" className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
           {loading ? (
             <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
           ) : data.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-              <p className="text-sm text-slate-500">Aucun établissement trouvé.</p>
+              <p className="text-sm text-slate-500">Aucun école trouvé.</p>
             </div>
           ) : (
             <div className="space-y-3">

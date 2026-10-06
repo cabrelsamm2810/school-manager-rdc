@@ -294,7 +294,7 @@ export default function ProfilePage() {
                         <InfoRow icon="user" label="Email" value={profile.email} />
                         <InfoRow icon="shield" label="Rôle" value={ROLE_LABELS[profile.role] ?? profile.role} />
                         {profile.institutionName && (
-                          <InfoRow icon="school" label="Établissement" value={profile.institutionName} />
+                          <InfoRow icon="school" label="École" value={profile.institutionName} />
                         )}
                         {profile.provinceAdministrative && (
                           <InfoRow icon="location" label="Province" value={profile.provinceAdministrative} />

@@ -31,7 +31,7 @@ export const ROLE_LABELS: Record<string, string> = {
   AGENT_PROVINCIAL: 'Agent provincial',
   COORDINATION_SOUS_PROVINCIALE: 'Coordination sous provinciale',
   AGENT_SOUS_PROVINCIAL: 'Agent sous provincial',
-  DIRECTION_ECOLE: 'Chef d’établissement',
+  DIRECTION_ECOLE: 'Chef d’école',
   ENSEIGNANT: 'Enseignant',
   PARENT: 'Parent',
   ELEVE: 'Élève'

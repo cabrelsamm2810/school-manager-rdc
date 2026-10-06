@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  // ── Établissement ──
-  let etab = await prisma.etablissement.findFirst({ where: { nom: 'Institut Tuendelee' } });
+  // ── École ──
+  let etab = await prisma.ecole.findFirst({ where: { nom: 'Institut Tuendelee' } });
   if (!etab) {
-    etab = await prisma.etablissement.create({
+    etab = await prisma.ecole.create({
       data: {
         nom: 'Institut Tuendelee',
         type: 'Secondaire',
@@ -103,7 +103,7 @@ async function main() {
   for (const e of elevesData) {
     const eleve = await prisma.eleve.upsert({
       where: { matricule: e.matricule },
-      create: { ...e, etablissementId: etab.id },
+      create: { ...e, ecoleId: etab.id },
       update: {},
     });
 

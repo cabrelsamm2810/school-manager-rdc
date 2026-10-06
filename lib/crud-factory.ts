@@ -22,7 +22,7 @@ export type CrudModelConfig = {
   defaultSort?: { field: string; order: 'asc' | 'desc' };
   provinceField?: string | false;
   sousProvincialeField?: string;
-  etablissementField?: string;
+  ecoleField?: string;
   institutionField?: string | false;
 };
 
@@ -93,7 +93,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeConfig: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeWhere = buildScopeWhere(auth.user, scopeConfig);
@@ -161,7 +161,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
@@ -198,7 +198,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
@@ -242,7 +242,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
@@ -270,7 +270,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);

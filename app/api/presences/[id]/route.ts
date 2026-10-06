@@ -31,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const data = parsed.data;
   const existing = await prisma.presence.findUnique({
     where: { id: params.id },
-    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, emailTuteur: true, nomTuteur: true, etablissement: { select: { nom: true } } } } },
+    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, emailTuteur: true, nomTuteur: true, ecole: { select: { nom: true } } } } },
   });
   if (!existing) {
     return NextResponse.json({ error: 'Présence introuvable.' }, { status: 404 });
@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         parentNom: existing.eleve.nomTuteur,
         eleveNom: `${existing.eleve.nom} ${existing.eleve.postNom} ${existing.eleve.prenom}`.trim(),
         classe: data.classe,
-        etablissementNom: existing.eleve.etablissement?.nom || 'Établissement',
+        ecoleNom: existing.eleve.ecole?.nom || 'École',
         dateAbsence: dateStr,
       }).catch(() => {});
     } else if (data.present && !existing.present) {
@@ -75,7 +75,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         parentNom: existing.eleve.nomTuteur,
         eleveNom: `${existing.eleve.nom} ${existing.eleve.postNom} ${existing.eleve.prenom}`.trim(),
         classe: data.classe,
-        etablissementNom: existing.eleve.etablissement?.nom || 'Établissement',
+        ecoleNom: existing.eleve.ecole?.nom || 'École',
         datePresence: dateStr,
         heurePresence: new Date(data.date).toLocaleTimeString('fr-FR'),
         localisation: data.latitude != null && data.longitude != null ? `${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}` : undefined,

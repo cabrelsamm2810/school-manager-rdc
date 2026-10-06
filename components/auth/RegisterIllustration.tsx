@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 const STEP_META: Record<number, { title: string; subtitle: string; color: string }> = {
-  0: { title: 'Votre institution', subtitle: 'Choisissez votre type d\'établissement', color: '#0066FF' },
+  0: { title: 'Votre institution', subtitle: 'Choisissez votre type d\'école', color: '#0066FF' },
   1: { title: 'Votre structure', subtitle: 'Définissez votre niveau dans l\'organisation', color: '#2563EB' },
   2: { title: 'Votre fonction', subtitle: 'Renseignez vos informations professionnelles', color: '#1D4ED8' },
   3: { title: 'Vos informations', subtitle: 'Complétez votre profil personnel', color: '#0066FF' },

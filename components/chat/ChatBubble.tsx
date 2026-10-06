@@ -120,7 +120,7 @@ function MessageActions({
 /**
  * Bulle de message SchoolChat.
  * - messages reçus alignés à gauche avec une photo de profil discrète (alignée en bas du groupe),
- * - messages envoyés alignés à droite, accent bleu de l'établissement, heure + statut,
+ * - messages envoyés alignés à droite, accent bleu de l'école, heure + statut,
  * - texte, image, message vocal et pièce jointe dans une même enveloppe compacte.
  */
 export const ChatBubble = memo(function ChatBubble({

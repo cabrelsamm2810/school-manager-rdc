@@ -29,7 +29,7 @@ export default function EnseignantsPage() {
         <ImportDialog
           endpoint="/api/import/enseignants"
           moduleName="Enseignants"
-          columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
+          columns={['nom', 'matricule', 'grade', 'ecole', 'specialite', 'telephone', 'email', 'statut']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowImport(false)}
         />
@@ -39,7 +39,7 @@ export default function EnseignantsPage() {
         <OcrImportDialog
           endpoint="/api/import/enseignants"
           moduleName="Enseignants"
-          columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
+          columns={['nom', 'matricule', 'grade', 'ecole', 'specialite', 'telephone', 'email', 'statut']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowOcr(false)}
         />

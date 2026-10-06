@@ -10,7 +10,7 @@ import { ROLE_RANK } from '@/lib/roles';
 
 /** Mapping route → rôle minimum requis. */
 export const ROUTE_MIN_ROLE: Record<string, string> = {
-  '/etablissements': 'DIRECTION_ECOLE',
+  '/ecoles': 'DIRECTION_ECOLE',
   '/eleves': 'DIRECTION_ECOLE',
   '/enseignants': 'DIRECTION_ECOLE',
   '/enseignant/dashboard': 'ENSEIGNANT',

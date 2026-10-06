@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   // Tentative 1: chercher par matricule direct
   eleve = await prisma.eleve.findUnique({
     where: { matricule: scannedValue },
-    include: { etablissement: { select: { nom: true } } },
+    include: { ecole: { select: { nom: true } } },
   });
 
   // Tentative 2: extraire l'ID depuis une URL (ex: /api/eleves/verify?matricule=XXX)
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       if (matricule) {
         eleve = await prisma.eleve.findUnique({
           where: { matricule },
-          include: { etablissement: { select: { nom: true } } },
+          include: { ecole: { select: { nom: true } } },
         });
       }
     } catch {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   if (!eleve) {
     eleve = await prisma.eleve.findUnique({
       where: { id: scannedValue },
-      include: { etablissement: { select: { nom: true } } },
+      include: { ecole: { select: { nom: true } } },
     });
   }
 
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         parentNom: eleve.nomTuteur,
         eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
         classe: eleve.classe,
-        etablissementNom: eleve.etablissement?.nom || 'Établissement',
+        ecoleNom: eleve.ecole?.nom || 'École',
         datePresence: now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
         heurePresence: now.toLocaleTimeString('fr-FR'),
         localisation: latitude != null && longitude != null ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` : undefined,
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       parentNom: eleve.nomTuteur,
       eleveNom: `${eleve.nom} ${eleve.postNom} ${eleve.prenom}`.trim(),
       classe: eleve.classe,
-      etablissementNom: eleve.etablissement?.nom || 'Établissement',
+      ecoleNom: eleve.ecole?.nom || 'École',
       datePresence: now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
       heurePresence: now.toLocaleTimeString('fr-FR'),
       localisation: latitude != null && longitude != null ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` : undefined,
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       postNom: eleve.postNom,
       prenom: eleve.prenom,
       classe: eleve.classe,
-      etablissement: eleve.etablissement?.nom || null,
+      ecole: eleve.ecole?.nom || null,
     },
     presence,
   }, { status: 201 });

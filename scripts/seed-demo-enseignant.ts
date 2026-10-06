@@ -1,6 +1,6 @@
 /**
  * Crée (ou remet à jour) le compte enseignant de démonstration rattaché à
- * l'établissement de démonstration, et génère les présences des 30 derniers
+ * l'école de démonstration, et génère les présences des 30 derniers
  * jours si la base n'en contient aucune.
  *
  * À exécuter avec : npx tsx scripts/seed-demo-enseignant.ts
@@ -15,31 +15,31 @@ const DEMO_EMAIL = 'enseignant.demo@schoolmanager-rdc.cd';
 const DEMO_PASSWORD = 'Enseignant2026';
 
 async function main() {
-  const etablissement = await prisma.etablissement.findFirst({
+  const ecole = await prisma.ecole.findFirst({
     where: {
       OR: [{ identifiantSM: 'DEMO-KIN-001' }, { nom: 'École de démonstration' }],
     },
   });
-  if (!etablissement) {
-    throw new Error("Établissement de démonstration introuvable — exécutez d'abord les seeds de données.");
+  if (!ecole) {
+    throw new Error("École de démonstration introuvable — exécutez d'abord les seeds de données.");
   }
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
   // Compte actif sans passer par la validation email, rattaché à l'école de
   // démonstration : le périmètre ENSEIGNANT de buildEleveScopeWhere() le limite
-  // aux élèves de cet établissement.
+  // aux élèves de cet école.
   const enseignant = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
     update: {
       role: Role.ENSEIGNANT,
       isActive: true,
       validationCode: null,
-      etablissementId: etablissement.id,
-      institutionName: etablissement.nom,
-      provinceAdministrative: etablissement.province,
-      provinceEducationnelle: etablissement.provinceEducationnelle,
-      typeInstitution: etablissement.institution,
+      ecoleId: ecole.id,
+      institutionName: ecole.nom,
+      provinceAdministrative: ecole.province,
+      provinceEducationnelle: ecole.provinceEducationnelle,
+      typeInstitution: ecole.institution,
       passwordHash,
     },
     create: {
@@ -54,15 +54,15 @@ async function main() {
       isActive: true,
       fonction: 'Enseignant',
       grade: 'Professeur',
-      etablissementId: etablissement.id,
-      institutionName: etablissement.nom,
-      provinceAdministrative: etablissement.province,
-      provinceEducationnelle: etablissement.provinceEducationnelle,
-      typeInstitution: etablissement.institution,
+      ecoleId: ecole.id,
+      institutionName: ecole.nom,
+      provinceAdministrative: ecole.province,
+      provinceEducationnelle: ecole.provinceEducationnelle,
+      typeInstitution: ecole.institution,
     },
   });
 
-  console.log(`Compte enseignant de démonstration prêt : ${enseignant.email} (${etablissement.nom}).`);
+  console.log(`Compte enseignant de démonstration prêt : ${enseignant.email} (${ecole.nom}).`);
 
   // ── Présences des 30 derniers jours (jours ouvrables uniquement) ──
   const dejaPresentes = await prisma.presence.count();
@@ -70,12 +70,12 @@ async function main() {
     console.log(`${dejaPresentes} présences déjà enregistrées — aucune génération.`);
   } else {
     const eleves = await prisma.eleve.findMany({
-      where: { etablissementId: etablissement.id },
+      where: { ecoleId: ecole.id },
       select: { id: true, classe: true },
     });
 
     if (eleves.length === 0) {
-      console.log('Aucun élève dans cet établissement — aucune présence générée.');
+      console.log('Aucun élève dans cet école — aucune présence générée.');
     } else {
       const aujourdHui = new Date();
       let total = 0;

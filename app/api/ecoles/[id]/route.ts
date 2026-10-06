@@ -17,7 +17,7 @@ const updateSchema = z.object({
   localisationGeo: z.string().trim().optional().or(z.literal('')),
   telephone: z.string().trim().optional().or(z.literal('')),
   email: z.string().trim().email('L\u2019email est invalide.').optional().or(z.literal('')),
-  chefEtablissement: z.string().trim().optional().or(z.literal('')),
+  chefEcole: z.string().trim().optional().or(z.literal('')),
   logoUrl: z.string().trim().optional().or(z.literal('')),
   effectif: z.number().int().min(0).optional(),
   statut: z.string().trim().optional().or(z.literal('')),
@@ -28,14 +28,14 @@ const updateSchema = z.object({
   structureRattachementType: z.string().trim().optional().or(z.literal('')),
 });
 
-/** GET /api/etablissements/[id] — fiche détaillée d'un établissement. */
+/** GET /api/ecoles/[id] — fiche détaillée d'un école. */
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
 
-  const etablissement = await prisma.etablissement.findUnique({
+  const ecole = await prisma.ecole.findUnique({
     where: { id: params.id },
     include: {
       coordSousProvinciale: { select: { id: true, nom: true, province: true } },
@@ -45,32 +45,32 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     },
   });
 
-  if (!etablissement) {
-    return NextResponse.json({ error: 'Établissement introuvable.' }, { status: 404 });
+  if (!ecole) {
+    return NextResponse.json({ error: 'École introuvable.' }, { status: 404 });
   }
 
   // ── Isolation par institution et périmètre territorial ──
   const user = auth.user as any;
   if (user.role !== 'SUPER_ADMIN') {
-    if (user.typeInstitution && user.typeInstitution !== etablissement.institution) {
+    if (user.typeInstitution && user.typeInstitution !== ecole.institution) {
       return NextResponse.json({ error: 'Accès refusé : institution différente.' }, { status: 403 });
     }
     const scope = getScopeLevel(user.role);
-    if (scope === 'school' && user.etablissementId && user.etablissementId !== params.id) {
-      return NextResponse.json({ error: 'Accès refusé : établissement différent.' }, { status: 403 });
+    if (scope === 'school' && user.ecoleId && user.ecoleId !== params.id) {
+      return NextResponse.json({ error: 'Accès refusé : école différent.' }, { status: 403 });
     }
-    if (scope === 'sousProvincial' && user.coordSousProvincialeId && etablissement.coordSousProvincialeId !== user.coordSousProvincialeId) {
+    if (scope === 'sousProvincial' && user.coordSousProvincialeId && ecole.coordSousProvincialeId !== user.coordSousProvincialeId) {
       return NextResponse.json({ error: 'Accès refusé : sous-province différente.' }, { status: 403 });
     }
-    if (scope === 'provincial' && user.provinceAdministrative && etablissement.province !== user.provinceAdministrative) {
+    if (scope === 'provincial' && user.provinceAdministrative && ecole.province !== user.provinceAdministrative) {
       return NextResponse.json({ error: 'Accès refusé : province différente.' }, { status: 403 });
     }
   }
 
-  return NextResponse.json({ etablissement });
+  return NextResponse.json({ ecole });
 }
 
-/** PUT /api/etablissements/[id] — modifier un établissement (protégé si validé). */
+/** PUT /api/ecoles/[id] — modifier un école (protégé si validé). */
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
   if (!auth.ok) {
@@ -87,9 +87,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 
   const data = parsed.data;
-  const existing = await prisma.etablissement.findUnique({ where: { id: params.id } });
+  const existing = await prisma.ecole.findUnique({ where: { id: params.id } });
   if (!existing) {
-    return NextResponse.json({ error: 'Établissement introuvable.' }, { status: 404 });
+    return NextResponse.json({ error: 'École introuvable.' }, { status: 404 });
   }
 
   // ── Isolation par institution et périmètre ──
@@ -99,8 +99,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Accès refusé : institution différente.' }, { status: 403 });
     }
     const scope = getScopeLevel(user.role);
-    if (scope === 'school' && user.etablissementId && user.etablissementId !== params.id) {
-      return NextResponse.json({ error: 'Accès refusé : établissement différent.' }, { status: 403 });
+    if (scope === 'school' && user.ecoleId && user.ecoleId !== params.id) {
+      return NextResponse.json({ error: 'Accès refusé : école différent.' }, { status: 403 });
     }
     if (scope === 'sousProvincial' && user.coordSousProvincialeId && existing.coordSousProvincialeId !== user.coordSousProvincialeId) {
       return NextResponse.json({ error: 'Accès refusé : sous-province différente.' }, { status: 403 });
@@ -114,12 +114,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const isValidationChange = data.statutValidation && data.statutValidation !== existing.statutValidation;
   if (existing.statutValidation === 'Validée' && !isValidationChange) {
     return NextResponse.json(
-      { error: 'Cet établissement est validé. Toute modification nécessite une nouvelle validation.' },
+      { error: 'Cet école est validé. Toute modification nécessite une nouvelle validation.' },
       { status: 403 },
     );
   }
 
-  const etablissement = await prisma.etablissement.update({
+  const ecole = await prisma.ecole.update({
     where: { id: params.id },
     data: {
       nom: data.nom,
@@ -134,7 +134,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       localisationGeo: data.localisationGeo ?? '',
       telephone: data.telephone ?? '',
       email: data.email ?? '',
-      chefEtablissement: data.chefEtablissement ?? '',
+      chefEcole: data.chefEcole ?? '',
       logoUrl: data.logoUrl || null,
       effectif: data.effectif ?? 0,
       statut: data.statut ?? 'Actif',
@@ -148,9 +148,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   // Si le statut de validation change, créer un log
   if (isValidationChange) {
-    await prisma.etablissementValidationLog.create({
+    await prisma.ecoleValidationLog.create({
       data: {
-        etablissementId: params.id,
+        ecoleId: params.id,
         statut: data.statutValidation!,
         commentaire: 'Modification du statut de validation.',
         validateurId: (auth.user as any).id,
@@ -159,24 +159,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     });
   }
 
-  return NextResponse.json({ etablissement });
+  return NextResponse.json({ ecole });
 }
 
-/** DELETE /api/etablissements/[id] — supprimer un établissement (interdit si validé). */
+/** DELETE /api/ecoles/[id] — supprimer un école (interdit si validé). */
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
 
-  const existing = await prisma.etablissement.findUnique({ where: { id: params.id } });
+  const existing = await prisma.ecole.findUnique({ where: { id: params.id } });
   if (!existing) {
-    return NextResponse.json({ error: 'Établissement introuvable.' }, { status: 404 });
+    return NextResponse.json({ error: 'École introuvable.' }, { status: 404 });
   }
 
   if (existing.statutValidation === 'Validée') {
     return NextResponse.json(
-      { error: 'Un établissement validé ne peut pas être supprimé. Le suspendre à la place.' },
+      { error: 'Un école validé ne peut pas être supprimé. Le suspendre à la place.' },
       { status: 403 },
     );
   }
@@ -188,8 +188,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Accès refusé : institution différente.' }, { status: 403 });
     }
     const scope = getScopeLevel(user.role);
-    if (scope === 'school' && user.etablissementId && user.etablissementId !== params.id) {
-      return NextResponse.json({ error: 'Accès refusé : établissement différent.' }, { status: 403 });
+    if (scope === 'school' && user.ecoleId && user.ecoleId !== params.id) {
+      return NextResponse.json({ error: 'Accès refusé : école différent.' }, { status: 403 });
     }
     if (scope === 'sousProvincial' && user.coordSousProvincialeId && existing.coordSousProvincialeId !== user.coordSousProvincialeId) {
       return NextResponse.json({ error: 'Accès refusé : sous-province différente.' }, { status: 403 });
@@ -199,6 +199,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
   }
 
-  await prisma.etablissement.delete({ where: { id: params.id } });
+  await prisma.ecole.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
 }

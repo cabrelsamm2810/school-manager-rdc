@@ -29,7 +29,7 @@ export function NationalDashboard({ stats, breakdown, chartData, activite, role 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Provinces" value={fmt(stats.totalProvinces)} hint="Couverture nationale" icon="globe" color="blue" delay={0} />
         <StatCard label="Sous-divisions" value={fmt(stats.totalSousProvinciales)} hint="Coord. sous-provinciales" icon="district" color="cyan" delay={0.04} />
-        <StatCard label="Établissements" value={fmt(stats.totalEtablissements)} hint="Toutes provinces" icon="school" color="violet" delay={0.08} />
+        <StatCard label="Écoles" value={fmt(stats.totalEcoles)} hint="Toutes provinces" icon="school" color="violet" delay={0.08} />
         <StatCard label="Élèves" value={fmt(stats.totalEleves)} hint="Inscrits cette année" icon="users" color="blue" delay={0.12} />
         <StatCard label="Enseignants" value={fmt(stats.totalEnseignants)} hint="Actifs" icon="teacher" color="emerald" delay={0.16} />
         <StatCard label="Classes" value={fmt(stats.totalClasses)} hint="Tous niveaux" icon="notebook" color="amber" delay={0.2} />
@@ -54,7 +54,7 @@ export function NationalDashboard({ stats, breakdown, chartData, activite, role 
               items={[
                 { label: 'Élèves', value: stats.totalEleves, color: '#3b82f6' },
                 { label: 'Enseignants', value: stats.totalEnseignants, color: '#10b981' },
-                { label: 'Établis.', value: stats.totalEtablissements, color: '#8b5cf6' },
+                { label: 'Établis.', value: stats.totalEcoles, color: '#8b5cf6' },
                 { label: 'Classes', value: stats.totalClasses, color: '#f59e0b' },
               ]}
             />

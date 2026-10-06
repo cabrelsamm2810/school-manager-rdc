@@ -29,7 +29,7 @@ export const navigationGroups: NavGroup[] = [
   {
     title: 'Gestion scolaire',
     items: [
-      { label: 'Établissements', href: '/etablissements', icon: 'school', minRole: 'DIRECTION_ECOLE' },
+      { label: 'Écoles', href: '/ecoles', icon: 'school', minRole: 'DIRECTION_ECOLE' },
       { label: 'Élèves', href: '/eleves', icon: 'users', minRole: 'DIRECTION_ECOLE' },
       { label: 'Enseignants', href: '/enseignants', icon: 'teacher', minRole: 'DIRECTION_ECOLE' },
       { label: 'Tableau de bord enseignant', href: '/enseignant/dashboard', icon: 'home', roles: ['ENSEIGNANT'] },

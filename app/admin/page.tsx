@@ -7,7 +7,7 @@ import { StatCard } from '@/components/ui/Card';
 
 type AdminStats = {
   totalUsers: number;
-  totalEtablissements: number;
+  totalEcoles: number;
   totalProvinces: number;
   totalDossiers: number;
 };
@@ -23,7 +23,7 @@ export default function AdminPage() {
     ]).then(([dash, users, dossiers]) => {
       setStats({
         totalUsers: users?.users?.length ?? 0,
-        totalEtablissements: dash?.stats?.totalEtablissements ?? 0,
+        totalEcoles: dash?.stats?.totalEcoles ?? 0,
         totalProvinces: dash?.stats?.totalProvinces ?? 0,
         totalDossiers: dossiers?.dossiers?.length ?? 0,
       });
@@ -34,7 +34,7 @@ export default function AdminPage() {
     <ModulePage icon="shield" eyebrow="Administration" title="Administration générale" description="Configuration globale, paramètres système et supervision de School Manager RDC.">
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Utilisateurs" value={stats ? String(stats.totalUsers) : '—'} hint="Total comptes" />
-        <StatCard label="Établissements" value={stats ? String(stats.totalEtablissements) : '—'} hint="Recensés" />
+        <StatCard label="Écoles" value={stats ? String(stats.totalEcoles) : '—'} hint="Recensés" />
         <StatCard label="Provinces" value={stats ? String(stats.totalProvinces) : '—'} hint="Couvertes" />
         <StatCard label="Dossiers" value={stats ? String(stats.totalDossiers) : '—'} hint="Actifs" />
       </div>
@@ -69,7 +69,7 @@ export default function AdminPage() {
               { label: 'Gérer les utilisateurs', href: '/admin/users' },
               { label: 'Paramètres généraux', href: '/parametres' },
               { label: 'Provinces & territoire', href: '/provinces' },
-              { label: 'Établissements', href: '/etablissements' },
+              { label: 'Écoles', href: '/ecoles' },
               { label: 'Dossiers administratifs', href: '/dossiers' },
             ].map((action) => (
               <Link key={action.label} href={action.href}

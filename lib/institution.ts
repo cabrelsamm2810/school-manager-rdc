@@ -1,5 +1,5 @@
 /**
- * Libellé d'établissement affiché dans les cartes du tableau de bord.
+ * Libellé d'école affiché dans les cartes du tableau de bord.
  * Source unique, partagée par la carte de bienvenue et la carte montre :
  * aucun libellé n'est inventé, tout vient des données de la session servie
  * par le serveur (nom réel ou type d'institution).

@@ -35,14 +35,14 @@ export function BulletinBatchPreview({
   classe,
   periode,
   anneeScolaire,
-  etablissementId,
+  ecoleId,
   onClose,
   onDownload,
 }: {
   classe: string;
   periode: string;
   anneeScolaire: string;
-  etablissementId: string;
+  ecoleId: string;
   onClose: () => void;
   onDownload: () => void;
 }) {
@@ -57,7 +57,7 @@ export function BulletinBatchPreview({
       try {
         // Charger les élèves
         const params = new URLSearchParams({ classe });
-        if (etablissementId) params.set('etablissementId', etablissementId);
+        if (ecoleId) params.set('ecoleId', ecoleId);
         const resEleves = await fetch(`/api/eleves?${params}`);
         const dataEleves = await resEleves.json();
         const list: Eleve[] = dataEleves.eleves || [];
@@ -69,7 +69,7 @@ export function BulletinBatchPreview({
           periode,
           anneeScolaire,
         });
-        if (etablissementId) params.set('etablissementId', etablissementId);
+        if (ecoleId) params.set('ecoleId', ecoleId);
         const resCotes = await fetch(`/api/cahier-de-cote?${cotesParams}`);
         const dataCotes = await resCotes.json();
         const allCotes = dataCotes.cahierDeCotes || [];
@@ -114,7 +114,7 @@ export function BulletinBatchPreview({
       }
     }
     load();
-  }, [classe, periode, anneeScolaire, etablissementId]);
+  }, [classe, periode, anneeScolaire, ecoleId]);
 
   async function handleDownload() {
     setDownloading(true);

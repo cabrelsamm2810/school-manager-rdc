@@ -6,8 +6,8 @@ import { existsSync } from 'fs';
 import path from 'path';
 
 /**
- * GET /api/etablissements/[id]/documents
- * Liste les documents justificatifs d'un établissement.
+ * GET /api/ecoles/[id]/documents
+ * Liste les documents justificatifs d'un école.
  */
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
@@ -15,8 +15,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
 
-  const documents = await prisma.etablissementDocument.findMany({
-    where: { etablissementId: params.id },
+  const documents = await prisma.ecoleDocument.findMany({
+    where: { ecoleId: params.id },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 /**
- * POST /api/etablissements/[id]/documents
+ * POST /api/ecoles/[id]/documents
  * Téléverse un document justificatif (multipart/form-data).
  * Champs: file (File), type (string), titre (string)
  */
@@ -34,9 +34,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
 
-  const existing = await prisma.etablissement.findUnique({ where: { id: params.id } });
+  const existing = await prisma.ecole.findUnique({ where: { id: params.id } });
   if (!existing) {
-    return NextResponse.json({ error: 'Établissement introuvable.' }, { status: 404 });
+    return NextResponse.json({ error: 'École introuvable.' }, { status: 404 });
   }
 
   const formData = await request.formData().catch(() => null);
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'Le titre du document est obligatoire.' }, { status: 400 });
   }
 
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'etablissements', params.id);
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'ecoles', params.id);
   if (!existsSync(uploadDir)) {
     await mkdir(uploadDir, { recursive: true });
   }
@@ -65,11 +65,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const bytes = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(uploadDir, uniqueName), bytes);
 
-  const fileUrl = `/uploads/etablissements/${params.id}/${uniqueName}`;
+  const fileUrl = `/uploads/ecoles/${params.id}/${uniqueName}`;
 
-  const document = await prisma.etablissementDocument.create({
+  const document = await prisma.ecoleDocument.create({
     data: {
-      etablissementId: params.id,
+      ecoleId: params.id,
       type,
       titre,
       fileUrl,
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 }
 
 /**
- * DELETE /api/etablissements/[id]/documents
+ * DELETE /api/ecoles/[id]/documents
  * Supprime un document (body: { documentId }).
  */
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
@@ -96,8 +96,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ error: 'ID du document requis.' }, { status: 400 });
   }
 
-  await prisma.etablissementDocument.delete({
-    where: { id: body.documentId, etablissementId: params.id },
+  await prisma.ecoleDocument.delete({
+    where: { id: body.documentId, ecoleId: params.id },
   });
 
   return NextResponse.json({ ok: true });

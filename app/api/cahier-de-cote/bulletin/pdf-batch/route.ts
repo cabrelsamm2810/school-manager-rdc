@@ -14,23 +14,23 @@ export async function GET(request: NextRequest) {
   const classe = searchParams.get('classe');
   const periode = searchParams.get('periode');
   const anneeScolaire = searchParams.get('anneeScolaire') || getCurrentAnneeScolaire();
-  const etablissementId = searchParams.get('etablissementId') || undefined;
+  const ecoleId = searchParams.get('ecoleId') || undefined;
 
   if (!classe || !periode) {
     return NextResponse.json({ error: 'Classe et période requises.' }, { status: 400 });
   }
 
   const scopeWhere = buildScopeWhere(auth.user, {
-    etablissementField: 'etablissementId',
+    ecoleField: 'ecoleId',
     // CahierDeCote n'a pas de champ `institution`.
-    provinceField: 'etablissementNom',
+    provinceField: 'ecoleNom',
     institutionField: false,
   });
 
   const eleves = await prisma.eleve.findMany({
     where: {
       classe,
-      ...(etablissementId ? { etablissementId } : {}),
+      ...(ecoleId ? { ecoleId } : {}),
     },
     orderBy: { nom: 'asc' },
   });
@@ -74,10 +74,10 @@ export async function GET(request: NextRequest) {
       : 0;
     const mentionGenerale = cotes.length > 0 ? getMention(pourcentageGeneral) : 'Non évalué';
 
-    const etablissement = cotes[0]?.etablissementId
-      ? await prisma.etablissement.findUnique({ where: { id: cotes[0].etablissementId } })
-      : (eleve.etablissementId
-        ? await prisma.etablissement.findUnique({ where: { id: eleve.etablissementId } })
+    const ecole = cotes[0]?.ecoleId
+      ? await prisma.ecole.findUnique({ where: { id: cotes[0].ecoleId } })
+      : (eleve.ecoleId
+        ? await prisma.ecole.findUnique({ where: { id: eleve.ecoleId } })
         : null);
 
     const qrToken = generateQrToken();
@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
           eleveMatricule: eleve.matricule,
           eleveNom: `${eleve.prenom} ${eleve.nom} ${eleve.postNom}`.trim(),
           classe: eleve.classe,
-          etablissementId: etablissement?.id || null,
-          etablissementNom: etablissement?.nom || cotes[0]?.etablissementNom || '',
+          ecoleId: ecole?.id || null,
+          ecoleNom: ecole?.nom || cotes[0]?.ecoleNom || '',
           periode,
           anneeScolaire,
           ...bulletinData,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       eleveNom: bulletin.eleveNom,
       eleveMatricule: bulletin.eleveMatricule,
       classe: bulletin.classe,
-      etablissementNom: bulletin.etablissementNom,
+      ecoleNom: bulletin.ecoleNom,
       periode: bulletin.periode,
       anneeScolaire: bulletin.anneeScolaire,
       moyenneGenerale: bulletin.moyenneGenerale,

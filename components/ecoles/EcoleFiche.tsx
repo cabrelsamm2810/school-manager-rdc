@@ -22,7 +22,7 @@ type ValidationLog = {
   createdAt: string;
 };
 
-type Etablissement = {
+type Ecole = {
   id: string;
   nom: string;
   type: string;
@@ -36,7 +36,7 @@ type Etablissement = {
   localisationGeo: string;
   telephone: string;
   email: string;
-  chefEtablissement: string;
+  chefEcole: string;
   logoUrl: string | null;
   identifiantSM: string | null;
   effectif: number;
@@ -56,8 +56,8 @@ const sectionClass = 'rounded-2xl border border-slate-200 bg-white p-5';
 const labelClass = 'text-xs font-medium uppercase tracking-wide text-slate-400';
 const valueClass = 'mt-0.5 text-sm font-medium text-slate-900';
 
-export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit: () => void; onClose: () => void }) {
-  const [etablissement, setEtablissement] = useState<Etablissement | null>(null);
+export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => void; onClose: () => void }) {
+  const [ecole, setEcole] = useState<Ecole | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState('');
@@ -67,9 +67,9 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
   async function loadData() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/etablissements/${id}`);
+      const res = await fetch(`/api/ecoles/${id}`);
       const data = await res.json();
-      if (res.ok) setEtablissement(data.etablissement);
+      if (res.ok) setEcole(data.ecole);
     } catch {
       // ignore
     } finally {
@@ -90,7 +90,7 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
       formData.append('file', docFile);
       formData.append('type', docType);
       formData.append('titre', docTitre);
-      const res = await fetch(`/api/etablissements/${id}/documents`, {
+      const res = await fetch(`/api/ecoles/${id}/documents`, {
         method: 'POST',
         body: formData,
       });
@@ -110,7 +110,7 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
   async function handleDeleteDoc(docId: string) {
     if (!confirm('Supprimer ce document ?')) return;
     try {
-      await fetch(`/api/etablissements/${id}/documents`, {
+      await fetch(`/api/ecoles/${id}/documents`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentId: docId }),
@@ -124,11 +124,11 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
   if (loading) {
     return <p className="py-8 text-center text-sm text-slate-500">Chargement de la fiche…</p>;
   }
-  if (!etablissement) {
-    return <p className="py-8 text-center text-sm text-slate-500">Établissement introuvable.</p>;
+  if (!ecole) {
+    return <p className="py-8 text-center text-sm text-slate-500">École introuvable.</p>;
   }
 
-  const inst = INSTITUTION_MAP[etablissement.institution];
+  const inst = INSTITUTION_MAP[ecole.institution];
 
   return (
     <div className="space-y-5">
@@ -148,28 +148,28 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
       <div className={`rounded-2xl border-2 p-5 ${inst?.borderColor || 'border-slate-200'} ${inst?.bgColor || 'bg-white'}`}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            {etablissement.logoUrl ? (
-              <img src={etablissement.logoUrl} alt="Logo" className="h-16 w-16 rounded-xl object-cover" />
+            {ecole.logoUrl ? (
+              <img src={ecole.logoUrl} alt="Logo" className="h-16 w-16 rounded-xl object-cover" />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/60 text-2xl font-bold text-slate-400">
-                {etablissement.nom[0]?.toUpperCase()}
+                {ecole.nom[0]?.toUpperCase()}
               </div>
             )}
             <div>
-              <h2 className="text-xl font-bold text-slate-900">{etablissement.nom}</h2>
+              <h2 className="text-xl font-bold text-slate-900">{ecole.nom}</h2>
               <p className="mt-0.5 text-sm text-slate-500">
-                {etablissement.identifiantSM && (
-                  <span className="font-mono font-semibold text-blue-600">ID: {etablissement.identifiantSM}</span>
+                {ecole.identifiantSM && (
+                  <span className="font-mono font-semibold text-blue-600">ID: {ecole.identifiantSM}</span>
                 )}
-                {etablissement.identifiantSM && etablissement.dinacope && ' · '}
-                {etablissement.dinacope && <span>DINACOPE: {etablissement.dinacope}</span>}
+                {ecole.identifiantSM && ecole.dinacope && ' · '}
+                {ecole.dinacope && <span>DINACOPE: {ecole.dinacope}</span>}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${inst?.bgColor} ${inst?.color}`}>
-                  {inst?.label || etablissement.institution}
+                  {inst?.label || ecole.institution}
                 </span>
-                <StatutBadge statut={etablissement.statutValidation} />
-                {etablissement.type && <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{etablissement.type}</span>}
+                <StatutBadge statut={ecole.statutValidation} />
+                {ecole.type && <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{ecole.type}</span>}
               </div>
             </div>
           </div>
@@ -180,17 +180,17 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
       <div className={sectionClass}>
         <h3 className="mb-3 text-sm font-bold text-slate-900">Hiérarchie de rattachement</h3>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{inst?.label || etablissement.institution}</span>
+          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{inst?.label || ecole.institution}</span>
           <span className="text-slate-400">→</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{etablissement.province}</span>
+          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{ecole.province}</span>
           <span className="text-slate-400">→</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{etablissement.provinceEducationnelle}</span>
+          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{ecole.provinceEducationnelle}</span>
           <span className="text-slate-400">→</span>
           <span className="rounded-lg bg-blue-50 px-3 py-1.5 font-medium text-blue-700">
-            {etablissement.coordSousProvinciale?.nom || 'Structure non assignée'}
+            {ecole.coordSousProvinciale?.nom || 'Structure non assignée'}
           </span>
           <span className="text-slate-400">→</span>
-          <span className="rounded-lg bg-blue-600 px-3 py-1.5 font-medium text-white">{etablissement.nom}</span>
+          <span className="rounded-lg bg-blue-600 px-3 py-1.5 font-medium text-white">{ecole.nom}</span>
         </div>
       </div>
 
@@ -198,27 +198,27 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
       <div className={sectionClass}>
         <h3 className="mb-3 text-sm font-bold text-slate-900">Informations générales</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div><p className={labelClass}>Type</p><p className={valueClass}>{etablissement.type || '—'}</p></div>
-          <div><p className={labelClass}>DINACOPE</p><p className={valueClass}>{etablissement.dinacope || '—'}</p></div>
-          <div><p className={labelClass}>Chef d'établissement</p><p className={valueClass}>{etablissement.chefEtablissement || '—'}</p></div>
-          <div><p className={labelClass}>Téléphone</p><p className={valueClass}>{etablissement.telephone || '—'}</p></div>
-          <div><p className={labelClass}>Email</p><p className={valueClass}>{etablissement.email || '—'}</p></div>
-          <div><p className={labelClass}>Effectif</p><p className={valueClass}>{etablissement.effectif.toLocaleString('fr-FR')}</p></div>
-          <div><p className={labelClass}>Province</p><p className={valueClass}>{etablissement.province || '—'}</p></div>
-          <div><p className={labelClass}>Province éducationnelle</p><p className={valueClass}>{etablissement.provinceEducationnelle || '—'}</p></div>
-          <div><p className={labelClass}>Commune</p><p className={valueClass}>{etablissement.commune || '—'}</p></div>
-          <div><p className={labelClass}>Ville</p><p className={valueClass}>{etablissement.ville || '—'}</p></div>
-          <div className="sm:col-span-2"><p className={labelClass}>Adresse</p><p className={valueClass}>{etablissement.adresse || '—'}</p></div>
-          <div className="sm:col-span-2 lg:col-span-1"><p className={labelClass}>Localisation géo.</p><p className={valueClass}>{etablissement.localisationGeo || '—'}</p></div>
+          <div><p className={labelClass}>Type</p><p className={valueClass}>{ecole.type || '—'}</p></div>
+          <div><p className={labelClass}>DINACOPE</p><p className={valueClass}>{ecole.dinacope || '—'}</p></div>
+          <div><p className={labelClass}>Chef d'école</p><p className={valueClass}>{ecole.chefEcole || '—'}</p></div>
+          <div><p className={labelClass}>Téléphone</p><p className={valueClass}>{ecole.telephone || '—'}</p></div>
+          <div><p className={labelClass}>Email</p><p className={valueClass}>{ecole.email || '—'}</p></div>
+          <div><p className={labelClass}>Effectif</p><p className={valueClass}>{ecole.effectif.toLocaleString('fr-FR')}</p></div>
+          <div><p className={labelClass}>Province</p><p className={valueClass}>{ecole.province || '—'}</p></div>
+          <div><p className={labelClass}>Province éducationnelle</p><p className={valueClass}>{ecole.provinceEducationnelle || '—'}</p></div>
+          <div><p className={labelClass}>Commune</p><p className={valueClass}>{ecole.commune || '—'}</p></div>
+          <div><p className={labelClass}>Ville</p><p className={valueClass}>{ecole.ville || '—'}</p></div>
+          <div className="sm:col-span-2"><p className={labelClass}>Adresse</p><p className={valueClass}>{ecole.adresse || '—'}</p></div>
+          <div className="sm:col-span-2 lg:col-span-1"><p className={labelClass}>Localisation géo.</p><p className={valueClass}>{ecole.localisationGeo || '—'}</p></div>
         </div>
       </div>
 
       {/* Documents justificatifs */}
       <div className={sectionClass}>
-        <h3 className="mb-3 text-sm font-bold text-slate-900">Documents justificatifs ({etablissement.documents.length})</h3>
-        {etablissement.documents.length > 0 ? (
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Documents justificatifs ({ecole.documents.length})</h3>
+        {ecole.documents.length > 0 ? (
           <div className="space-y-2">
-            {etablissement.documents.map((doc) => (
+            {ecole.documents.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-2.5">
                 <div className="flex items-center gap-3">
                   <span className="text-lg">📄</span>
@@ -270,11 +270,11 @@ export function EtablissementFiche({ id, onEdit, onClose }: { id: string; onEdit
       </div>
 
       {/* Historique de validation */}
-      {etablissement.validationLogs.length > 0 && (
+      {ecole.validationLogs.length > 0 && (
         <div className={sectionClass}>
           <h3 className="mb-3 text-sm font-bold text-slate-900">Historique de validation</h3>
           <div className="space-y-2">
-            {etablissement.validationLogs.map((log) => (
+            {ecole.validationLogs.map((log) => (
               <div key={log.id} className="flex items-start gap-3 rounded-xl bg-slate-50 px-4 py-2.5">
                 <StatutBadge statut={log.statut} />
                 <div className="flex-1">

@@ -129,7 +129,7 @@ export const institutionOptions = INSTITUTIONS.map((i) => ({
   label: i.label,
 }));
 
-/* ── Statuts de validation d'un établissement ── */
+/* ── Statuts de validation d'un école ── */
 
 export type ValidationStatut =
   | 'Brouillon'

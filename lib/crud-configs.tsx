@@ -18,12 +18,12 @@ export const crudConfigs: Record<string, CrudConfig> = {
     entityName: 'enseignant',
     entityNamePlural: 'enseignants',
     icon: 'teacher',
-    searchFields: ['nom', 'matricule', 'etablissement'],
+    searchFields: ['nom', 'matricule', 'ecole'],
     fields: [
       { name: 'nom', label: 'Nom complet', type: 'text', required: true },
       { name: 'matricule', label: 'Matricule', type: 'text', required: true, half: true },
       { name: 'grade', label: 'Grade', type: 'text', half: true },
-      { name: 'etablissement', label: 'Établissement', type: 'text', half: true },
+      { name: 'ecole', label: 'École', type: 'text', half: true },
       { name: 'specialite', label: 'Spécialité', type: 'text', half: true },
       { name: 'telephone', label: 'Téléphone', type: 'text', half: true },
       { name: 'email', label: 'Email', type: 'text', half: true },
@@ -37,11 +37,11 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'nom', label: 'Nom', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
       { key: 'matricule', label: 'Matricule' },
       { key: 'grade', label: 'Grade' },
-      { key: 'etablissement', label: 'Établissement' },
+      { key: 'ecole', label: 'École' },
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
-      { name: 'etablissement', label: 'Tous les établissements' },
+      { name: 'ecole', label: 'Tous les écoles' },
       { name: 'statut', label: 'Tous les statuts', options: [
         { value: 'Actif', label: 'Actif' },
         { value: 'Congé', label: 'En congé' },
@@ -69,13 +69,13 @@ export const crudConfigs: Record<string, CrudConfig> = {
         { value: 'Actif', label: 'Actif' },
         { value: 'En setup', label: 'En setup' },
       ] },
-      { name: 'etablissements', label: 'Nb établissements', type: 'number', half: true, default: 0 },
+      { name: 'ecoles', label: 'Nb écoles', type: 'number', half: true, default: 0 },
       { name: 'eleves', label: "Nb élèves", type: 'number', half: true, default: 0 },
     ],
     columns: [
       { key: 'nom', label: 'Province', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
       { key: 'chefLieu', label: 'Chef-lieu' },
-      { key: 'etablissements', label: 'Établissements' },
+      { key: 'ecoles', label: 'Écoles' },
       { key: 'eleves', label: 'Élèves' },
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
@@ -104,7 +104,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { name: 'provinceAdministrative', label: 'Province administrative', type: 'text', half: true },
       { name: 'chefLieu', label: 'Chef-lieu', type: 'text', half: true },
       { name: 'sousDivisions', label: 'Nb sous-divisions', type: 'number', half: true, default: 0 },
-      { name: 'etablissements', label: 'Nb établissements', type: 'number', half: true, default: 0 },
+      { name: 'ecoles', label: 'Nb écoles', type: 'number', half: true, default: 0 },
       { name: 'eleves', label: 'Nb élèves', type: 'number', half: true, default: 0 },
       { name: 'statut', label: 'Statut', type: 'select', half: true, default: 'Actif', options: [
         { value: 'Actif', label: 'Actif' },
@@ -116,7 +116,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'provinceAdministrative', label: 'Province administrative' },
       { key: 'chefLieu', label: 'Chef-lieu' },
       { key: 'sousDivisions', label: 'Sous-divisions' },
-      { key: 'etablissements', label: 'Établissements' },
+      { key: 'ecoles', label: 'Écoles' },
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
@@ -145,7 +145,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { name: 'provinceEducationnelle', label: 'Province éducationnelle', type: 'select', required: true, half: true, options: PROVINCE_EDUCATIONNELLE_NAMES.map((n) => ({ value: n, label: n })) },
       { name: 'provinceAdministrative', label: 'Province administrative', type: 'text', half: true },
       { name: 'lieuImplantation', label: "Lieu d'implantation", type: 'text', half: true },
-      { name: 'etablissements', label: 'Nb établissements', type: 'number', half: true, default: 0 },
+      { name: 'ecoles', label: 'Nb écoles', type: 'number', half: true, default: 0 },
       { name: 'eleves', label: 'Nb élèves', type: 'number', half: true, default: 0 },
       { name: 'statut', label: 'Statut', type: 'select', half: true, default: 'Actif', options: [
         { value: 'Actif', label: 'Actif' },
@@ -156,7 +156,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'nom', label: 'Sous-division', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
       { key: 'provinceEducationnelle', label: 'Province éduc.' },
       { key: 'lieuImplantation', label: "Lieu d'implantation" },
-      { key: 'etablissements', label: 'Établissements' },
+      { key: 'ecoles', label: 'Écoles' },
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
@@ -170,7 +170,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { label: 'Sous-divisions', value: (items: any[]) => String(items.length), hint: 'Total' },
       { label: 'Actives', value: (items: any[]) => String(items.filter((e) => e.statut === 'Actif').length) },
       { label: 'Provinces éduc.', value: (items: any[]) => String(new Set(items.map((e) => e.provinceEducationnelle)).size) },
-      { label: 'Établissements', value: (items: any[]) => String(items.reduce((s, e) => s + (e.etablissements || 0), 0)) },
+      { label: 'Écoles', value: (items: any[]) => String(items.reduce((s, e) => s + (e.ecoles || 0), 0)) },
     ],
   },
 
@@ -434,10 +434,10 @@ export const crudConfigs: Record<string, CrudConfig> = {
     entityName: 'visite',
     entityNamePlural: 'visites',
     icon: 'visit',
-    searchFields: ['etablissement', 'visiteur', 'objet'],
+    searchFields: ['ecole', 'visiteur', 'objet'],
     fields: [
       { name: 'date', label: 'Date', type: 'date', half: true },
-      { name: 'etablissement', label: 'Établissement', type: 'text', required: true, half: true },
+      { name: 'ecole', label: 'École', type: 'text', required: true, half: true },
       { name: 'visiteur', label: 'Visiteur', type: 'text', half: true },
       { name: 'objet', label: 'Objet', type: 'text', half: true },
       { name: 'statut', label: 'Statut', type: 'select', default: 'Planifiée', options: [
@@ -448,13 +448,13 @@ export const crudConfigs: Record<string, CrudConfig> = {
     ],
     columns: [
       { key: 'date', label: 'Date', render: (e: any) => e.date ? new Date(e.date).toLocaleDateString('fr-FR') : '—' },
-      { key: 'etablissement', label: 'Établissement', render: (e: any) => <span className="font-medium text-slate-900">{e.etablissement}</span> },
+      { key: 'ecole', label: 'École', render: (e: any) => <span className="font-medium text-slate-900">{e.ecole}</span> },
       { key: 'visiteur', label: 'Visiteur' },
       { key: 'objet', label: 'Objet' },
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
-      { name: 'etablissement', label: 'Tous les établissements' },
+      { name: 'ecole', label: 'Tous les écoles' },
       { name: 'statut', label: 'Tous les statuts', options: [
         { value: 'Planifiée', label: 'Planifiée' },
         { value: 'Terminée', label: 'Terminée' },

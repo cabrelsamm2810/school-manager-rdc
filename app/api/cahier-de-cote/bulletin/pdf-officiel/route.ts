@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   // Récupérer l'élève
   const eleve = await prisma.eleve.findUnique({
     where: { id: eleveId },
-    include: { etablissement: true },
+    include: { ecole: true },
   });
   if (!eleve) {
     return NextResponse.json({ error: 'Élève introuvable.' }, { status: 404 });
@@ -29,9 +29,9 @@ export async function GET(request: NextRequest) {
 
   // Récupérer les cotes des 3 trimestres
   const scopeWhere = buildScopeWhere(auth.user, {
-    etablissementField: 'etablissementId',
+    ecoleField: 'ecoleId',
     // CahierDeCote n'a pas de champ `institution`.
-    provinceField: 'etablissementNom',
+    provinceField: 'ecoleNom',
     institutionField: false,
   });
 
@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
   const totalMax = branches.length * 180;
   const pourcentageGeneral = totalMax > 0 ? (totalObtenu / totalMax) * 100 : 0;
 
-  // Établissement
-  const etab = eleve.etablissement;
+  // École
+  const etab = eleve.ecole;
 
   // URL de vérification
   const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     application: '',
     conduite: '',
     enseignantNom: allCotes[0]?.enseignantNom || '',
-    chefEtablissement: etab?.chefEtablissement || '',
+    chefEcole: etab?.chefEcole || '',
     verifyUrl,
   });
 

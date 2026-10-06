@@ -24,13 +24,13 @@ export function ProvincialDashboard({ stats, breakdown, chartData, activite, pro
           {provinceLabel ? `Province de ${provinceLabel}` : 'Vue provinciale'}
         </h1>
         <p className="mt-1 text-[13px] text-slate-500">
-          Pilotage provincial — indicateurs des établissements et sous-divisions de votre province.
+          Pilotage provincial — indicateurs des écoles et sous-divisions de votre province.
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard label="Sous-divisions" value={fmt(stats.totalSousProvinciales)} hint="Dans la province" icon="district" color="cyan" delay={0} />
-        <StatCard label="Établissements" value={fmt(stats.totalEtablissements)} hint="Dans la province" icon="school" color="violet" delay={0.06} />
+        <StatCard label="Écoles" value={fmt(stats.totalEcoles)} hint="Dans la province" icon="school" color="violet" delay={0.06} />
         <StatCard label="Élèves" value={fmt(stats.totalEleves)} hint="Inscrits dans la province" icon="users" color="blue" delay={0.12} />
         <StatCard label="Enseignants" value={fmt(stats.totalEnseignants)} hint="Actifs" icon="teacher" color="emerald" delay={0.18} />
         <StatCard label="Classes" value={fmt(stats.totalClasses)} hint="Tous niveaux" icon="notebook" color="amber" delay={0.24} />
@@ -54,7 +54,7 @@ export function ProvincialDashboard({ stats, breakdown, chartData, activite, pro
               items={[
                 { label: 'Élèves', value: stats.totalEleves, color: '#3b82f6' },
                 { label: 'Enseignants', value: stats.totalEnseignants, color: '#10b981' },
-                { label: 'Établis.', value: stats.totalEtablissements, color: '#8b5cf6' },
+                { label: 'Établis.', value: stats.totalEcoles, color: '#8b5cf6' },
                 { label: 'Classes', value: stats.totalClasses, color: '#f59e0b' },
               ]}
             />

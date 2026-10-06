@@ -11,7 +11,7 @@ type ScannedEleve = {
   postNom: string;
   prenom: string;
   classe: string;
-  etablissement?: string | null;
+  ecole?: string | null;
 };
 
 type ScanResult = {

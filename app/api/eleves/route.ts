@@ -19,7 +19,7 @@ const createSchema = z.object({
   nomTuteur: z.string().trim().optional().or(z.literal('')),
   telephoneTuteur: z.string().trim().optional().or(z.literal('')),
   emailTuteur: z.string().trim().email('L\u2019email du parent est invalide.').optional().or(z.literal('')),
-  etablissementId: z.string().trim().optional().or(z.literal(''))
+  ecoleId: z.string().trim().optional().or(z.literal(''))
 });
 
 /** GET /api/eleves — liste des élèves (filtrable par classe et recherche). */
@@ -31,12 +31,12 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const classe = searchParams.get('classe') || undefined;
-  const etablissementId = searchParams.get('etablissementId') || undefined;
+  const ecoleId = searchParams.get('ecoleId') || undefined;
   const search = searchParams.get('search') || undefined;
 
   const where: Record<string, unknown> = {};
   if (classe) where.classe = classe;
-  if (etablissementId) where.etablissementId = etablissementId;
+  if (ecoleId) where.ecoleId = ecoleId;
   if (search) {
     where.OR = [
       { nom: { contains: search, mode: 'insensitive' } },
@@ -46,12 +46,12 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  // Filtrage hiérarchique par périmètre territorial (via l'établissement)
+  // Filtrage hiérarchique par périmètre territorial (via l'école)
   Object.assign(where, buildEleveScopeWhere(auth.user));
 
   const eleves = await prisma.eleve.findMany({
     where,
-    include: { etablissement: { select: { id: true, nom: true, province: true } } },
+    include: { ecole: { select: { id: true, nom: true, province: true } } },
     orderBy: [{ classe: 'asc' }, { nom: 'asc' }]
   });
 
@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
       nomTuteur: data.nomTuteur ?? '',
       telephoneTuteur: data.telephoneTuteur ?? '',
       emailTuteur: data.emailTuteur ?? '',
-      etablissement: data.etablissementId
-        ? { connect: { id: data.etablissementId } }
+      ecole: data.ecoleId
+        ? { connect: { id: data.ecoleId } }
         : undefined
     }
   });
@@ -118,10 +118,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   const updateData: Record<string, unknown> = {};
-  const allowedFields = ['classe', 'sexe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'emailTuteur', 'etablissementId'];
+  const allowedFields = ['classe', 'sexe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'emailTuteur', 'ecoleId'];
   for (const field of allowedFields) {
     if (body.data?.[field] === undefined || body.data[field] === '' || body.data[field] === null) continue;
-    updateData[field] = field === 'etablissementId'
+    updateData[field] = field === 'ecoleId'
       ? body.data[field]
       : body.data[field];
   }

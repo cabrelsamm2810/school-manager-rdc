@@ -20,7 +20,7 @@ type Tab = { label: string; href: string; icon: string };
 const ROLE_TABS: Record<string, Tab[]> = {
   SUPER_ADMIN: [
     { label: 'Utilisateurs', href: '/admin/users', icon: 'people' },
-    { label: 'Écoles', href: '/etablissements', icon: 'school' },
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
     { label: 'Notifs', href: '/notifications', icon: 'bell' }
   ],
   COORDINATION_NATIONALE: [
@@ -29,23 +29,23 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Utilisateurs', href: '/admin/users', icon: 'people' }
   ],
   COORDINATION_PROVINCIALE: [
-    { label: 'Écoles', href: '/etablissements', icon: 'school' },
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
     { label: 'Coordination', href: '/coordination-provinciale', icon: 'region' },
     { label: 'Utilisateurs', href: '/admin/users', icon: 'people' }
   ],
   COORDINATION_SOUS_PROVINCIALE: [
-    { label: 'Écoles', href: '/etablissements', icon: 'school' },
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
     { label: 'Coordination', href: '/coordination-sous-provinciale', icon: 'district' },
     { label: 'Élèves', href: '/eleves', icon: 'users' }
   ],
   AGENT_PROVINCIAL: [
     { label: 'Dossiers', href: '/dossiers', icon: 'folder' },
     { label: 'Visites', href: '/visites', icon: 'visit' },
-    { label: 'Écoles', href: '/etablissements', icon: 'school' }
+    { label: 'Écoles', href: '/ecoles', icon: 'school' }
   ],
   AGENT_SOUS_PROVINCIAL: [
     { label: 'Services', href: '/services', icon: 'services' },
-    { label: 'Écoles', href: '/etablissements', icon: 'school' },
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
     { label: 'Élèves', href: '/eleves', icon: 'users' }
   ],
   DIRECTION_ECOLE: [

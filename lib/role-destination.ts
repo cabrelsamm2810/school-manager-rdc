@@ -4,7 +4,7 @@
  * Aucun rôle, aucune permission et aucune donnée ne sont modifiés : il s'agit
  * uniquement de routes déjà présentes dans l'application, toutes accessibles au
  * rôle concerné. `/dashboard` adapte son contenu au périmètre du rôle
- * (national, provincial, sous-provincial, établissement) côté serveur.
+ * (national, provincial, sous-provincial, école) côté serveur.
  */
 const ROLE_DESTINATION: Record<string, string> = {
   /* Espace élève : logique de redirection déjà existante, conservée telle quelle. */

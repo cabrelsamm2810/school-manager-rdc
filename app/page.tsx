@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 /* ── Data ── */
 
 const accessCards = [
-  { icon: 'school', title: 'Établissement scolaire', desc: 'Gestion numérique de l’établissement.', href: '/etablissements' },
+  { icon: 'school', title: 'École scolaire', desc: 'Gestion numérique de l’école.', href: '/ecoles' },
   { icon: 'organization', title: 'EC-ERC', desc: 'Écoles conventionnées des Églises du Réveil du Congo.', href: '/ec-erc' },
   { icon: 'users', title: 'Élève', desc: 'Accès aux informations et services scolaires.', href: '/eleves' },
   { icon: 'teacher', title: 'Personnel éducatif', desc: 'Outils numériques pour le personnel scolaire.', href: '/enseignants' },
@@ -24,7 +24,7 @@ const services = [
   { icon: 'send', label: 'Transmission des dossiers' },
   { icon: 'visit', label: 'Visites numériques' },
   { icon: 'chat', label: 'Communication scolaire' },
-  { icon: 'school', label: 'Gestion des établissements' },
+  { icon: 'school', label: 'Gestion des écoles' },
   { icon: 'services', label: 'Gestion administrative' },
 ];
 
