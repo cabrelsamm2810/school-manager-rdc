@@ -9,7 +9,7 @@ docker compose -f docker-compose.base44.yml up -d
 ```
 - `postgres` — local PostgreSQL (user/pass `school`/`schoolpass`, db `school`), healthchecked with `pg_isready`.
 - `migrate` — one-shot: `npm install` → `prisma generate` → `prisma db push --accept-data-loss` → `tsx prisma/seed.ts`. Exits 0 when done. Uses `db push` (not `migrate deploy`) because the DB was created via `db push` and isn't baselined for migrations.
-- `web` — `next dev -H 0.0.0.0 -p 3000` with the repo bind-mounted; live reload is active. Depends on `migrate` completing successfully.
+- `web` — `next dev -H 0.0.0.0 -p 3000` with the repo bind-mounted; live reload is active. Depends on `migrate` completing successfully. It runs `rm -rf .next` before starting: `/app/.next` is a persistent anonymous volume, and stale webpack chunks from an unclean shutdown otherwise cause `Cannot find module './NNNN.js'` 500s (`/_next/static/chunks/fallback/*`) until the cache is cleared.
 
 Web entry point is on host port 3000. Single-origin wiring (API routes served by the same Next dev server).
 

@@ -68,6 +68,11 @@ services:
       - |
         npm install --no-audit --no-fund
         npx prisma generate
+        # Clear the Next dev build cache: the persistent /app/.next volume can keep
+        # stale webpack chunks from a previous run (e.g. after an unclean shutdown),
+        # which surfaces as 'Cannot find module ./NNNN.js' 500s. Clear the contents
+        # (.next is a mount point, so the directory itself can't be removed).
+        find .next -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
         exec npx next dev -H 0.0.0.0 -p 3000
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
