@@ -12,7 +12,7 @@ const STEPS = [
 /* Ressources nécessaires au premier écran (logo + logos institutionnels). */
 const CRITICAL_ASSETS = ['/logo.png', '/illustrations/ec-erc-logo.jpg', '/illustrations/eccath-logo.jpg'];
 
-const MIN_VISIBLE_MS = 5000; /* durée d'affichage demandée : 5 s, comptée depuis l'apparition de l'écran */
+const MIN_VISIBLE_MS = 5000; /* durée totale demandée : 5 s depuis l'apparition, fondu compris */
 const MAX_VISIBLE_MS = 8000; /* garde-fou : l'écran ne peut jamais rester bloqué */
 const STEP_DWELL_MS = 300; /* laisse chaque étape lisible */
 const FADE_MS = 550;
@@ -85,7 +85,8 @@ export function SplashScreen() {
     const finish = () => {
       if (cancelled || finished) return;
       finished = true;
-      const remaining = MIN_VISIBLE_MS - (performance.now() - shownSince);
+      /* Le fondu fait partie des 5 s : l'écran a disparu à 5 s pile. */
+      const remaining = MIN_VISIBLE_MS - FADE_MS - (performance.now() - shownSince);
       const close = () => {
         if (cancelled) return;
         setStep(STEPS.length);
