@@ -12,6 +12,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { DigitalClock } from '@/components/dashboards/DigitalClock';
 import { BottomNav } from '@/components/dashboards/BottomNav';
 import { RefreshButton } from '@/components/ui/RefreshButton';
+import { MobileNavDrawer } from '@/components/dashboards/MobileNavDrawer';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -197,43 +198,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarContent groups={groups} pathname={pathname} user={user} onLogout={handleLogout} />
         </aside>
 
-        {/* ── Menu mobile (drawer) — toujours rendu, transition CSS ── */}
-        <div
-          className={clsx(
-            'fixed inset-0 z-40 bg-slate-900/40 transition-opacity duration-300 lg:hidden',
-            sidebarOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
-          )}
-          onClick={closeSidebar}
-          aria-hidden="true"
+        {/* ── Menu mobile (drawer sombre) — toujours rendu, transition CSS ── */}
+        <MobileNavDrawer
+          open={sidebarOpen}
+          groups={groups}
+          pathname={pathname}
+          user={user}
+          onClose={closeSidebar}
+          onLogout={handleLogout}
         />
-        <aside
-          className={clsx(
-            'fixed left-0 top-0 z-50 flex h-full w-[78vw] max-w-[19rem] flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out lg:hidden',
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          )}
-          aria-label="Navigation principale"
-        >
-          <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-3">
-            <Link href="/dashboard" className="flex min-w-0 items-center gap-2" onClick={closeSidebar}>
-              <img src="/logo.png" alt="" className="h-8 w-8 shrink-0 object-contain" />
-              <span className="truncate text-sm font-bold text-slate-900">School Manager RDC</span>
-            </Link>
-            <button
-              onClick={closeSidebar}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 active:bg-slate-200"
-              aria-label="Fermer le menu"
-            >
-              <Icon name="close" />
-            </button>
-          </div>
-          <SidebarContent
-            groups={groups}
-            pathname={pathname}
-            user={user}
-            onLogout={handleLogout}
-            onNavigate={closeSidebar}
-          />
-        </aside>
 
         {/* ── Barre de navigation du bas (mobile) ── */}
         <BottomNav role={user?.role} onMore={() => setSidebarOpen(true)} />
@@ -249,14 +222,12 @@ function SidebarContent({
   groups,
   pathname,
   user,
-  onLogout,
-  onNavigate
+  onLogout
 }: {
   groups: NavGroup[];
   pathname: string;
   user: SessionUser | null;
   onLogout: () => void;
-  onNavigate?: () => void;
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -265,7 +236,6 @@ function SidebarContent({
         <div className="shrink-0 px-2.5 pt-3">
           <Link
             href="/profile"
-            onClick={onNavigate}
             className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 transition hover:border-blue-200 hover:bg-white hover:shadow-sm"
           >
             <Avatar
@@ -301,7 +271,6 @@ function SidebarContent({
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      onClick={onNavigate}
                       aria-current={active ? 'page' : undefined}
                       className={clsx(
                         'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition',
