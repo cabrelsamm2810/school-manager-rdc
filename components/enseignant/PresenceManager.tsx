@@ -40,7 +40,7 @@ export function PresenceManager() {
 
   // Charger les classes disponibles
   useEffect(() => {
-    fetch('/api/eleves')
+    fetch('/api/enseignant/eleves')
       .then((r) => r.json())
       .then((data) => {
         if (data.eleves) {
@@ -57,7 +57,7 @@ export function PresenceManager() {
       setEleves([]);
       return;
     }
-    fetch(`/api/eleves?classe=${encodeURIComponent(selectedClass)}`)
+    fetch(`/api/enseignant/eleves?classe=${encodeURIComponent(selectedClass)}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.eleves) {

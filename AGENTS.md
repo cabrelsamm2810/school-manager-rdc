@@ -159,16 +159,33 @@ Quatre espaces sont propres à un rôle et ne doivent pas s'ouvrir aux rôles su
 - `lib/navigation.ts` — un élément de menu peut porter `roles: ['ENSEIGNANT']` (rôles exacts, prioritaire sur
   `minRole`) ; `visibleNavigationGroups()` filtre dessus, donc la barre latérale, le drawer mobile et la grille
   de services suivent automatiquement.
-- Les raccourcis codés en dur (`components/dashboards/QuickActions.tsx`, `BottomNav.tsx`, `NationalDashboard`,
-  `ProvincialDashboard`) ne lisent pas cette règle : ils doivent être alignés à la main, sinon ils pointent vers
-  une redirection. L'API d'un espace réservé porte la même règle que sa page
-  (`/api/enseignant/dashboard` → 403 si `user.role !== 'ENSEIGNANT'`, sinon un PARENT lit l'effectif par classe).
+- Les raccourcis codés en dur (`components/dashboards/QuickActions.tsx`, `BottomNav.tsx`, `SchoolDashboard.tsx`)
+  filtrent leurs liens avec `canAccessPath(role, href)` : plus d'alignement manuel, un lien affiché est
+  toujours ouvrable. `NationalDashboard`/`ProvincialDashboard` restent alignés à la main (leurs liens sont
+  conditionnés par la portée du rôle) — à revérifier si vous les modifiez. L'API d'un espace réservé porte la
+  même règle que sa page (`/api/enseignant/dashboard` → 403 si `user.role !== 'ENSEIGNANT'`, sinon un PARENT
+  lit l'effectif par classe).
 
-`ROUTE_MIN_ROLE` reprend le `minRole` du menu pour les modules CRUD qui n'étaient pas gardés côté route
-(`/cahier-de-cote`, `/classes-rdc`, `/matieres-rdc`, `/options-rdc`, `/import`, `/provinces-educationnelles`,
-`/sous-divisions`) : le menu les masquait déjà, la page s'ouvrait quand même. Reste à trancher :
-`/rappels-cotes` — le menu le réserve à `DIRECTION_ECOLE`, mais les raccourcis ENSEIGNANT y renvoient et
-`/api/rappels-cotes` répond 403 à ENSEIGNANT.
+Ces règles vivent désormais dans `lib/route-access.ts` (`ROUTE_MIN_ROLE`, `ROUTE_EXACT_ROLE`,
+`getExactRoleForPath`, `getMinRoleForPath`, `canAccessPath`), importé par `middleware.ts` (qui redirige) **et**
+par les raccourcis de l'interface : les deux ne peuvent plus diverger. `ROLE_RANK`/`ROLE_LABELS` sont dans
+`lib/roles.ts` (module pur, sans Prisma, importable par le middleware edge) et ré-exportés par `lib/rbac.ts`.
+
+`ROUTE_MIN_ROLE` reprend le `minRole` du menu pour les modules qui n'étaient pas gardés côté route
+(`/cahier-de-cote`, `/rappels-cotes`, `/recherche-eleves`, `/classes-rdc`, `/matieres-rdc`, `/options-rdc`,
+`/import`, `/provinces-educationnelles`, `/sous-divisions`) : le menu les masquait déjà, la page s'ouvrait
+quand même. `/rappels-cotes` est réservé à `DIRECTION_ECOLE` (menu, route et `/api/rappels-cotes`), et
+`/recherche-eleves` aussi parce que la page ne lit que `/api/eleves` (DIRECTION_ECOLE).
+
+Vérification : pour les 10 rôles × 28 routes, `canAccessPath(role, route)` doit être vrai **si et seulement si**
+le curl avec `Cookie: school_manager_session=demo; school_manager_role=<ROLE>` répond 200 (307 = redirection).
+Toute divergence = page ouverte à tort ou lien mort.
+
+Le tableau de bord enseignant lit `/api/enseignant/eleves` (lecture seule, `user.role !== 'ENSEIGNANT'` → 403)
+pour les listes de classes/élèves de `components/enseignant/PresenceManager.tsx` : `/api/eleves` reste fermé à
+ENSEIGNANT (module de gestion `DIRECTION_ECOLE`) — ne pas y rebrancher ces composants, ils resteraient vides.
+Le périmètre vient de `buildEleveScopeWhere()` (établissement, repli province), partagé avec
+`/api/enseignant/dashboard`.
 
 Vérification : `curl` sur `/enseignant/dashboard` avec `school_manager_role=DIRECTION_ECOLE` → 307 vers
 `/dashboard` ; avec `school_manager_role=ENSEIGNANT` → 200. Idem `/coordination-nationale` :

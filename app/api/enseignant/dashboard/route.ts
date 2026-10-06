@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
-import { getScopeLevel } from '@/lib/territory-filter';
+import { buildEleveScopeWhere } from '@/lib/territory-filter';
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -14,20 +14,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Espace réservé au rôle enseignant.' }, { status: 403 });
   }
 
-  // Filtre hiérarchique : un enseignant ne voit que les élèves de son établissement
-  const scope = getScopeLevel(user.role);
-  const etabId = (user as any).etablissementId || '';
-  const sousProvId = (user as any).coordSousProvincialeId || '';
-  const prov = (user as any).provinceAdministrative || '';
-
-  let eleveWhere: Record<string, unknown> = {};
-  if (scope === 'school' && etabId) {
-    eleveWhere = { etablissementId: etabId };
-  } else if (scope === 'sousProvincial' && sousProvId) {
-    eleveWhere = { etablissement: { coordSousProvincialeId: sousProvId } };
-  } else if (scope !== 'national' && prov) {
-    eleveWhere = { etablissement: { province: prov } };
-  }
+  // Filtre hiérarchique : l'enseignant ne voit que les élèves de son périmètre
+  // (même helper que `/api/eleves` et `/api/enseignant/eleves`).
+  const eleveWhere = buildEleveScopeWhere(user);
 
   // Compter les élèves par classe
   const eleves = await prisma.eleve.findMany({

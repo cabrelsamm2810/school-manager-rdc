@@ -86,7 +86,7 @@ export default function DashboardPage() {
           {data.scope === 'sousProvincial' && (
             <SousProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />
           )}
-          {data.scope === 'school' && <SchoolDashboard {...dashProps} />}
+          {data.scope === 'school' && <SchoolDashboard {...dashProps} role={user.role} />}
           <ServicesGrid role={user.role} />
         </div>
       </div>

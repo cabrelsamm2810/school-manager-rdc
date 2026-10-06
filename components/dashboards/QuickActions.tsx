@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
+import { canAccessPath } from '@/lib/route-access';
 
 type Action = {
   label: string;
@@ -88,7 +89,9 @@ const COLOR_MAP: Record<string, { bg: string; text: string }> = {
  * connecté. Les droits restent inchangés (mêmes routes, mêmes contrôles).
  */
 export function QuickActions({ role }: { role: string }) {
-  const actions = ROLE_ACTIONS[role] ?? ROLE_ACTIONS.DIRECTION_ECOLE;
+  // Un raccourci ne doit jamais pointer vers une route fermée au rôle.
+  const actions = (ROLE_ACTIONS[role] ?? ROLE_ACTIONS.DIRECTION_ECOLE)
+    .filter((action) => canAccessPath(role, action.href));
 
   return (
     <section className="mb-5">

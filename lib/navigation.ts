@@ -37,7 +37,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Rappels de cotes', href: '/rappels-cotes', icon: 'bell', minRole: 'DIRECTION_ECOLE' },
       { label: 'Bulletin numérique', href: '/bulletin-numerique', icon: 'notebook', minRole: 'DIRECTION_ECOLE' },
       { label: 'Carte scolaire', href: '/carte-scolaire', icon: 'map', minRole: 'DIRECTION_ECOLE' },
-      { label: 'Recherche d’élèves', href: '/recherche-eleves', icon: 'search' },
+      { label: 'Recherche d’élèves', href: '/recherche-eleves', icon: 'search', minRole: 'DIRECTION_ECOLE' },
       { label: 'Photo passeport', href: '/photo-passeport', icon: 'photo', minRole: 'DIRECTION_ECOLE' },
       { label: 'QR & Cartes scolaires', href: '/cartes-qr', icon: 'qr', minRole: 'DIRECTION_ECOLE' },
       { label: 'Importer mes données', href: '/import', icon: 'upload', minRole: 'DIRECTION_ECOLE' },

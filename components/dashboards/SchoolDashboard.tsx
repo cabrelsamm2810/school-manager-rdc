@@ -2,18 +2,27 @@
 
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
+import { canAccessPath } from '@/lib/route-access';
 import { StatCard } from './StatCard';
 import { DonutChart, BarCompare } from './Charts';
 import { RecentActivity } from './RecentActivity';
 import type { BreakdownItem, ChartItem, DashboardStats } from './types';
 
-export function SchoolDashboard({ stats, breakdown, chartData, activite }: {
+export function SchoolDashboard({ stats, breakdown, chartData, activite, role }: {
   stats: DashboardStats;
   breakdown: BreakdownItem[];
   chartData: ChartItem[];
   activite: string[];
+  role: string;
 }) {
   const fmt = (n: number) => n.toLocaleString('fr-FR');
+
+  // Un raccourci ne doit jamais pointer vers une route fermée au rôle.
+  const shortcuts = [
+    { href: '/eleves', icon: 'users', label: 'Gérer les élèves' },
+    { href: '/cahier-de-notes', icon: 'notebook', label: 'Cahier de notes' },
+    { href: '/cartes-qr', icon: 'qr', label: 'Cartes QR' }
+  ].filter((shortcut) => canAccessPath(role, shortcut.href));
 
   return (
     <>
@@ -88,17 +97,21 @@ export function SchoolDashboard({ stats, breakdown, chartData, activite }: {
           <div className="mt-4">
             <RecentActivity items={activite} accent="amber" />
           </div>
-          <div className="mt-4 flex flex-wrap gap-2.5">
-            <Link href="/eleves" className="flex min-h-[40px] items-center gap-2 rounded-full bg-amber-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-amber-700">
-              <Icon name="users" className="h-4 w-4" /> Gérer les élèves
-            </Link>
-            <Link href="/cahier-de-notes" className="flex min-h-[40px] items-center gap-2 rounded-full border border-amber-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-amber-600 transition hover:bg-amber-50">
-              <Icon name="notebook" className="h-4 w-4" /> Cahier de notes
-            </Link>
-            <Link href="/cartes-qr" className="flex min-h-[40px] items-center gap-2 rounded-full border border-amber-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-amber-600 transition hover:bg-amber-50">
-              <Icon name="qr" className="h-4 w-4" /> Cartes QR
-            </Link>
-          </div>
+          {shortcuts.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {shortcuts.map((shortcut, index) => (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  className={index === 0
+                    ? 'flex min-h-[40px] items-center gap-2 rounded-full bg-amber-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-amber-700'
+                    : 'flex min-h-[40px] items-center gap-2 rounded-full border border-amber-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-amber-600 transition hover:bg-amber-50'}
+                >
+                  <Icon name={shortcut.icon} className="h-4 w-4" /> {shortcut.label}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>

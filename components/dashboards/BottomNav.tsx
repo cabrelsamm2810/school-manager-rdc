@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { getRoleDestination } from '@/lib/role-destination';
+import { canAccessPath } from '@/lib/route-access';
 import { Icon } from '@/components/ui/Icon';
 
 type Tab = { label: string; href: string; icon: string };
@@ -77,7 +78,9 @@ const FALLBACK_TABS: Tab[] = [
 export function BottomNav({ role, onMore }: { role?: string | null; onMore: () => void }) {
   const pathname = usePathname();
   const home = getRoleDestination(role);
-  const tabs: Tab[] = [{ label: 'Accueil', href: home, icon: 'home' }, ...(ROLE_TABS[role ?? ''] ?? FALLBACK_TABS)];
+  // Les onglets fermés au rôle sont retirés : aucun onglet mort sur mobile.
+  const tabs: Tab[] = [{ label: 'Accueil', href: home, icon: 'home' }, ...(ROLE_TABS[role ?? ''] ?? FALLBACK_TABS)]
+    .filter((tab) => canAccessPath(role, tab.href));
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
