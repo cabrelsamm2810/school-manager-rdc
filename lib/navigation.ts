@@ -5,6 +5,8 @@ export type NavItem = {
   href: string;
   icon: string;
   minRole?: string;
+  /** Restriction à un ou plusieurs rôles exacts (prioritaire sur `minRole`). */
+  roles?: string[];
 };
 
 export type NavGroup = {
@@ -30,7 +32,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Établissements', href: '/etablissements', icon: 'school', minRole: 'DIRECTION_ECOLE' },
       { label: 'Élèves', href: '/eleves', icon: 'users', minRole: 'DIRECTION_ECOLE' },
       { label: 'Enseignants', href: '/enseignants', icon: 'teacher', minRole: 'DIRECTION_ECOLE' },
-      { label: 'Tableau de bord enseignant', href: '/enseignant/dashboard', icon: 'home', minRole: 'ENSEIGNANT' },
+      { label: 'Tableau de bord enseignant', href: '/enseignant/dashboard', icon: 'home', roles: ['ENSEIGNANT'] },
       { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', minRole: 'ENSEIGNANT' },
       { label: 'Rappels de cotes', href: '/rappels-cotes', icon: 'bell', minRole: 'DIRECTION_ECOLE' },
       { label: 'Bulletin numérique', href: '/bulletin-numerique', icon: 'notebook', minRole: 'DIRECTION_ECOLE' },
@@ -99,8 +101,10 @@ export function visibleNavigationGroups(role?: string | null): NavGroup[] {
   return navigationGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter(
-        (item) => !item.minRole || (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[item.minRole] ?? 0)
+      items: group.items.filter((item) =>
+        item.roles
+          ? item.roles.includes(role)
+          : !item.minRole || (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[item.minRole] ?? 0)
       )
     }))
     .filter((group) => group.items.length > 0);

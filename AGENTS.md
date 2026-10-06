@@ -146,6 +146,22 @@ Full flow: register at `/register` (the account starts inactive and a 6-digit co
 activate with `POST /api/auth/verify` → log in at `/login` (sets the session cookie) →
 `GET /api/auth/session` → `GET /api/users/me`.
 
+## Accès restreint par rôle exact
+
+`/enseignant/dashboard` (tableau de bord enseignant) est un espace propre au rôle `ENSEIGNANT` : il ne doit pas
+s'ouvrir aux rôles supérieurs. Deux points le garantissent, à garder cohérents si une autre route de ce type
+est ajoutée :
+
+- `lib/navigation.ts` — un élément de menu peut porter `roles: ['ENSEIGNANT']` (rôles exacts, prioritaire sur
+  `minRole`) en plus de la règle de rang par défaut ; `visibleNavigationGroups()` filtre dessus, donc la barre
+  latérale, le drawer mobile et les raccourcis suivent automatiquement.
+- `middleware.ts` — `ROUTE_EXACT_ROLE` impose le rôle exact côté route (toute autre valeur du cookie
+  `school_manager_role` est redirigée vers `/dashboard`), car `ROUTE_MIN_ROLE` seul laisse passer les rangs
+  supérieurs.
+
+Vérification : `curl` sur `/enseignant/dashboard` avec `school_manager_role=DIRECTION_ECOLE` → 307 vers
+`/dashboard` ; avec `school_manager_role=ENSEIGNANT` → 200.
+
 ## Recherche du menu latéral mobile
 
 `components/dashboards/MobileNavDrawer.tsx` (drawer sombre, mobile uniquement — la barre latérale desktop

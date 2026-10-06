@@ -42,8 +42,28 @@ const ROUTE_MIN_ROLE: Record<string, string> = {
   '/admin': 'SUPER_ADMIN',
 };
 
+/**
+ * Routes réservées à un rôle EXACT (pas de règle de rang) : les espaces propres
+ * à un rôle, comme le tableau de bord enseignant, ne doivent pas s'ouvrir aux
+ * rôles supérieurs (direction, coordination, administration).
+ */
+const ROUTE_EXACT_ROLE: Record<string, string> = {
+  '/enseignant/dashboard': 'ENSEIGNANT',
+};
+
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some((route) => pathname === route);
+}
+
+/** Trouve le rôle exact imposé à un chemin donné (gère les préfixes). */
+function getExactRoleForPath(pathname: string): string | undefined {
+  const sorted = Object.keys(ROUTE_EXACT_ROLE).sort((a, b) => b.length - a.length);
+  for (const route of sorted) {
+    if (pathname === route || pathname.startsWith(route + '/')) {
+      return ROUTE_EXACT_ROLE[route];
+    }
+  }
+  return undefined;
 }
 
 /** Trouve le rôle minimum pour un chemin donné (gère les préfixes). */
@@ -80,6 +100,11 @@ export function middleware(request: NextRequest) {
   // Vérification du rôle via le cookie (défini à la connexion)
   const roleCookie = request.cookies.get('school_manager_role')?.value;
   if (roleCookie) {
+    const exactRole = getExactRoleForPath(pathname);
+    if (exactRole && roleCookie !== exactRole) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
     const requiredRole = getMinRoleForPath(pathname);
     if (requiredRole) {
       const userRank = ROLE_RANK[roleCookie] ?? 0;
