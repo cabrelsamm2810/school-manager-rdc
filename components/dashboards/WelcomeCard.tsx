@@ -14,6 +14,7 @@ type WelcomeUser = {
   typeInstitution?: string | null;
   institutionName?: string | null;
   provinceAdministrative?: string | null;
+  ecoleNom?: string | null;
 };
 
 const SCOPE_LABELS: Record<string, string> = {
@@ -80,6 +81,12 @@ export function WelcomeCard({ user, scope }: { user: WelcomeUser; scope: string 
               <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white">
                 <Icon name="school" className="h-3 w-3" />
                 {institutionLabel}
+              </span>
+            )}
+            {user.ecoleNom && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-medium text-white">
+                <Icon name="school" className="h-3 w-3" />
+                {user.ecoleNom}
               </span>
             )}
             {user.provinceAdministrative && (
