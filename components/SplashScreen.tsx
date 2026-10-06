@@ -48,7 +48,7 @@ function afterPaint() {
   });
 }
 
-export function SplashScreen() {
+export function SplashScreen({ onDone }: { onDone?: () => void }) {
   const [step, setStep] = useState(0);
   const [fading, setFading] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -58,6 +58,11 @@ export function SplashScreen() {
   if (servedWithPage.current === null && typeof document !== 'undefined') {
     servedWithPage.current = !!document.querySelector('.splash-overlay');
   }
+  /* Dernière version du callback de fin, sans relancer la séquence de démarrage. */
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
     /* La durée part de l'apparition de l'écran, pas de la fin du chargement. */
@@ -91,6 +96,8 @@ export function SplashScreen() {
         if (cancelled) return;
         setStep(STEPS.length);
         setFading(true);
+        /* Démarrage terminé : l'application peut rejoindre la destination du rôle. */
+        onDoneRef.current?.();
         timers.push(setTimeout(() => setVisible(false), FADE_MS));
       };
       if (remaining > 0) timers.push(setTimeout(close, remaining));

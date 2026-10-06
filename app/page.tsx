@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { SplashScreen } from '@/components/SplashScreen';
+import { StartupGate } from '@/components/StartupGate';
 import { Icon } from '@/components/ui/Icon';
 
 /* ── Data ── */
@@ -50,7 +50,7 @@ function Chevron() {
 export default function HomePage() {
   return (
     <>
-      <SplashScreen />
+      <StartupGate />
 
       <div className="lp-page">
         {/* En-tête */}

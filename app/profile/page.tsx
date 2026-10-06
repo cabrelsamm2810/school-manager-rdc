@@ -159,7 +159,8 @@ export default function ProfilePage() {
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
+    /* Session fermée : retour à l'accueil public. */
+    window.location.href = '/';
   }
 
   const initials = profile

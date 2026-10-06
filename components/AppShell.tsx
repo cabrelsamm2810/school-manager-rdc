@@ -83,7 +83,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
+    /* Session fermée : retour à l'accueil public (splash puis accueil au prochain lancement). */
+    window.location.href = '/';
   }
 
   const initials = user

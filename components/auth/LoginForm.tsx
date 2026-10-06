@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
+import { getRoleDestination } from '@/lib/role-destination';
 
 export function LoginForm() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function LoginForm() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push(result.user?.role === 'ELEVE' ? '/profile' : '/dashboard');
+        router.push(getRoleDestination(result.user?.role));
         router.refresh();
       }, 600);
     } catch {

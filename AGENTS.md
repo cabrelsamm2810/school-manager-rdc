@@ -54,6 +54,14 @@ credentials. Nothing external is required to boot.
   `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
   is declared there but referenced nowhere in the code.
 
+## Ouverture de l'application
+
+`components/StartupGate.tsx` (monté sur `/`) enchaîne : splash → `GET /api/auth/session` → destination du
+rôle, définie dans `lib/role-destination.ts` (ELEVE → `/profile`, ENSEIGNANT → `/enseignant/dashboard`,
+tous les autres → `/dashboard`, qui adapte son périmètre à la portée du rôle). Aucun rôle ni permission
+n'est modifié ; la décision vient de la session serveur (cookie httpOnly), jamais d'une valeur du
+navigateur. La déconnexion (`components/AppShell.tsx`, `app/profile/page.tsx`) renvoie vers `/`.
+
 ## Building (`npm run build`)
 
 `next build` only works with `NODE_ENV=production` **and** dev dependencies installed. Inside the `web`
