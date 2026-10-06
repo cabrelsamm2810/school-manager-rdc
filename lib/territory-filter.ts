@@ -113,3 +113,28 @@ export function mergeScopeFilter(
   if (Object.keys(scopeFilter).length === 0) return baseWhere;
   return { AND: [baseWhere, scopeFilter] };
 }
+
+/**
+ * Filtre de périmètre pour les modèles élèves (`Eleve`) : ils n'ont ni `province`
+ * ni `institution`, la province passe donc par la relation `etablissement`.
+ *
+ * @returns Un objet `where` Prisma valide pour `prisma.eleve`.
+ */
+export function buildEleveScopeWhere(user: AuthUser | null): Record<string, unknown> {
+  if (!user) return {};
+
+  const scope = getScopeLevel(user.role);
+  const where: Record<string, unknown> = {};
+
+  if (scope === 'national') return where;
+
+  if (scope === 'sousProvincial' && user.coordSousProvincialeId) {
+    where.etablissement = { coordSousProvincialeId: user.coordSousProvincialeId };
+  } else if (scope === 'school' && user.etablissementId) {
+    where.etablissementId = user.etablissementId;
+  } else if (user.provinceAdministrative) {
+    where.etablissement = { province: user.provinceAdministrative };
+  }
+
+  return where;
+}

@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
 
   const scopeWhere = buildScopeWhere(auth.user, {
     etablissementField: 'etablissementId',
+    // CahierDeCote n'a pas de champ `institution`.
     provinceField: 'etablissementNom',
+    institutionField: false,
   });
 
   const eleves = await prisma.eleve.findMany({

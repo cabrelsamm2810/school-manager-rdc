@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
   // Récupérer toutes les cotes de l'élève pour cette période
   const scopeWhere = buildScopeWhere(auth.user, {
     etablissementField: 'etablissementId',
+    // CahierDeCote et Bulletin n'ont pas de champ `institution`.
     provinceField: 'etablissementNom',
+    institutionField: false,
   });
 
   const cotes = await prisma.cahierDeCote.findMany({
@@ -149,7 +151,9 @@ export async function GET(request: NextRequest) {
 
   const scopeWhere = buildScopeWhere(auth.user, {
     etablissementField: 'etablissementId',
+    // CahierDeCote et Bulletin n'ont pas de champ `institution`.
     provinceField: 'etablissementNom',
+    institutionField: false,
   });
   if (Object.keys(scopeWhere).length > 0) {
     where.AND = [scopeWhere];

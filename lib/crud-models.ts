@@ -4,6 +4,11 @@ import type { CrudModelConfig } from '@/lib/crud-factory';
 /**
  * Configuration centrale de tous les modèles CRUD.
  * Chaque entrée définit le modèle Prisma, les champs, les rôles et la recherche.
+ *
+ * Règle de périmètre : `buildScopeWhere()` ajoute par défaut un filtre `province` et
+ * `institution`. Un modèle Prisma qui ne possède pas ces champs DOIT donc déclarer
+ * `provinceField: false` / `institutionField: false`, sinon Prisma rejette le `where`
+ * (`PrismaClientValidationError` → 500) pour tout rôle non national.
  */
 
 export const crudModels: Record<string, CrudModelConfig> = {
@@ -165,6 +170,8 @@ export const crudModels: Record<string, CrudModelConfig> = {
     ],
   },
 
+  // Les modèles ci-dessous n'ont ni `province` ni `institution` : le filtre de
+  // périmètre y est inapplicable et doit être désactivé explicitement.
   'bureaux-fonctions': {
     delegate: prisma.bureau,
     entityName: 'bureau',
@@ -172,6 +179,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['bureau', 'fonction', 'titulaire', 'localisation'],
     defaultSort: { field: 'bureau', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'bureau', type: 'string', required: true },
@@ -188,6 +196,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['grade', 'categorie'],
     defaultSort: { field: 'grade', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'grade', type: 'string', required: true },
@@ -204,6 +213,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_PROVINCIAL',
     searchFields: ['reference', 'objet', 'demandeur'],
     defaultSort: { field: 'createdAt', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'reference', type: 'string', required: true, unique: true },
@@ -221,6 +231,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_PROVINCIAL',
     searchFields: ['etablissement', 'visiteur', 'objet'],
     defaultSort: { field: 'date', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'date', type: 'date' },
@@ -238,6 +249,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_SOUS_PROVINCIAL',
     searchFields: ['service'],
     defaultSort: { field: 'service', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'service', type: 'string', required: true },
@@ -254,6 +266,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'ELEVE',
     searchFields: ['titre', 'message', 'type'],
     defaultSort: { field: 'createdAt', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'titre', type: 'string', required: true },
@@ -270,6 +283,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['reference', 'description'],
     defaultSort: { field: 'date', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'reference', type: 'string', required: true, unique: true },
@@ -287,6 +301,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'cycle', 'diplome'],
     defaultSort: { field: 'ordre', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true, unique: true },
@@ -304,6 +319,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'cycle', 'domaine'],
     defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true },
@@ -321,6 +337,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'cycle', 'type', 'description'],
     defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true },
@@ -338,6 +355,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'ENSEIGNANT',
     searchFields: ['eleve', 'classe'],
     defaultSort: { field: 'eleve', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'eleve', type: 'string', required: true },

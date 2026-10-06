@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
   // Récupérer les cotes des 3 trimestres
   const scopeWhere = buildScopeWhere(auth.user, {
     etablissementField: 'etablissementId',
+    // CahierDeCote n'a pas de champ `institution`.
     provinceField: 'etablissementNom',
+    institutionField: false,
   });
 
   const periodes = ['1er Trimestre', '2e Trimestre', '3e Trimestre'];

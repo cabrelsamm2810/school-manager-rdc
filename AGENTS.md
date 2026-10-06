@@ -57,8 +57,17 @@ credentials. Nothing external is required to boot.
   et il n'existe ni province ni `etablissementId`. `crud-models.ts` marque donc `provinceField: false` pour ce
   module : sans cela `buildScopeWhere()` ajoutait un `where.province` inexistant et `/api/enseignants` répondait
   500 (`PrismaClientValidationError`) à tout rôle non national — y compris le compte de démonstration
-  DIRECTION_ECOLE. Conséquence assumée : la liste des enseignants n'est pas filtrée par périmètre. Les autres
-  modules déclarant `institutionField: false` sans `provinceField` ont le même défaut latent.
+  DIRECTION_ECOLE. Conséquence assumée : la liste des enseignants n'est pas filtrée par périmètre.
+- **Règle de périmètre (source d'un 500 récurrent).** `buildScopeWhere()` ajoute par défaut `province` et
+  `institution`. Tout appelant doit donc déclarer `provinceField: false` / `institutionField: false` (ou un nom
+  de champ réel) dès que le modèle Prisma visé n'a pas ces colonnes, sinon Prisma rejette le `where` :
+  « Unknown argument `province` ». Les modules CRUD concernés (`bureaux-fonctions`, `grades`, `dossiers`,
+  `visites`, `services`, `notifications`, `paiements`, `classes-rdc`, `matieres-rdc`, `options-rdc`, `notes`)
+  portent désormais ces deux drapeaux. Les routes `cahier-de-cote` passent `institutionField: false` et
+  utilisent `etablissementNom` (libellé réel) comme repli provincial ; `Eleve`, qui n'a ni `province` ni
+  `institution`, passe par la relation `etablissement` via le helper `buildEleveScopeWhere()` de
+  `lib/territory-filter.ts` (utilisé par `/api/eleves` et `/api/cahier-de-cote/options`).
+  Vérification : `GET /api/<module>` avec un compte DIRECTION_ECOLE actif doit répondre 200, jamais 500.
 
 ## Ouverture de l'application
 

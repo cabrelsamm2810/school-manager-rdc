@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
   // Filtrage hiérarchique par périmètre
   const scopeWhere = buildScopeWhere(auth.user, {
     etablissementField: 'etablissementId',
+    // CahierDeCote n'a pas de champ `institution` ni `province` : le libellé
+    // `etablissementNom` sert de repli provincial, le filtre institution est désactivé.
     provinceField: 'etablissementNom',
+    institutionField: false,
   });
   if (Object.keys(scopeWhere).length > 0) {
     where.AND = [scopeWhere];
