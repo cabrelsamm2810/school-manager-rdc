@@ -250,8 +250,9 @@ async function renderBulletinPage(doc: PDFKit.PDFDocument, data: BulletinPdfData
         doc.font('Helvetica').text(`${d.pourcentage}%`, cx, y + 6, { width: colWidths.pct - 6, align: 'center' });
         cx += colWidths.pct;
 
-        const mentionColor: [number, number, number] = MENTION_COLORS[d.mention] || [100, 116, 139];
-        doc.fillColor(mentionColor).font('Helvetica-Bold');
+        const mentionColor = MENTION_COLORS[d.mention] || [100, 116, 139];
+        const mentionHex = `#${mentionColor.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+        doc.fillColor(mentionHex).font('Helvetica-Bold');
         doc.text(d.mention, cx, y + 6, { width: colWidths.mention - 6, align: 'center' });
 
         y += rowHeight;

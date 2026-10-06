@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   const file = formData.get('file');
-  if (!(file instanceof File)) {
+  if (typeof file === 'string' || !file) {
     return NextResponse.json({ error: 'Aucun fichier trouv\u00e9 dans la requ\u00eate.' }, { status: 400 });
   }
 

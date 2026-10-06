@@ -29,7 +29,7 @@ export function GeoScanTracker() {
       .then((r) => r.json())
       .then((data) => {
         if (data.eleves) {
-          setClasses([...new Set((data.eleves as { classe: string }[]).map((e) => e.classe))].sort());
+          setClasses([...new Set<string>(data.eleves.map((e: { classe: string }) => e.classe))].sort());
         }
       })
       .catch(() => {});

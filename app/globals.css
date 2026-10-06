@@ -564,6 +564,17 @@ body {
 .nav-group-expand { animation: navGroupExpand 0.2s ease-out forwards; }
 
 /* ── Login page ── */
+/* ── Login / verification background ── */
+.login-background {
+  position: relative;
+  background-image:
+    linear-gradient(rgba(10, 23, 49, 0.68), rgba(10, 23, 49, 0.68)),
+    url('/school-background.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .login-page {
   background: linear-gradient(150deg, #0a1729 0%, #002868 45%, #003d99 75%, #0a1729 100%);
 }

@@ -1,3 +1,5 @@
+name: school-manager-rdc
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -46,7 +48,6 @@ services:
       migrate:
         condition: service_completed_successfully
     env_file:
-      - ./.env.base44-defaults
       - /run/base44/app.env
     environment:
       DATABASE_URL: postgresql://school:schoolpass@postgres:5432/school?schema=public
@@ -68,10 +69,10 @@ services:
       - |
         npm install --no-audit --no-fund
         npx prisma generate
-        # Clear the Next dev build cache: the persistent /app/.next volume can keep
-        # stale webpack chunks from a previous run (e.g. after an unclean shutdown),
-        # which surfaces as 'Cannot find module ./NNNN.js' 500s. Clear the contents
-        # (.next is a mount point, so the directory itself can't be removed).
+        # Clear the Next dev build cache on start: the persistent /app/.next volume keeps
+        # chunks left by an unclean shutdown or a production build, which surface as
+        # 'Cannot find module ./NNNN.js' 500s on /_next/static/chunks/fallback/*.
+        # .next is a mount point, so clear its contents, not the directory itself.
         find .next -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
         exec npx next dev -H 0.0.0.0 -p 3000
     healthcheck:

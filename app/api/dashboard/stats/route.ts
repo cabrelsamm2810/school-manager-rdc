@@ -40,6 +40,11 @@ export async function GET(request: NextRequest) {
     eleveWhere = { AND: [eleveWhere, { etablissement: { ...existingEtabFilter, institution: userInst } }] };
   }
 
+  // Filtre du compteur de sous-divisions (mêmes règles que les autres stats)
+  const sousProvWhere: { province?: string; institution?: string } = {};
+  if (scope === 'provincial') sousProvWhere.province = prov;
+  if (userInst) sousProvWhere.institution = userInst;
+
   // ── Stats de base (communes à tous les niveaux) ──
   const [totalEleves, totalEtablissements, totalEnseignants, totalProvinces, totalClassesAgg, totalDossiers, totalVisites, totalSousProvinciales] = await Promise.all([
     prisma.eleve.count({ where: eleveWhere }),
@@ -49,12 +54,7 @@ export async function GET(request: NextRequest) {
     prisma.eleve.groupBy({ by: ['classe'], where: eleveWhere, _count: true }),
     prisma.dossier.count(),
     prisma.visite.count(),
-    prisma.coordSousProvinciale.count({
-      where: {
-        ...(scope === 'provincial' ? { province: prov } : {}),
-        ...(userInst ? { institution: userInst } : {}),
-      },
-    }),
+    prisma.coordSousProvinciale.count({ where: sousProvWhere }),
   ]);
 
   const totalClasses = totalClassesAgg.length;

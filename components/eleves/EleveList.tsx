@@ -12,9 +12,9 @@ type Eleve = {
   classe: string;
   telephone: string;
   email: string;
-  emailTuteur: string;
   nomTuteur: string;
   telephoneTuteur: string;
+  emailTuteur: string;
   etablissement: { id: string; nom: string } | null;
   etablissementId: string | null;
   sexe: string;
@@ -59,7 +59,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
       if (res.ok) {
         setEleves(data.eleves ?? []);
         if (!classeFilter) {
-          setClasses([...new Set(((data.eleves ?? []) as Eleve[]).map((e) => e.classe))].sort());
+          setClasses([...new Set<string>((data.eleves ?? []).map((e: Eleve) => e.classe))].sort());
         }
       }
     } catch {
@@ -84,7 +84,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
         if (active && res.ok) {
           setEleves(data.eleves ?? []);
           if (!classeFilter) {
-            setClasses([...new Set(((data.eleves ?? []) as Eleve[]).map((e) => e.classe))].sort());
+            setClasses([...new Set<string>((data.eleves ?? []).map((e: Eleve) => e.classe))].sort());
           }
         }
       } catch {
