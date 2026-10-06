@@ -277,7 +277,7 @@ export function OcrImportDialog({ endpoint, moduleName, columns, onImported, onC
                   accept="image/*"
                   capture="environment"
                   className="hidden"
-                  onChange={(e) => handleFile(e.target.files[0] ?? null)}
+                  onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
                 />
                 {file ? (
                   <div className="flex flex-col items-center gap-3">

@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
 
   const filename = `bulletin_officiel_${eleve.nom.replace(/\s+/g, '_')}_${anneeScolaire.replace('/', '-')}.pdf`;
 
-  return new NextResponse(pdfBuffer, {
+  return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

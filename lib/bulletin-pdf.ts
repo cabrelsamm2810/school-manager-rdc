@@ -251,7 +251,8 @@ async function renderBulletinPage(doc: PDFKit.PDFDocument, data: BulletinPdfData
         cx += colWidths.pct;
 
         const mentionColor = MENTION_COLORS[d.mention] || [100, 116, 139];
-        doc.fillColor(mentionColor[0], mentionColor[1], mentionColor[2]).font('Helvetica-Bold');
+        const mentionHex = `#${mentionColor.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+        doc.fillColor(mentionHex).font('Helvetica-Bold');
         doc.text(d.mention, cx, y + 6, { width: colWidths.mention - 6, align: 'center' });
 
         y += rowHeight;

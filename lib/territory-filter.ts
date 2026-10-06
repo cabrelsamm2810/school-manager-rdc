@@ -76,8 +76,8 @@ export function buildScopeWhere(
 
   if (scope === 'sousProvincial') {
     // Filtrer par la sous-division spécifique si le modèle le permet
-    if (config.sousProvincialField && user.coordSousProvincialeId) {
-      where[config.sousProvincialField] = user.coordSousProvincialeId;
+    if (config.sousProvincialeField && user.coordSousProvincialeId) {
+      where[config.sousProvincialeField] = user.coordSousProvincialeId;
     } else {
       // Sinon, repli sur la province
       const prov = user.provinceAdministrative;

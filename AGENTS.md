@@ -50,6 +50,38 @@ credentials. Nothing external is required to boot.
   `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
   is declared there but referenced nowhere in the code.
 
+## Building (`npm run build`)
+
+`next build` only works with `NODE_ENV=production` **and** dev dependencies installed. Inside the `web`
+service `NODE_ENV=development` (correct for `next dev`), and that breaks the build in two ways that look
+unrelated to each other:
+
+- `npm install` under `NODE_ENV=production` skips devDependencies. Without `typescript`, Next cannot read
+  `tsconfig.json`, so the `@/*` alias plugin gets empty paths and every aliased import fails with
+  `Module not found: Can't resolve '@/…'`.
+- With `NODE_ENV=development` the build uses the development React server bundle and every page prerender
+  dies with `<Html> should not be imported outside of pages/_document`.
+
+Known-good, verified command (`✓ Compiled successfully`, 107/107 static pages, exit 0) — inside the `web`
+container the devDependencies are already installed, so only the build itself needs the override:
+
+```bash
+docker compose -f docker-compose.base44.yml exec web sh -c 'NODE_ENV=production npm run build'
+```
+
+From a clean checkout, keep devDependencies in the install step too:
+
+```bash
+docker compose -f docker-compose.base44.yml run --rm -T --no-deps -e NODE_ENV=production web \
+  sh -c 'npm install --include=dev --no-audit --no-fund && npx prisma generate && npm run build'
+```
+
+`docker compose run` gets its own `node_modules`/`.next` anonymous volumes, so that form never disturbs the
+running dev server.
+
+`tsconfig.json` uses `"target": "ES2017"`; `es5` made every `[...new Set(...)]` / `Map.entries()` a
+`TS2802` error.
+
 ## Verifying it works
 
 ```bash

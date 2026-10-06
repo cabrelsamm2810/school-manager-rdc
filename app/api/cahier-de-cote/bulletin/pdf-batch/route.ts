@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
 
   const filename = `bulletins_${classe.replace(/\s+/g, '_')}_${periode.replace(/\s+/g, '_')}.pdf`;
 
-  return new NextResponse(combined, {
+  return new NextResponse(new Uint8Array(combined), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

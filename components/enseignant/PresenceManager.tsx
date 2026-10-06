@@ -44,7 +44,7 @@ export function PresenceManager() {
       .then((r) => r.json())
       .then((data) => {
         if (data.eleves) {
-          const uniqueClasses = [...new Set(data.eleves.map((e: Eleve) => e.classe))].sort();
+          const uniqueClasses = [...new Set<string>(data.eleves.map((e: Eleve) => e.classe))].sort();
           setClasses(uniqueClasses);
         }
       })
