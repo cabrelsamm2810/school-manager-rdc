@@ -9,7 +9,7 @@ interface ParsedRow {
   postNom?: string;
   prenom?: string;
   sexe?: string;
-  dateNaissance?: string;
+  dateNaissance?: string | Date;
   lieuNaissance?: string;
   classe?: string;
   telephone?: string;

@@ -49,7 +49,12 @@ export async function GET(request: NextRequest) {
     prisma.eleve.groupBy({ by: ['classe'], where: eleveWhere, _count: true }),
     prisma.dossier.count(),
     prisma.visite.count(),
-    prisma.coordSousProvinciale.count(scope === 'provincial' ? { where: { province: prov, ...(userInst ? { institution: userInst } : {}) } } : (userInst ? { where: { institution: userInst } } : {})),
+    prisma.coordSousProvinciale.count({
+      where: {
+        ...(scope === 'provincial' ? { province: prov } : {}),
+        ...(userInst ? { institution: userInst } : {}),
+      },
+    }),
   ]);
 
   const totalClasses = totalClassesAgg.length;

@@ -31,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const data = parsed.data;
   const existing = await prisma.presence.findUnique({
     where: { id: params.id },
-    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, emailTuteur: true, nomTuteur: true, etablissement: { select: { nom: true } } } },
+    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, emailTuteur: true, nomTuteur: true, etablissement: { select: { nom: true } } } } },
   });
   if (!existing) {
     return NextResponse.json({ error: 'Présence introuvable.' }, { status: 404 });
