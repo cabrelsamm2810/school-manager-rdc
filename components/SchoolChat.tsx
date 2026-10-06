@@ -604,9 +604,9 @@ export function SchoolChat() {
           mobileShowChat ? 'hidden md:flex' : 'flex w-full'
         )}
       >
-        <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-100 bg-white px-3">
-          <SchoolChatMark className="h-[30px] w-[30px]" />
-          <h2 className="min-w-0 flex-1 truncate text-[19px] font-bold tracking-tight text-slate-900">SchoolChat</h2>
+        <div className="flex h-14 shrink-0 items-center gap-2.5 bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-3">
+          <SchoolChatMark className="h-9 w-9 rounded-full ring-1 ring-white/25" />
+          <h2 className="min-w-0 flex-1 truncate text-[19px] font-bold tracking-tight text-white">SchoolChat</h2>
 
           {currentUser && (
             <Avatar
@@ -614,12 +614,13 @@ export function SchoolChat() {
               prenom={currentUser.prenom}
               nom={currentUser.nom}
               size="sm"
+              className="ring-2 ring-white/30"
             />
           )}
 
           <button
             onClick={() => setShowNewChat(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-90"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 active:scale-90"
             aria-label="Nouvelle conversation"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
@@ -630,7 +631,7 @@ export function SchoolChat() {
 
           <button
             onClick={() => setShowNewGroup(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:scale-90"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/85 transition hover:bg-white/15 hover:text-white active:scale-90"
             aria-label="Nouveau groupe"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
