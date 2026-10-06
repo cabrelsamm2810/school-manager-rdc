@@ -38,6 +38,7 @@ const icons: Record<string, string> = {
   phone: 'M7 2h10l1 5-3 1c0 4-3 7-7 7l-1-3-5 1v10',
   chart: 'M3 20h18M7 16v-6M12 16V8M17 16v-4',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  refresh: 'M4 12a8 8 0 0 1 13.66-5.66L20 8.6M20 4.5V9h-4.5M20 12a8 8 0 0 1-13.66 5.66L4 15.4M4 19.5V15h4.5',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

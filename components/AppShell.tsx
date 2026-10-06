@@ -11,6 +11,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Avatar } from '@/components/ui/Avatar';
 import { DigitalClock } from '@/components/dashboards/DigitalClock';
 import { BottomNav } from '@/components/dashboards/BottomNav';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -86,6 +87,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Droite : montre compacte + notifications + profil */}
           <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
             <DigitalClock variant="compact" className="mr-1 flex sm:mr-0" />
+
+            <RefreshButton />
 
             <Link
               href="/notifications"
