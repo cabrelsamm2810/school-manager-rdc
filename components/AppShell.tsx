@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
-import { navigationGroups, type NavItem, type NavGroup } from '@/lib/navigation';
-import { ROLE_LABELS, ROLE_RANK } from '@/lib/rbac';
+import { visibleNavigationGroups, type NavGroup } from '@/lib/navigation';
+import { ROLE_LABELS } from '@/lib/rbac';
 import { Icon } from '@/components/ui/Icon';
 
 type SessionUser = {
@@ -17,10 +17,6 @@ type SessionUser = {
   role: string;
   profilePhotoUrl?: string | null;
 };
-
-function filterByRole(items: NavItem[], role: string): NavItem[] {
-  return items.filter((item) => !item.minRole || (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[item.minRole] ?? 0));
-}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -91,11 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     ? `${user.prenom?.[0] ?? ''}${user.nom?.[0] ?? ''}`.toUpperCase()
     : 'SM';
 
-  const visibleGroups = user
-    ? navigationGroups
-        .map((g) => ({ ...g, items: filterByRole(g.items, user.role) }))
-        .filter((g) => g.items.length > 0)
-    : navigationGroups;
+  const visibleGroups = visibleNavigationGroups(user?.role);
 
   return (
     <div className="min-h-screen bg-slate-50">

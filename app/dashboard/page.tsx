@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
 import { DashboardHeader } from '@/components/dashboards/DashboardHeader';
 import { QuickActions } from '@/components/dashboards/QuickActions';
+import { ServicesGrid } from '@/components/dashboards/ServicesGrid';
 import { NationalDashboard } from '@/components/dashboards/NationalDashboard';
 import { ProvincialDashboard } from '@/components/dashboards/ProvincialDashboard';
 import { SousProvincialDashboard } from '@/components/dashboards/SousProvincialDashboard';
@@ -103,6 +104,7 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-6xl">
           <DashboardHeader user={user} scope={data.scope} />
           <QuickActions role={user.role} />
+          <ServicesGrid role={user.role} />
           {data.scope === 'national' && <NationalDashboard {...dashProps} />}
           {data.scope === 'provincial' && (
             <ProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />

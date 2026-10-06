@@ -1,3 +1,5 @@
+import { ROLE_RANK } from '@/lib/rbac';
+
 export type NavItem = {
   label: string;
   href: string;
@@ -87,3 +89,19 @@ export const navigationGroups: NavGroup[] = [
 
 /** Aplatit tous les éléments de navigation en une liste simple. */
 export const allNavItems: NavItem[] = navigationGroups.flatMap((g) => g.items);
+
+/**
+ * Groupes de navigation visibles pour un rôle donné, vides exclus.
+ * Règle unique (rang de rôle) partagée par la barre latérale et l'accueil.
+ */
+export function visibleNavigationGroups(role?: string | null): NavGroup[] {
+  if (!role) return navigationGroups;
+  return navigationGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.minRole || (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[item.minRole] ?? 0)
+      )
+    }))
+    .filter((group) => group.items.length > 0);
+}
