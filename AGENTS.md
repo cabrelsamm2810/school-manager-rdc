@@ -46,6 +46,9 @@ credentials. Nothing external is required to boot.
   `components/CrudManager.tsx` (list + form + delete UI). Route files are thin wrappers around
   `createCrudHandlers()`. To add a module: add the Prisma model, add entries to `crud-models.ts` and
   `crud-configs.tsx`, add the two route files, and render `<CrudManager config={crudConfigs.xxx} />`.
+- **`tsconfig.tsbuildinfo` is not tracked** (`.gitignore` has `*.tsbuildinfo`). It is a TypeScript
+  incremental cache, and committing it made stale `TS2802` diagnostics replay for files that were already
+  fixed. To type-check from scratch: `npx tsc --noEmit --incremental false`.
 - `.env.example` lists Supabase and S3 settings, but those integrations are **not implemented** — only
   `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
   is declared there but referenced nowhere in the code.
