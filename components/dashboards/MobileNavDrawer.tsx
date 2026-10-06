@@ -294,7 +294,7 @@ export function MobileNavDrawer({
                         )}
                       >
                         {item.href === '/schoolchat' ? (
-                          <SchoolChatMark className="h-[18px] w-[18px] rounded-[4px]" />
+                          <SchoolChatMark className="h-[21px] w-[21px] rounded-[5px]" />
                         ) : (
                           <Icon
                             name={item.icon}

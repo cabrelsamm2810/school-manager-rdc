@@ -281,7 +281,7 @@ function SidebarContent({
                       )}
                     >
                       {item.href === '/schoolchat' ? (
-                        <SchoolChatMark className="h-[18px] w-[18px]" />
+                        <SchoolChatMark className="h-[21px] w-[21px]" />
                       ) : (
                         <Icon
                           name={item.icon}
