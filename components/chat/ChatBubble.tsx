@@ -1,78 +1,76 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { clsx } from 'clsx';
+import { Avatar } from '@/components/ui/Avatar';
 import { VoiceMessagePlayer } from './VoiceMessagePlayer';
 import { FileBubble, type FileStatus } from './FileBubble';
+import { formatMessageTime, getMessagePreview, isAudioFile, isImageFile } from '@/lib/chat-format';
 
 export type ChatMessageData = {
   id: string;
   content: string;
   senderId: string;
   senderName?: string;
+  senderPrenom?: string | null;
+  senderNom?: string | null;
+  senderPhotoUrl?: string | null;
   createdAt: string;
   read: boolean;
   fileUrl?: string | null;
   fileName?: string | null;
   fileType?: string | null;
-  fileSize?: number;
+  fileSize?: number | null;
   status?: FileStatus;
   replyToId?: string | null;
   replyTo?: { senderName: string; content: string } | null;
 };
 
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function isImageFile(fileType?: string | null, fileUrl?: string | null) {
-  if (fileType?.startsWith('image/')) return true;
-  if (fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl)) return true;
-  return false;
-}
-
-function isAudioFile(fileType?: string | null, fileUrl?: string | null) {
-  if (fileType?.startsWith('audio/')) return true;
-  if (fileUrl && /\.(mp3|wav|ogg|webm|m4a|aac|opus)$/i.test(fileUrl)) return true;
-  return false;
-}
-
-function getMessagePreview(msg: ChatMessageData): string {
-  if (msg.content) return msg.content;
-  if (isAudioFile(msg.fileType, msg.fileUrl)) return '🎤 Message vocal';
-  if (isImageFile(msg.fileType, msg.fileUrl)) return '📷 Photo';
-  if (msg.fileUrl) return `📎 ${msg.fileName || 'Fichier'}`;
-  return '';
-}
-
-/**
- * Double coche pour le statut de lecture.
- */
-function ReadCheck({ read }: { read: boolean }) {
-  if (read) {
+/** Statut d'acheminement / de lecture d'un message envoyé. */
+function MessageStatus({ msg }: { msg: ChatMessageData }) {
+  if (msg.status === 'failed') {
     return (
-      <svg viewBox="0 0 18 11" className="h-3 w-[18px]" fill="#60a5fa" stroke="#60a5fa" strokeWidth={1}>
-        <path d="M11.071.653a.5.5 0 0 1 .024.707l-6 6.5a.5.5 0 0 1-.738.024L1.3 5.353a.5.5 0 1 1 .7-.714l2.69 2.69L10.4.677a.5.5 0 0 1 .671-.024z" />
-        <path d="M15.071.653a.5.5 0 0 1 .024.707l-6 6.5a.5.5 0 0 1-.738.024l-.5-.5a.5.5 0 1 1 .707-.707l.146.146L14.4.677a.5.5 0 0 1 .671-.024z" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-3.5 w-3.5 text-red-200" aria-label="Envoi échoué">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
     );
   }
+
+  if (msg.status === 'sending') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-white/70" aria-label="Envoi en cours">
+        <circle cx="12" cy="12" r="9" />
+        <polyline points="12 7 12 12 15.5 14" />
+      </svg>
+    );
+  }
+
   return (
-    <svg viewBox="0 0 16 11" className="h-3 w-4" fill="none" stroke="#9ca3af" strokeWidth={1}>
-      <path d="M11.071.653a.5.5 0 0 1 .024.707l-6 6.5a.5.5 0 0 1-.738.024L1.3 5.353a.5.5 0 1 1 .7-.714l2.69 2.69L10.4.677a.5.5 0 0 1 .671-.024z" />
+    <svg
+      viewBox="0 0 18 11"
+      className={clsx('h-3 w-[16px]', msg.read ? 'text-[#bfdbfe]' : 'text-white/70')}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-label={msg.read ? 'Lu' : 'Envoyé'}
+    >
+      <path d="M1.4 5.7l2.9 2.9L10.2 2.6" />
+      {msg.read && <path d="M7.6 6.7l2.5 2.5L16.6 2.6" />}
     </svg>
   );
 }
 
-/**
- * Menu d'actions contextuel (répondre, supprimer, transférer).
- */
+/** Menu d'actions contextuel (répondre, transférer, supprimer). */
 function MessageActions({
   onReply,
   onDelete,
   onForward,
   canDelete,
-  onClose,
+  onClose
 }: {
   onReply: () => void;
   onDelete: () => void;
@@ -88,26 +86,29 @@ function MessageActions({
 
   return (
     <div
-      className="absolute z-20 min-w-[150px] overflow-hidden rounded-2xl bg-white dark:bg-slate-800 py-1.5 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-700"
+      className="absolute z-20 min-w-[150px] overflow-hidden rounded-xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200"
       style={{ animation: 'msgActionIn 0.15s ease-out' }}
       onClick={(e) => e.stopPropagation()}
     >
-      <button onClick={onReply} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-700">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-blue-500">
-          <polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+      <button onClick={onReply} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#2563eb]">
+          <polyline points="9 17 4 12 9 7" />
+          <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
         </svg>
         Répondre
       </button>
-      <button onClick={onForward} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-700">
+      <button onClick={onForward} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-violet-500">
-          <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
         Transférer
       </button>
       {canDelete && (
-        <button onClick={onDelete} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/30">
+        <button onClick={onDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-red-500 transition hover:bg-red-50">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
           Supprimer
         </button>
@@ -117,35 +118,38 @@ function MessageActions({
 }
 
 /**
- * Bulle de message moderne pour SchoolChat.
- * Gère texte, images, audio, fichiers, avec :
- * - alignement gauche/droite
- * - coins arrondis élégants avec queue
- * - heure discrète
- * - statut d'envoi/lecture (double coche)
- * - regroupement intelligent des messages consécutifs
- * - aperçu de réponse
- * - menu d'actions (répondre, supprimer, transférer)
+ * Bulle de message SchoolChat.
+ * - messages reçus alignés à gauche avec une photo de profil discrète (alignée en bas du groupe),
+ * - messages envoyés alignés à droite, accent bleu de l'établissement, heure + statut,
+ * - texte, image, message vocal et pièce jointe dans une même enveloppe compacte.
  */
-export function ChatBubble({
+export const ChatBubble = memo(function ChatBubble({
   msg,
   isMe,
   isGroup,
   showSenderName,
   isConsecutive,
+  isLastInGroup,
   replyToMessage,
+  senderPhotoUrl,
+  senderPrenom,
+  senderNom,
   onReply,
   onDelete,
   onForward,
   onRetry,
-  canDelete,
+  canDelete
 }: {
   msg: ChatMessageData;
   isMe: boolean;
   isGroup: boolean;
   showSenderName: boolean;
   isConsecutive: boolean;
+  isLastInGroup: boolean;
   replyToMessage?: ChatMessageData | null;
+  senderPhotoUrl?: string | null;
+  senderPrenom?: string | null;
+  senderNom?: string | null;
   onReply: (msg: ChatMessageData) => void;
   onDelete: (msg: ChatMessageData) => void;
   onForward: (msg: ChatMessageData) => void;
@@ -153,41 +157,65 @@ export function ChatBubble({
   canDelete: boolean;
 }) {
   const [showActions, setShowActions] = useState(false);
-  const bubbleRef = useRef<HTMLDivElement>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleLongPress = () => setShowActions(true);
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowActions(true);
   };
-
-  // Long press pour mobile
-  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPress = () => {
-    pressTimer.current = setTimeout(() => handleLongPress(), 500);
+    pressTimer.current = setTimeout(() => setShowActions(true), 500);
   };
   const cancelPress = () => {
     if (pressTimer.current) clearTimeout(pressTimer.current);
   };
 
-  const hasFile = msg.fileUrl && !isAudioFile(msg.fileType, msg.fileUrl);
   const hasImage = isImageFile(msg.fileType, msg.fileUrl);
-  const hasAudio = isAudioFile(msg.fileType, msg.fileUrl) && msg.fileUrl;
-  const hasText = msg.content && msg.content.trim();
+  const hasAudio = isAudioFile(msg.fileType, msg.fileUrl) && Boolean(msg.fileUrl);
+  const hasFile = Boolean(msg.fileUrl) && !hasImage && !hasAudio;
+  const hasText = Boolean(msg.content && msg.content.trim());
+  const isWide = hasAudio || hasFile;
 
   return (
     <div
-      className={clsx('flex', isMe ? 'justify-end' : 'justify-start', isConsecutive ? 'mt-0.5' : 'mt-2')}
-      style={{ animation: 'chatBubbleIn 0.25s ease-out' }}
+      className={clsx(
+        'flex w-full items-end gap-2',
+        isMe ? 'justify-end' : 'justify-start',
+        isConsecutive ? 'mt-[3px]' : 'mt-2'
+      )}
+      style={{ animation: 'chatBubbleIn 0.22s ease-out' }}
     >
-      <div className="relative max-w-[80%] md:max-w-[65%]">
-        {/* Menu d'actions */}
+      {/* Photo de profil discrète, alignée sur la dernière bulle d'un groupe */}
+      {!isMe && (
+        <span className="w-7 shrink-0 self-end">
+          {isLastInGroup && (
+            <Avatar
+              photoUrl={senderPhotoUrl}
+              prenom={senderPrenom ?? msg.senderName}
+              nom={senderNom}
+              size="2xs"
+              className="ring-1 ring-black/5"
+            />
+          )}
+        </span>
+      )}
+
+      <div className="relative max-w-[80%] md:max-w-[62%]">
         {showActions && (
-          <div className={clsx('absolute bottom-full mb-1', isMe ? 'right-0' : 'left-0')}>
+          <div className={clsx('absolute bottom-full z-20 mb-1', isMe ? 'right-0' : 'left-0')}>
             <MessageActions
-              onReply={() => { onReply(msg); setShowActions(false); }}
-              onDelete={() => { onDelete(msg); setShowActions(false); }}
-              onForward={() => { onForward(msg); setShowActions(false); }}
+              onReply={() => {
+                onReply(msg);
+                setShowActions(false);
+              }}
+              onDelete={() => {
+                onDelete(msg);
+                setShowActions(false);
+              }}
+              onForward={() => {
+                onForward(msg);
+                setShowActions(false);
+              }}
               canDelete={canDelete}
               onClose={() => setShowActions(false)}
             />
@@ -195,85 +223,81 @@ export function ChatBubble({
         )}
 
         <div
-          ref={bubbleRef}
           onContextMenu={handleContextMenu}
           onTouchStart={startPress}
           onTouchEnd={cancelPress}
           onTouchMove={cancelPress}
           className={clsx(
-            'relative px-3 py-2 transition',
+            'relative px-3 py-1.5 text-[13.5px] shadow-sm transition',
             isMe
-              ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-[#1e3a8a] dark:to-[#1e40af] text-slate-900 dark:text-blue-50 shadow-md'
-              : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700/40',
-            // Coins arrondis avec queue
+              ? 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-blue-900/10'
+              : 'bg-white text-slate-800 ring-1 ring-slate-200/80',
             isMe
-              ? isConsecutive ? 'rounded-2xl rounded-tr-md' : 'rounded-2xl rounded-tr-sm'
-              : isConsecutive ? 'rounded-2xl rounded-tl-md' : 'rounded-2xl rounded-tl-sm',
-            // Largeur adaptée
-            hasAudio ? 'w-[220px] md:w-[260px]' : '',
+              ? isConsecutive && !isLastInGroup
+                ? 'rounded-2xl rounded-br-md'
+                : 'rounded-2xl rounded-br-sm'
+              : isConsecutive && !isLastInGroup
+                ? 'rounded-2xl rounded-bl-md'
+                : 'rounded-2xl rounded-bl-sm',
+            isWide && 'w-[228px] md:w-[264px]'
           )}
         >
-          {/* Nom de l'expéditeur pour les groupes */}
           {isGroup && !isMe && showSenderName && msg.senderName && (
-            <p className="mb-1 text-xs font-bold tracking-wide text-[#1e3a8a] dark:text-blue-400">{msg.senderName}</p>
+            <p className="mb-0.5 text-[11.5px] font-bold tracking-wide text-[#2563eb]">{msg.senderName}</p>
           )}
 
-          {/* Aperçu de réponse */}
           {replyToMessage && (
-            <div className={clsx(
-              'mb-2 rounded-lg px-2.5 py-1.5 border-l-[3px]',
-              isMe
-                ? 'bg-blue-100/50 dark:bg-blue-900/30 border-[#1e3a8a] dark:border-blue-400'
-                : 'bg-slate-100 dark:bg-slate-700/50 border-slate-400 dark:border-slate-500'
-            )}>
-              <p className={clsx('text-[11px] font-bold tracking-wide', isMe ? 'text-[#1e3a8a] dark:text-blue-300' : 'text-slate-600 dark:text-slate-300')}>
+            <div
+              className={clsx(
+                'mb-1.5 rounded-lg border-l-[3px] px-2 py-1',
+                isMe ? 'bg-white/15 border-white/50' : 'bg-slate-50 border-[#2563eb]/60'
+              )}
+            >
+              <p className={clsx('truncate text-[11px] font-semibold', isMe ? 'text-white' : 'text-[#1d4ed8]')}>
                 {replyToMessage.senderName || (replyToMessage.senderId === msg.senderId ? 'Vous' : 'Utilisateur')}
               </p>
-              <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+              <p className={clsx('truncate text-[11px]', isMe ? 'text-white/75' : 'text-slate-500')}>
                 {getMessagePreview(replyToMessage)}
               </p>
             </div>
           )}
 
-          {/* Image */}
           {hasImage && msg.fileUrl && (
-            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="mb-1.5 block overflow-hidden rounded-xl">
-              <img src={msg.fileUrl} alt={msg.fileName || 'Image'} className="max-h-60 w-full rounded-xl object-cover transition hover:opacity-95" />
+            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="mb-1 block overflow-hidden rounded-xl">
+              <img
+                src={msg.fileUrl}
+                alt={msg.fileName || 'Image'}
+                loading="lazy"
+                decoding="async"
+                className="max-h-56 w-full rounded-xl object-cover transition hover:opacity-95 md:max-h-64"
+              />
             </a>
           )}
 
-          {/* Audio */}
-          {hasAudio && (
-            <VoiceMessagePlayer src={msg.fileUrl!} isMe={isMe} />
-          )}
+          {hasAudio && <VoiceMessagePlayer src={msg.fileUrl!} isMe={isMe} />}
 
-          {/* Fichier (non-image, non-audio) */}
           {hasFile && msg.fileUrl && (
             <FileBubble
               fileName={msg.fileName || 'Fichier'}
               fileType={msg.fileType}
               fileUrl={msg.fileUrl}
-              fileSize={msg.fileSize}
+              fileSize={msg.fileSize ?? undefined}
               status={msg.status}
               onRetry={onRetry ? () => onRetry(msg) : undefined}
               isMe={isMe}
             />
           )}
 
-          {/* Texte */}
-          {hasText && (
-            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{msg.content}</p>
-          )}
+          {hasText && <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>}
 
-          {/* Heure + statut de lecture */}
-          <div className="mt-1 flex items-center justify-end gap-1">
-            <span className={clsx('text-[10px] tabular-nums', isMe ? 'text-slate-400 dark:text-blue-200/60' : 'text-slate-400 dark:text-slate-500')}>
-              {formatTime(msg.createdAt)}
+          <div className={clsx('mt-0.5 flex items-center justify-end gap-1', (hasAudio || hasFile) && 'pt-0.5')}>
+            <span className={clsx('text-[10px] tabular-nums', isMe ? 'text-white/70' : 'text-slate-400')}>
+              {formatMessageTime(msg.createdAt)}
             </span>
-            {isMe && <ReadCheck read={msg.read} />}
+            {isMe && <MessageStatus msg={msg} />}
           </div>
         </div>
       </div>
     </div>
   );
-}
+});

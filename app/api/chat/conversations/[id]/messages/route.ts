@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/session-user';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { getStoredFileSize } from '@/lib/chat-files';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -74,17 +75,20 @@ export async function GET(
   });
 
   return NextResponse.json(
-    messages.map((m) => ({
-      id: m.id,
-      content: m.content,
-      senderId: m.senderId,
-      createdAt: m.createdAt,
-      read: m.read,
-      fileUrl: m.fileUrl,
-      fileName: m.fileName,
-      fileType: m.fileType,
-      replyToId: m.replyToId,
-    }))
+    await Promise.all(
+      messages.map(async (m) => ({
+        id: m.id,
+        content: m.content,
+        senderId: m.senderId,
+        createdAt: m.createdAt,
+        read: m.read,
+        fileUrl: m.fileUrl,
+        fileName: m.fileName,
+        fileType: m.fileType,
+        fileSize: await getStoredFileSize(m.fileUrl),
+        replyToId: m.replyToId,
+      }))
+    )
   );
 }
 
@@ -115,6 +119,7 @@ export async function POST(
   let fileUrl: string | null = null;
   let fileName: string | null = null;
   let fileType: string | null = null;
+  let fileSize: number | null = null;
   let replyToId: string | null = null;
 
   if (contentType.includes('multipart/form-data')) {
@@ -155,6 +160,7 @@ export async function POST(
     fileUrl = `/uploads/chat-files/${uniqueName}`;
     fileName = file.name;
     fileType = file.type;
+    fileSize = file.size;
   } else {
     // ── Message texte seul ──
     const body = await request.json();
@@ -193,6 +199,7 @@ export async function POST(
     fileUrl: message.fileUrl,
     fileName: message.fileName,
     fileType: message.fileType,
+    fileSize,
     replyToId: message.replyToId,
   });
 }

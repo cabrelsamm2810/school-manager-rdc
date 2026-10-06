@@ -1,17 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { clsx } from 'clsx';
 import { Icon } from '@/components/ui/Icon';
-import { ROLE_LABELS } from '@/lib/rbac';
 import { CallOverlay } from '@/components/CallOverlay';
 import { ChatComposer } from '@/components/chat/ChatComposer';
 import { ChatBubble, type ChatMessageData } from '@/components/chat/ChatBubble';
+import { ChatHeader } from '@/components/chat/ChatHeader';
+import { ConversationListItem, type ChatPreviewKind } from '@/components/chat/ConversationListItem';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import { formatListTime, getMessageKind, getMessagePreview } from '@/lib/chat-format';
 
 type ChatUser = {
   id: string;
   displayName: string;
+  prenom?: string;
+  nom?: string;
   role: string;
   roleLabel: string;
   profilePhotoUrl?: string | null;
@@ -27,6 +31,8 @@ type Conversation = {
     senderId: string;
     fileUrl?: string | null;
     fileName?: string | null;
+    fileType?: string | null;
+    read?: boolean;
   } | null;
   unreadCount: number;
   missedCall: { type: string; createdAt: string } | null;
@@ -51,52 +57,29 @@ type GroupChat = {
 };
 
 type Message = ChatMessageData;
+type ChatKind = 'conversation' | 'group';
 
-function formatListTime(dateStr: string) {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  const oneDay = 24 * 60 * 60 * 1000;
-  if (diff < oneDay && d.getDate() === now.getDate()) {
-    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  }
-  if (diff < 2 * oneDay) return 'Hier';
-  if (diff < 7 * oneDay) {
-    return d.toLocaleDateString('fr-FR', { weekday: 'short' });
-  }
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-}
+/** Élément de la liste unifiée : conversation privée ou groupe de classe. */
+type ChatListItem =
+  | { id: string; kind: 'conversation'; updatedAt: string; conversation: Conversation }
+  | { id: string; kind: 'group'; updatedAt: string; group: GroupChat };
 
-function getInitials(name: string) {
-  const parts = name.trim().split(' ');
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
-}
-
-function isImageFile(fileType?: string | null, fileUrl?: string | null) {
-  if (fileType?.startsWith('image/')) return true;
-  if (fileUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl)) return true;
-  return false;
-}
-
-function isAudioFile(fileType?: string | null, fileUrl?: string | null) {
-  if (fileType?.startsWith('audio/')) return true;
-  if (fileUrl && /\.(mp3|wav|ogg|webm|m4a|aac|opus)$/i.test(fileUrl)) return true;
-  return false;
-}
-
-function getMessagePreview(msg: Message): string {
-  if (msg.content) return msg.content;
-  if (isAudioFile(msg.fileType, msg.fileUrl)) return '🎤 Message vocal';
-  if (isImageFile(msg.fileType, msg.fileUrl)) return '📷 Photo';
-  if (msg.fileUrl) return `📎 ${msg.fileName || 'Fichier'}`;
-  return '';
+/** Regroupe les messages consécutifs (même expéditeur, moins de 2 minutes, même jour). */
+function isSameRun(a: Message, b?: Message) {
+  if (!b || b.senderId !== a.senderId) return false;
+  if (new Date(b.createdAt).toDateString() !== new Date(a.createdAt).toDateString()) return false;
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() < 120000;
 }
 
 export function SchoolChat() {
-  const [currentUser, setCurrentUser] = useState<{ id: string; prenom: string; nom: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    prenom: string;
+    nom: string;
+    profilePhotoUrl?: string | null;
+  } | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -124,15 +107,14 @@ export function SchoolChat() {
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [groups, setGroups] = useState<GroupChat[]>([]);
-  const [activeChatType, setActiveChatType] = useState<'conversation' | 'group'>('conversation');
-  const [activeGroup, setActiveGroup] = useState<GroupChat | null>(null);
+  const [activeChatType, setActiveChatType] = useState<ChatKind>('conversation');
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupClasse, setNewGroupClasse] = useState('');
   const [creatingGroup, setCreatingGroup] = useState(false);
 
-  // Nouveaux états pour les fonctionnalités premium
+  // Fonctionnalités premium existantes
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
@@ -140,16 +122,14 @@ export function SchoolChat() {
   const [convSearchQuery, setConvSearchQuery] = useState('');
   const [showTyping, setShowTyping] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesKeyRef = useRef('');
 
   // Charge l'utilisateur courant
   useEffect(() => {
     fetch('/api/auth/session')
       .then((r) => r.json())
       .then((data) => {
-        if (data?.authenticated) {
-          setCurrentUser(data.user);
-        }
+        if (data?.authenticated) setCurrentUser(data.user);
       })
       .catch(() => {});
   }, []);
@@ -173,6 +153,56 @@ export function SchoolChat() {
       .catch(() => {});
   }, []);
 
+  // Charge les messages d'une conversation ou d'un groupe
+  const loadMessages = useCallback((chatId: string, type: ChatKind) => {
+    const endpoint =
+      type === 'group' ? `/api/chat/groups/${chatId}/messages` : `/api/chat/conversations/${chatId}/messages`;
+    fetch(endpoint)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        // Rien de nouveau depuis le dernier chargement : on évite de tout re-rendre.
+        const key = data.map((m: Message) => `${m.id}${m.read ? '1' : '0'}`).join('|');
+        if (key === messagesKeyRef.current) return;
+        messagesKeyRef.current = key;
+        setMessages((prev) => {
+          const serverIds = new Set(data.map((m: Message) => m.id));
+          const pending = prev.filter((m) => m.id.startsWith('temp-') && !serverIds.has(m.id));
+          return pending.length ? [...data, ...pending] : data;
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  /** Ouvre un fil (conversation ou groupe) : le seul point d'entrée utilisé par la liste. */
+  const openChat = useCallback(
+    (id: string, kind: ChatKind) => {
+      setActiveConversationId(id);
+      setActiveChatType(kind);
+      setMobileShowChat(true);
+      setReplyTo(null);
+      setShowSearchInConv(false);
+      setConvSearchQuery('');
+      messagesKeyRef.current = '';
+      setMessages([]);
+      loadMessages(id, kind);
+    },
+    [loadMessages]
+  );
+
+  /** Stable : permet aux lignes de la liste (mémoïsées) de ne pas se re-rendre inutilement. */
+  const handleSelectChat = useCallback((id: string, kind: ChatKind) => openChat(id, kind), [openChat]);
+
+  // Conversation et groupe actifs, dérivés de la liste (toujours à jour après le polling)
+  const activeConversation = useMemo(
+    () => (activeChatType === 'conversation' ? conversations.find((c) => c.id === activeConversationId) ?? null : null),
+    [conversations, activeChatType, activeConversationId]
+  );
+  const activeGroup = useMemo(
+    () => (activeChatType === 'group' ? groups.find((g) => g.id === activeConversationId) ?? null : null),
+    [groups, activeChatType, activeConversationId]
+  );
+
   useEffect(() => {
     if (currentUser) {
       loadConversations();
@@ -186,26 +216,10 @@ export function SchoolChat() {
     const interval = setInterval(() => {
       loadConversations();
       loadGroups();
-      if (activeConversationId) {
-        loadMessages(activeConversationId, activeChatType);
-      }
+      if (activeConversationId) loadMessages(activeConversationId, activeChatType);
     }, 5000);
     return () => clearInterval(interval);
-  }, [currentUser, activeConversationId, activeChatType, loadConversations, loadGroups]);
-
-  // Charge les messages d'une conversation
-  const loadMessages = useCallback((chatId: string, type?: 'conversation' | 'group') => {
-    const chatType = type ?? activeChatType;
-    const endpoint = chatType === 'group'
-      ? `/api/chat/groups/${chatId}/messages`
-      : `/api/chat/conversations/${chatId}/messages`;
-    fetch(endpoint)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setMessages(data);
-      })
-      .catch(() => {});
-  }, [activeChatType]);
+  }, [currentUser, activeConversationId, activeChatType, loadConversations, loadGroups, loadMessages]);
 
   // ── Appels audio/vidéo ──
   const startCall = useCallback(
@@ -256,35 +270,6 @@ export function SchoolChat() {
     return () => clearInterval(interval);
   }, [currentUser, activeCall, conversations]);
 
-  // Ouvre une conversation
-  const openConversation = useCallback(
-    (conv: Conversation) => {
-      setActiveConversationId(conv.id);
-      setActiveChatType('conversation');
-      setActiveConversation(conv);
-      setActiveGroup(null);
-      setMobileShowChat(true);
-      setReplyTo(null);
-      setShowSearchInConv(false);
-      loadMessages(conv.id, 'conversation');
-    },
-    [loadMessages]
-  );
-
-  const openGroup = useCallback(
-    (group: GroupChat) => {
-      setActiveConversationId(group.id);
-      setActiveChatType('group');
-      setActiveGroup(group);
-      setActiveConversation(null);
-      setMobileShowChat(true);
-      setReplyTo(null);
-      setShowSearchInConv(false);
-      loadMessages(group.id, 'group');
-    },
-    [loadMessages]
-  );
-
   // Scroll en bas quand de nouveaux messages arrivent
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -311,9 +296,10 @@ export function SchoolChat() {
     const currentReplyTo = replyTo;
     setReplyTo(null);
 
-    const endpoint = activeChatType === 'group'
-      ? `/api/chat/groups/${activeConversationId}/messages`
-      : `/api/chat/conversations/${activeConversationId}/messages`;
+    const endpoint =
+      activeChatType === 'group'
+        ? `/api/chat/groups/${activeConversationId}/messages`
+        : `/api/chat/conversations/${activeConversationId}/messages`;
     fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -323,7 +309,8 @@ export function SchoolChat() {
       .then((data) => {
         if (data.id) {
           setMessages((prev) => prev.map((m) => (m.id === tempId ? data : m)));
-          if (activeChatType === 'group') loadGroups(); else loadConversations();
+          if (activeChatType === 'group') loadGroups();
+          else loadConversations();
         }
       })
       .catch(() => {})
@@ -358,21 +345,19 @@ export function SchoolChat() {
       setMessages((prev) => [...prev, optimisticMsg]);
       setInputText('');
 
-      const endpoint = activeChatType === 'group'
-        ? `/api/chat/groups/${activeConversationId}/messages`
-        : `/api/chat/conversations/${activeConversationId}/messages`;
-      fetch(endpoint, {
-        method: 'POST',
-        body: formData,
-      })
+      const endpoint =
+        activeChatType === 'group'
+          ? `/api/chat/groups/${activeConversationId}/messages`
+          : `/api/chat/conversations/${activeConversationId}/messages`;
+      fetch(endpoint, { method: 'POST', body: formData })
         .then((r) => r.json())
         .then((data) => {
           if (data.id) {
             URL.revokeObjectURL(previewUrl);
             setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...data, status: 'sent' } : m)));
-            if (activeChatType === 'group') loadGroups(); else loadConversations();
+            if (activeChatType === 'group') loadGroups();
+            else loadConversations();
           } else {
-            // Échec
             setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)));
           }
         })
@@ -386,33 +371,27 @@ export function SchoolChat() {
   );
 
   // Réessayer l'envoi d'un fichier échoué
-  const retrySend = useCallback(
-    (msg: Message) => {
-      if (!msg.fileUrl || !activeConversationId) return;
-      // Pour les fichiers optimistes, on ne peut pas vraiment réessayer sans le blob original.
-      // On supprime le message échoué et l'utilisateur devra réattacher le fichier.
-      setMessages((prev) => prev.filter((m) => m.id !== msg.id));
-    },
-    [activeConversationId]
-  );
+  const retrySend = useCallback((msg: Message) => {
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+  }, []);
 
   // ── Suppression de message ──
   const deleteMessage = useCallback(
     (msg: Message) => {
       if (!activeConversationId) return;
-      // Suppression optimiste
       setMessages((prev) => prev.filter((m) => m.id !== msg.id));
 
-      const endpoint = activeChatType === 'group'
-        ? `/api/chat/groups/${activeConversationId}/messages/${msg.id}`
-        : `/api/chat/conversations/${activeConversationId}/messages/${msg.id}`;
+      const endpoint =
+        activeChatType === 'group'
+          ? `/api/chat/groups/${activeConversationId}/messages/${msg.id}`
+          : `/api/chat/conversations/${activeConversationId}/messages/${msg.id}`;
       fetch(endpoint, { method: 'DELETE' })
         .then((r) => r.json())
         .then(() => {
-          if (activeChatType === 'group') loadGroups(); else loadConversations();
+          if (activeChatType === 'group') loadGroups();
+          else loadConversations();
         })
         .catch(() => {
-          // Restaurer en cas d'échec
           setMessages((prev) => {
             const idx = prev.findIndex((m) => m.createdAt > msg.createdAt);
             if (idx === -1) return [...prev, msg];
@@ -426,22 +405,18 @@ export function SchoolChat() {
   );
 
   // ── Transfert de message ──
-  const forwardMsg = useCallback(
-    (msg: Message) => {
-      setForwardMessage(msg);
-      setShowForwardModal(true);
-    },
-    []
-  );
+  const forwardMsg = useCallback((msg: Message) => {
+    setForwardMessage(msg);
+    setShowForwardModal(true);
+  }, []);
 
   const doForward = useCallback(
     (targetConvId: string) => {
       if (!forwardMessage) return;
-      const content = forwardMessage.content;
       fetch(`/api/chat/conversations/${targetConvId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content: forwardMessage.content }),
       })
         .then((r) => r.json())
         .then(() => {
@@ -455,6 +430,28 @@ export function SchoolChat() {
   );
 
   // ── Enregistrement vocal ──
+  const cleanupRecording = useCallback(() => {
+    recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
+    recordingStreamRef.current = null;
+    mediaRecorderRef.current = null;
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingTime(0);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  }, []);
+
+  const cancelRecording = useCallback(() => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.onstop = () => {};
+      mediaRecorder.stop();
+    }
+    cleanupRecording();
+  }, [cleanupRecording]);
+
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -472,9 +469,7 @@ export function SchoolChat() {
       setRecordingTime(0);
       setRecordingError('');
 
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingTime((t) => t + 1);
-      }, 1000);
+      recordingTimerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
     } catch {
       setRecordingError('Micro inaccessible. Vérifiez les permissions.');
     }
@@ -489,66 +484,32 @@ export function SchoolChat() {
 
     mediaRecorder.onstop = () => {
       const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      const file = new File([blob], `message-vocal-${Date.now()}.webm`, {
-        type: 'audio/webm',
-      });
+      const file = new File([blob], `message-vocal-${Date.now()}.webm`, { type: 'audio/webm' });
       sendFile(file);
       cleanupRecording();
     };
 
     mediaRecorder.stop();
-  }, [sendFile]);
-
-  const cancelRecording = useCallback(() => {
-    const mediaRecorder = mediaRecorderRef.current;
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.onstop = () => {};
-      mediaRecorder.stop();
-    }
-    cleanupRecording();
-  }, []);
-
-  const cleanupRecording = useCallback(() => {
-    recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
-    recordingStreamRef.current = null;
-    mediaRecorderRef.current = null;
-    audioChunksRef.current = [];
-    setIsRecording(false);
-    setRecordingTime(0);
-    if (recordingTimerRef.current) {
-      clearInterval(recordingTimerRef.current);
-      recordingTimerRef.current = null;
-    }
-  }, []);
+  }, [sendFile, cancelRecording, cleanupRecording]);
 
   // Démarre une nouvelle conversation
   const startNewChat = useCallback(
-    (userId: string) => {
+    (user: ChatUser) => {
       fetch('/api/chat/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otherUserId: userId }),
+        body: JSON.stringify({ otherUserId: user.id }),
       })
         .then((r) => r.json())
         .then((data) => {
-          if (data.id) {
-            setShowNewChat(false);
-            loadConversations();
-            setTimeout(() => {
-              fetch('/api/chat/conversations')
-                .then((r) => r.json())
-                .then((convs) => {
-                  if (Array.isArray(convs)) {
-                    const conv = convs.find((c: Conversation) => c.id === data.id);
-                    if (conv) openConversation(conv);
-                  }
-                });
-            }, 300);
-          }
+          if (!data.id) return;
+          setShowNewChat(false);
+          loadConversations();
+          openChat(data.id, 'conversation');
         })
         .catch(() => {});
     },
-    [loadConversations, openConversation]
+    [loadConversations, openChat]
   );
 
   const createGroup = useCallback(() => {
@@ -566,66 +527,61 @@ export function SchoolChat() {
           setNewGroupName('');
           setNewGroupClasse('');
           loadGroups();
-          setTimeout(() => {
-            fetch('/api/chat/groups')
-              .then((r) => r.json())
-              .then((grps) => {
-                if (Array.isArray(grps)) {
-                  const grp = grps.find((g: GroupChat) => g.id === data.id);
-                  if (grp) openGroup(grp);
-                }
-              });
-          }, 300);
+          openChat(data.id, 'group');
         }
       })
       .catch(() => {})
       .finally(() => setCreatingGroup(false));
-  }, [newGroupName, newGroupClasse, loadGroups, openGroup]);
+  }, [newGroupName, newGroupClasse, loadGroups, openChat]);
 
   // Charge les classes disponibles pour la création de groupe
   useEffect(() => {
-    if (showNewGroup) {
-      fetch('/api/eleves?limit=1000')
-        .then((r) => r.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            const classes = [...new Set(data.map((e: { classe?: string }) => e.classe).filter(Boolean))].sort() as string[];
-            setAvailableClasses(classes);
-          }
-        })
-        .catch(() => {});
-    }
+    if (!showNewGroup) return;
+    fetch('/api/eleves?limit=1000')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const classes = [...new Set(data.map((e: { classe?: string }) => e.classe).filter(Boolean))].sort() as string[];
+          setAvailableClasses(classes);
+        }
+      })
+      .catch(() => {});
   }, [showNewGroup]);
 
   // Charge tous les utilisateurs pour le nouveau chat
   useEffect(() => {
-    if (showNewChat) {
-      fetch('/api/chat/users')
-        .then((r) => r.json())
-        .then((data) => {
-          if (Array.isArray(data)) setAllUsers(data);
-        })
-        .catch(() => {});
-    }
+    if (!showNewChat) return;
+    fetch('/api/chat/users')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAllUsers(data);
+      })
+      .catch(() => {});
   }, [showNewChat]);
 
-  // Filtre les conversations par recherche
-  const filteredConversations = conversations.filter((c) =>
-    c.otherUser?.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const normalizedSearch = searchQuery.trim().toLowerCase();
 
-  const filteredGroups = groups.filter((g) =>
-    g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    g.classe.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Liste unifiée : conversations et groupes, triés par activité
+  const chatList = useMemo<ChatListItem[]>(() => {
+    const convItems: ChatListItem[] = conversations
+      .filter((c) => !normalizedSearch || c.otherUser?.displayName.toLowerCase().includes(normalizedSearch))
+      .map((c) => ({ id: c.id, kind: 'conversation', updatedAt: c.updatedAt, conversation: c }));
+    const groupItems: ChatListItem[] = groups
+      .filter(
+        (g) =>
+          !normalizedSearch ||
+          g.name.toLowerCase().includes(normalizedSearch) ||
+          g.classe.toLowerCase().includes(normalizedSearch)
+      )
+      .map((g) => ({ id: g.id, kind: 'group', updatedAt: g.updatedAt, group: g }));
+    return [...convItems, ...groupItems].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }, [conversations, groups, normalizedSearch]);
 
-  const mergedChatList = [
-    ...filteredConversations.map((c) => ({ type: 'conversation' as const, item: c })),
-    ...filteredGroups.map((g) => ({ type: 'group' as const, item: g })),
-  ].sort((a, b) => new Date(b.item.updatedAt).getTime() - new Date(a.item.updatedAt).getTime());
-
-  const filteredUsers = allUsers.filter((u) =>
-    u.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = useMemo(
+    () => allUsers.filter((u) => !normalizedSearch || u.displayName.toLowerCase().includes(normalizedSearch)),
+    [allUsers, normalizedSearch]
   );
 
   // Messages filtrés par la recherche dans la conversation
@@ -633,50 +589,46 @@ export function SchoolChat() {
     ? messages.filter((m) => m.content?.toLowerCase().includes(convSearchQuery.toLowerCase()))
     : messages;
 
+  const activeOther = activeConversation?.otherUser ?? null;
+  const chatOpen = Boolean(activeConversation || activeGroup);
+
   // ── Rendu ──
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-100 dark:bg-slate-950">
+    <div className="flex h-[calc(100dvh-3.5rem-68px)] overflow-hidden bg-slate-100 lg:h-[calc(100vh-3.5rem)]">
       {/* ── Panneau gauche : liste des conversations ── */}
-      <div
+      <aside
         className={clsx(
-          'flex w-full flex-col bg-white dark:bg-slate-900 md:w-80 md:border-r md:border-slate-200 md:dark:border-slate-700',
-          mobileShowChat ? 'hidden md:flex' : 'flex'
+          'min-w-0 flex-col overflow-hidden bg-white md:flex md:w-[336px] md:shrink-0 md:border-r md:border-slate-200',
+          mobileShowChat ? 'hidden md:flex' : 'flex w-full'
         )}
       >
-        {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 bg-[#1e3a8a] px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Icon name="chat" className="h-5 w-5 text-white" />
-            <h2 className="text-base font-semibold text-white">SchoolChat</h2>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowNewGroup(true)}
-              className="rounded-full p-2 text-white transition hover:bg-white/20"
-              aria-label="Nouveau groupe"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setShowNewChat(true)}
-              className="rounded-full p-2 text-white transition hover:bg-white/20"
-              aria-label="Nouvelle conversation"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-            </button>
-          </div>
+        <div className="flex h-14 shrink-0 items-center gap-2 bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-3">
+          <Icon name="chat" className="h-5 w-5 text-white" />
+          <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold text-white">SchoolChat</h2>
+          <button
+            onClick={() => setShowNewGroup(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-white/15 hover:text-white active:scale-90"
+            aria-label="Nouveau groupe"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setShowNewChat(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-white/15 hover:text-white active:scale-90"
+            aria-label="Nouvelle conversation"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </button>
         </div>
 
-        {/* Barre de recherche */}
-        <div className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-2">
+        <div className="shrink-0 border-b border-slate-100 px-3 py-2">
           <div className="relative">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
               <circle cx="11" cy="11" r="8" />
@@ -687,265 +639,160 @@ export function SchoolChat() {
               placeholder="Rechercher une conversation…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg bg-white dark:bg-slate-800 py-2 pl-9 pr-3 text-sm text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-[#1e3a8a]/30"
+              aria-label="Rechercher une conversation"
+              className="w-full rounded-full bg-slate-100 py-2 pl-9 pr-3 text-[13px] text-slate-700 outline-none transition focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
             />
           </div>
         </div>
 
-        {/* Liste des conversations */}
-        <div className="flex-1 overflow-y-auto">
-          {mergedChatList.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-              <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                <Icon name="chat" className="h-8 w-8 text-slate-400" />
-              </div>
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Aucune conversation</p>
-              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                Appuyez sur l&apos;icône crayon pour démarrer une discussion.
-              </p>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {chatList.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-100">
+                <Icon name="chat" className="h-7 w-7 text-slate-300" />
+              </span>
+              <p className="text-[13px] font-semibold text-slate-600">Aucune conversation</p>
+              <p className="mt-1 text-xs text-slate-400">Démarrez une discussion avec l&apos;icône crayon.</p>
             </div>
           ) : (
-            mergedChatList.map(({ type, item }) => {
-              const isActive = item.id === activeConversationId;
-              if (type === 'group') {
-                const grp = item as GroupChat;
+            chatList.map((item) => {
+              if (item.kind === 'group') {
+                const group = item.group!;
                 return (
-                  <button
-                    key={grp.id}
-                    onClick={() => openGroup(grp)}
-                    className={clsx(
-                      'flex w-full items-center gap-3 border-b border-slate-50 dark:border-slate-800 px-3 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50',
-                      isActive && activeChatType === 'group' && 'bg-[#eff6ff] dark:bg-blue-900/20'
-                    )}
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0369a1] text-white">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                      </svg>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{grp.name}</span>
-                        {grp.lastMessage && (
-                          <span className="ml-2 shrink-0 text-xs text-slate-400 dark:text-slate-500">{formatListTime(grp.lastMessage.createdAt)}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-xs text-slate-500 dark:text-slate-400">
-                          {grp.lastMessage
-                            ? (grp.lastMessage.senderId === currentUser?.id ? 'Vous: ' : `${grp.lastMessage.senderName}: `) +
-                              (grp.lastMessage.content ||
-                                (isAudioFile(null, grp.lastMessage.fileUrl) ? '🎤 Message vocal'
-                                  : grp.lastMessage.fileUrl && grp.lastMessage.fileName ? `📎 ${grp.lastMessage.fileName}` : '📎 Fichier'))
-                            : `Classe ${grp.classe} • ${grp.memberCount} membres`}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
+                  <ConversationListItem
+                    key={group.id}
+                    id={group.id}
+                    kind="group"
+                    name={group.name}
+                    preview={
+                      group.lastMessage
+                        ? `${group.lastMessage.senderId === currentUser?.id ? 'Vous' : group.lastMessage.senderName} : ${
+                            getMessagePreview(group.lastMessage) || 'Fichier'
+                          }`
+                        : `Classe ${group.classe} • ${group.memberCount} membres`
+                    }
+                    previewKind={group.lastMessage ? getMessageKind(group.lastMessage) : 'text'}
+                    lastMessageMine={group.lastMessage ? group.lastMessage.senderId === currentUser?.id : false}
+                    timeLabel={group.lastMessage ? formatListTime(group.lastMessage.createdAt) : null}
+                    isActive={item.id === activeConversationId && activeChatType === 'group'}
+                    onSelect={handleSelectChat}
+                  />
                 );
               }
-              const conv = item as Conversation;
+
+              const conv = item.conversation!;
+              const other = conv.otherUser;
+              const last = conv.lastMessage;
+              const missed = Boolean(conv.missedCall);
+
               return (
-                <button
+                <ConversationListItem
                   key={conv.id}
-                  onClick={() => openConversation(conv)}
-                  className={clsx(
-                    'flex w-full items-center gap-3 border-b border-slate-50 dark:border-slate-800 px-3 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50',
-                    isActive && activeChatType === 'conversation' && 'bg-[#eff6ff] dark:bg-blue-900/20'
-                  )}
-                >
-                  {conv.otherUser?.profilePhotoUrl ? (
-                    <img src={conv.otherUser.profilePhotoUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-sm font-semibold text-white">
-                      {conv.otherUser ? getInitials(conv.otherUser.displayName) : '?'}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {conv.otherUser?.displayName ?? 'Utilisateur supprimé'}
-                      </span>
-                      {conv.lastMessage && (
-                        <span className="ml-2 shrink-0 text-xs text-slate-400 dark:text-slate-500">
-                          {formatListTime(conv.lastMessage.createdAt)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      {conv.missedCall ? (
-                        <span className="flex items-center gap-1 truncate text-xs font-medium text-red-500">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                            <line x1="2" y1="2" x2="22" y2="22" />
-                          </svg>
-                          Appel {conv.missedCall.type === 'video' ? 'vidéo' : 'audio'} manqué
-                        </span>
-                      ) : (
-                        <span className="truncate text-xs text-slate-500 dark:text-slate-400">
-                          {conv.lastMessage
-                            ? (conv.lastMessage.senderId === currentUser?.id ? 'Vous: ' : '') +
-                              (conv.lastMessage.content ||
-                                (isAudioFile(null, conv.lastMessage.fileUrl)
-                                  ? '🎤 Message vocal'
-                                  : conv.lastMessage.fileUrl && conv.lastMessage.fileName
-                                    ? `📎 ${conv.lastMessage.fileName}`
-                                    : '📎 Fichier'))
-                            : conv.otherUser?.roleLabel ?? ''}
-                        </span>
-                      )}
-                      {conv.unreadCount > 0 && (
-                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-1.5 text-xs font-bold text-[#1e3a8a] shadow-sm">
-                          {conv.unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
+                  id={conv.id}
+                  kind="conversation"
+                  name={other?.displayName ?? 'Utilisateur supprimé'}
+                  prenom={other?.prenom}
+                  nom={other?.nom}
+                  photoUrl={other?.profilePhotoUrl}
+                  preview={
+                    missed
+                      ? `Appel ${conv.missedCall?.type === 'video' ? 'vidéo' : 'audio'} manqué`
+                      : last
+                        ? `${last.senderId === currentUser?.id ? 'Vous : ' : ''}${getMessagePreview(last) || 'Fichier'}`
+                        : other?.roleLabel ?? ''
+                  }
+                  previewKind={missed ? 'missed' : last ? getMessageKind(last) : 'text'}
+                  lastMessageMine={last ? last.senderId === currentUser?.id : false}
+                  lastMessageRead={Boolean(last?.read)}
+                  timeLabel={last ? formatListTime(last.createdAt) : null}
+                  unreadCount={conv.unreadCount}
+                  isActive={item.id === activeConversationId && activeChatType === 'conversation'}
+                  onSelect={handleSelectChat}
+                />
               );
             })
           )}
         </div>
-      </div>
+      </aside>
 
-      {/* ── Panneau droit : zone de chat ── */}
-      <div
-        className={clsx(
-          'flex-1 flex-col',
-          mobileShowChat ? 'flex' : 'hidden md:flex'
-        )}
-      >
-        {(activeConversation || activeGroup) ? (
+      {/* ── Panneau droit : fil de discussion ── */}
+      <section className={clsx('min-w-0 flex-1 flex-col', mobileShowChat ? 'flex' : 'hidden md:flex')}>
+        {chatOpen ? (
           <>
-            {/* En-tête du chat */}
-            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 bg-[#1e3a8a] px-3 py-2.5 md:px-4">
-              <button
-                onClick={() => setMobileShowChat(false)}
-                className="rounded-full p-1.5 text-white transition hover:bg-white/20 md:hidden"
-                aria-label="Retour"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                  <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
-              </button>
-              {activeGroup ? (
-                <>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{activeGroup.name}</p>
-                    <p className="truncate text-xs text-white/70">Classe {activeGroup.classe} • {activeGroup.memberCount} membres</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {activeConversation?.otherUser?.profilePhotoUrl ? (
-                    <img src={activeConversation.otherUser.profilePhotoUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-sm font-semibold text-white">
-                      {activeConversation?.otherUser ? getInitials(activeConversation.otherUser.displayName) : '?'}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">
-                      {activeConversation?.otherUser?.displayName ?? 'Utilisateur supprimé'}
-                    </p>
-                    <p className="truncate text-xs text-white/70">
-                      {activeConversation?.otherUser?.roleLabel ?? ''}
-                    </p>
-                  </div>
-                  {/* Bouton recherche dans la conversation */}
-                  <button
-                    onClick={() => setShowSearchInConv((s) => !s)}
-                    className="rounded-full p-1.5 text-white/80 transition hover:bg-white/15 hover:text-white sm:p-2"
-                    aria-label="Rechercher dans la conversation"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 sm:h-5 sm:w-5">
-                      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => startCall('audio')}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white shadow-sm ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-white/20 active:scale-90 sm:h-10 sm:w-10"
-                    aria-label="Appel audio"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 sm:h-5 sm:w-5">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => startCall('video')}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white shadow-sm ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-white/20 active:scale-90 sm:h-10 sm:w-10"
-                    aria-label="Appel vidéo"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 sm:h-5 sm:w-5">
-                      <polygon points="23 7 16 12 23 17 23 7" />
-                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                    </svg>
-                  </button>
-                </>
-              )}
-            </div>
+            <ChatHeader
+              name={activeGroup ? activeGroup.name : activeOther?.displayName ?? 'Utilisateur supprimé'}
+              prenom={activeOther?.prenom}
+              nom={activeOther?.nom}
+              photoUrl={activeOther?.profilePhotoUrl}
+              subtitle={
+                activeGroup
+                  ? `Classe ${activeGroup.classe} • ${activeGroup.memberCount} membres`
+                  : activeOther?.roleLabel ?? ''
+              }
+              isGroup={Boolean(activeGroup)}
+              canCall={Boolean(activeConversation && activeOther)}
+              searchOpen={showSearchInConv}
+              onBack={() => setMobileShowChat(false)}
+              onToggleSearch={() => setShowSearchInConv((s) => !s)}
+              onCall={startCall}
+            />
 
-            {/* Barre de recherche dans la conversation */}
             {showSearchInConv && (
-              <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-2" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+              <div className="shrink-0 border-b border-slate-200 bg-white px-3 py-2" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
                 <div className="relative">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
-                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
                   </svg>
                   <input
                     type="text"
                     placeholder="Rechercher dans cette conversation…"
                     value={convSearchQuery}
                     onChange={(e) => setConvSearchQuery(e.target.value)}
-                    className="w-full rounded-lg bg-white dark:bg-slate-800 py-2 pl-9 pr-9 text-sm text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-[#1e3a8a]/30"
                     autoFocus
+                    aria-label="Rechercher dans la conversation"
+                    className="w-full rounded-full bg-slate-100 py-2 pl-9 pr-9 text-[13px] text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
                   />
                   <button
-                    onClick={() => { setShowSearchInConv(false); setConvSearchQuery(''); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700"
+                    onClick={() => {
+                      setShowSearchInConv(false);
+                      setConvSearchQuery('');
+                    }}
+                    className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200"
                     aria-label="Fermer la recherche"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-4 w-4">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Zone messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto px-3 py-4 md:px-8"
+              className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 md:px-6"
               style={{
-                backgroundColor: '#e5ddd5',
+                backgroundColor: '#f3f5fb',
                 backgroundImage:
-                  "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d1c7bd' fill-opacity='0.3'%3E%3Cpath d='M30 30c0-5.523-4.477-10-10-10s-10 4.477-10 10 4.477 10 10 10 10-4.477 10-10zm10 0c0-5.523-4.477-10-10-10s-10 4.477-10 10 4.477 10 10 10 10-4.477 10-10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+                  "url(\"data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23c7d2fe' fill-opacity='0.35'/%3E%3C/svg%3E\")"
               }}
             >
               {filteredMessages.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <div className="rounded-xl bg-white/90 dark:bg-slate-800/90 px-5 py-3 text-center text-sm text-slate-700 dark:text-slate-300 shadow-md">
-                    {convSearchQuery
-                      ? 'Aucun message trouvé pour cette recherche.'
-                      : activeGroup
-                        ? `Démarrez la conversation dans le groupe ${activeGroup.name}`
-                        : `Démarrez votre conversation avec ${activeConversation?.otherUser?.displayName ?? 'cet utilisateur'}`}
+                  <div className="max-w-xs rounded-2xl bg-white/95 px-5 py-4 text-center shadow-sm ring-1 ring-slate-200/70">
+                    <p className="text-[13px] font-medium text-slate-600">
+                      {convSearchQuery
+                        ? 'Aucun message trouvé pour cette recherche.'
+                        : activeGroup
+                          ? `Démarrez la conversation dans le groupe ${activeGroup.name}`
+                          : `Démarrez votre conversation avec ${activeOther?.displayName ?? 'cet utilisateur'}`}
+                    </p>
                   </div>
                 </div>
               ) : (
-                <div className="mx-auto flex max-w-2xl flex-col">
+                <div className="mx-auto flex max-w-3xl flex-col">
                   {filteredMessages.map((msg, idx) => {
                     const isMe = msg.senderId === currentUser?.id;
                     const prevMsg = filteredMessages[idx - 1];
@@ -954,32 +801,22 @@ export function SchoolChat() {
                       !prevMsg ||
                       new Date(prevMsg.createdAt).toDateString() !== new Date(msg.createdAt).toDateString();
 
-                    // Regroupement : même expéditeur + moins de 2 minutes d'écart
-                    const isConsecutive =
-                      prevMsg &&
-                      prevMsg.senderId === msg.senderId &&
-                      new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 120000 &&
-                      !showDate;
+                    const isConsecutive = prevMsg ? isSameRun(prevMsg, msg) : false;
 
                     const showSenderName =
-                      activeChatType === 'group' &&
-                      !isMe &&
-                      (!prevMsg || prevMsg.senderId !== msg.senderId || showDate);
+                      activeChatType === 'group' && !isMe && (!prevMsg || prevMsg.senderId !== msg.senderId || showDate);
 
-                    // Trouve le message de réponse
-                    const replyToMessage = msg.replyToId
-                      ? messages.find((m) => m.id === msg.replyToId)
-                      : null;
+                    const replyToMessage = msg.replyToId ? messages.find((m) => m.id === msg.replyToId) : null;
 
                     return (
                       <div key={msg.id}>
                         {showDate && (
-                          <div className="my-4 flex justify-center">
-                            <span className="rounded-full bg-white/90 dark:bg-slate-800/90 px-4 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 shadow-md ring-1 ring-slate-200/50 dark:ring-slate-700/50">
+                          <div className="my-3 flex justify-center">
+                            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200/60">
                               {new Date(msg.createdAt).toLocaleDateString('fr-FR', {
                                 weekday: 'long',
                                 day: 'numeric',
-                                month: 'long',
+                                month: 'long'
                               })}
                             </span>
                           </div>
@@ -989,8 +826,12 @@ export function SchoolChat() {
                           isMe={isMe}
                           isGroup={activeChatType === 'group'}
                           showSenderName={showSenderName}
-                          isConsecutive={!!isConsecutive}
+                          isConsecutive={isConsecutive}
+                          isLastInGroup={!isSameRun(msg, nextMsg)}
                           replyToMessage={replyToMessage}
+                          senderPhotoUrl={isMe ? null : activeChatType === 'group' ? msg.senderPhotoUrl : activeOther?.profilePhotoUrl}
+                          senderPrenom={isMe ? null : activeChatType === 'group' ? msg.senderPrenom : activeOther?.prenom}
+                          senderNom={isMe ? null : activeChatType === 'group' ? msg.senderNom : activeOther?.nom}
                           onReply={(m) => setReplyTo(m)}
                           onDelete={deleteMessage}
                           onForward={forwardMsg}
@@ -1000,7 +841,6 @@ export function SchoolChat() {
                       </div>
                     );
                   })}
-                  {/* Indicateur de frappe */}
                   {showTyping && (
                     <div className="mt-2 flex justify-start">
                       <TypingIndicator isMe={false} />
@@ -1011,7 +851,6 @@ export function SchoolChat() {
               )}
             </div>
 
-            {/* Barre de saisie moderne */}
             <ChatComposer
               value={inputText}
               onChange={setInputText}
@@ -1025,25 +864,29 @@ export function SchoolChat() {
               recordingError={recordingError}
               uploading={uploading}
               sending={loading}
-              replyTo={replyTo ? {
-                name: replyTo.senderName || (replyTo.senderId === currentUser?.id ? 'Vous' : 'Utilisateur'),
-                preview: getMessagePreview(replyTo),
-              } : null}
+              replyTo={
+                replyTo
+                  ? {
+                      name: replyTo.senderName || (replyTo.senderId === currentUser?.id ? 'Vous' : 'Utilisateur'),
+                      preview: getMessagePreview(replyTo)
+                    }
+                  : null
+              }
               onCancelReply={() => setReplyTo(null)}
             />
           </>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-8 text-center">
-            <div className="mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#1e3a8a]/10 to-blue-500/10 dark:from-blue-900/20 dark:to-blue-600/10 ring-1 ring-blue-200/30 dark:ring-blue-800/30">
-              <Icon name="chat" className="h-12 w-12 text-[#1e3a8a] dark:text-blue-400" />
-            </div>
-            <p className="text-xl font-bold tracking-tight text-slate-700 dark:text-slate-200">SchoolChat</p>
-            <p className="mt-2 max-w-xs text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex h-full flex-col items-center justify-center bg-white px-8 text-center">
+            <span className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#1e3a8a]/10 to-[#2563eb]/10 ring-1 ring-[#1e3a8a]/10">
+              <Icon name="chat" className="h-10 w-10 text-[#1e3a8a]" />
+            </span>
+            <p className="text-lg font-bold tracking-tight text-slate-800">SchoolChat</p>
+            <p className="mt-1.5 max-w-xs text-[13px] text-slate-500">
               Sélectionnez une conversation ou démarrez-en une nouvelle pour commencer à discuter.
             </p>
           </div>
         )}
-      </div>
+      </section>
 
       {/* ── Overlay d'appel audio/vidéo ── */}
       {activeCall && (
@@ -1052,6 +895,8 @@ export function SchoolChat() {
           otherUserId={activeCall.otherUserId}
           otherUserName={activeCall.otherUserName}
           otherUserPhoto={activeCall.otherUserPhoto}
+          localUserPhoto={currentUser?.profilePhotoUrl ?? null}
+          localUserName={`${currentUser?.prenom ?? ''} ${currentUser?.nom ?? ''}`.trim()}
           callType={activeCall.callType}
           isCaller={activeCall.isCaller}
           incomingCallId={activeCall.callId}
@@ -1062,39 +907,39 @@ export function SchoolChat() {
 
       {/* ── Modal : transfert de message ── */}
       {showForwardModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-16 md:pt-24">
-          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 bg-[#1e3a8a] px-4 py-3">
-              <h3 className="text-base font-semibold text-white">Transférer le message</h3>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-4 pt-16 backdrop-blur-sm md:pt-24">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+            <div className="flex items-center justify-between bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-4 py-3">
+              <h3 className="text-[15px] font-semibold text-white">Transférer le message</h3>
               <button
-                onClick={() => { setShowForwardModal(false); setForwardMessage(null); }}
-                className="rounded-full p-1.5 text-white transition hover:bg-white/20"
+                onClick={() => {
+                  setShowForwardModal(false);
+                  setForwardMessage(null);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-white transition hover:bg-white/20"
                 aria-label="Fermer"
               >
                 <Icon name="close" className="h-5 w-5" />
               </button>
             </div>
-            <div className="max-h-80 overflow-y-auto p-2">
+            <div className="max-h-80 overflow-y-auto p-1.5">
               {conversations.length === 0 ? (
-                <p className="p-6 text-center text-sm text-slate-400">Aucune conversation disponible.</p>
+                <p className="p-6 text-center text-[13px] text-slate-400">Aucune conversation disponible.</p>
               ) : (
                 conversations.map((conv) => (
-                  <button
+                  <ConversationListItem
                     key={conv.id}
-                    onClick={() => doForward(conv.id)}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700"
-                  >
-                    {conv.otherUser?.profilePhotoUrl ? (
-                      <img src={conv.otherUser.profilePhotoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-xs font-semibold text-white">
-                        {conv.otherUser ? getInitials(conv.otherUser.displayName) : '?'}
-                      </div>
-                    )}
-                    <span className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
-                      {conv.otherUser?.displayName ?? 'Utilisateur supprimé'}
-                    </span>
-                  </button>
+                    id={conv.id}
+                    kind="conversation"
+                    name={conv.otherUser?.displayName ?? 'Utilisateur supprimé'}
+                    prenom={conv.otherUser?.prenom}
+                    nom={conv.otherUser?.nom}
+                    photoUrl={conv.otherUser?.profilePhotoUrl}
+                    preview={conv.otherUser?.roleLabel ?? ''}
+                    previewKind="text"
+                    isActive={false}
+                    onSelect={(id) => doForward(id)}
+                  />
                 ))
               )}
             </div>
@@ -1104,13 +949,17 @@ export function SchoolChat() {
 
       {/* ── Modal : nouveau groupe ── */}
       {showNewGroup && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-16 md:pt-24">
-          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 bg-[#1e3a8a] px-4 py-3">
-              <h3 className="text-base font-semibold text-white">Nouveau groupe de classe</h3>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-4 pt-16 backdrop-blur-sm md:pt-24">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+            <div className="flex items-center justify-between bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-4 py-3">
+              <h3 className="text-[15px] font-semibold text-white">Nouveau groupe de classe</h3>
               <button
-                onClick={() => { setShowNewGroup(false); setNewGroupName(''); setNewGroupClasse(''); }}
-                className="rounded-full p-1.5 text-white transition hover:bg-white/20"
+                onClick={() => {
+                  setShowNewGroup(false);
+                  setNewGroupName('');
+                  setNewGroupClasse('');
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-white transition hover:bg-white/20"
                 aria-label="Fermer"
               >
                 <Icon name="close" className="h-5 w-5" />
@@ -1118,38 +967,38 @@ export function SchoolChat() {
             </div>
             <div className="space-y-4 p-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Nom du groupe</label>
+                <label className="mb-1.5 block text-[13px] font-medium text-slate-700">Nom du groupe</label>
                 <input
                   type="text"
-                  placeholder="Ex: Classe de 6e A"
+                  placeholder="Ex : Classe de 6e A"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1e3a8a]/20"
+                  className="w-full rounded-xl bg-slate-50 px-3.5 py-2.5 text-[13.5px] text-slate-700 outline-none ring-1 ring-slate-200 transition focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Classe</label>
+                <label className="mb-1.5 block text-[13px] font-medium text-slate-700">Classe</label>
                 <input
                   type="text"
                   list="available-classes"
-                  placeholder="Ex: 6A"
+                  placeholder="Ex : 6A"
                   value={newGroupClasse}
                   onChange={(e) => setNewGroupClasse(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1e3a8a]/20"
+                  className="w-full rounded-xl bg-slate-50 px-3.5 py-2.5 text-[13.5px] text-slate-700 outline-none ring-1 ring-slate-200 transition focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
                 />
                 <datalist id="available-classes">
                   {availableClasses.map((c) => (
                     <option key={c} value={c} />
                   ))}
                 </datalist>
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                <p className="mt-1.5 text-xs text-slate-400">
                   Tous les élèves inscrits avec cette classe seront automatiquement ajoutés.
                 </p>
               </div>
               <button
                 onClick={createGroup}
                 disabled={!newGroupName.trim() || !newGroupClasse.trim() || creatingGroup}
-                className="w-full rounded-full bg-[#1e3a8a] py-2.5 text-sm font-semibold text-white transition hover:bg-[#172554] disabled:opacity-40"
+                className="w-full rounded-full bg-[#2563eb] py-2.5 text-[13.5px] font-semibold text-white transition hover:bg-[#1d4ed8] disabled:opacity-40"
               >
                 {creatingGroup ? 'Création…' : 'Créer le groupe'}
               </button>
@@ -1160,56 +1009,52 @@ export function SchoolChat() {
 
       {/* ── Modal : nouvelle conversation ── */}
       {showNewChat && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-16 md:pt-24">
-          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 bg-[#1e3a8a] px-4 py-3">
-              <h3 className="text-base font-semibold text-white">Nouvelle conversation</h3>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-4 pt-16 backdrop-blur-sm md:pt-24">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+            <div className="flex items-center justify-between bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-4 py-3">
+              <h3 className="text-[15px] font-semibold text-white">Nouvelle conversation</h3>
               <button
                 onClick={() => setShowNewChat(false)}
-                className="rounded-full p-1.5 text-white transition hover:bg-white/20"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-white transition hover:bg-white/20"
                 aria-label="Fermer"
               >
                 <Icon name="close" className="h-5 w-5" />
               </button>
             </div>
-            <div className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-3">
+            <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
               <div className="relative">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
-                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
                 </svg>
                 <input
                   type="text"
                   placeholder="Rechercher un utilisateur…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-sm text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-[#1e3a8a]/30"
+                  aria-label="Rechercher un utilisateur"
+                  className="w-full rounded-full bg-white py-2 pl-9 pr-3 text-[13px] text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-[#2563eb]/25"
                 />
               </div>
             </div>
-            <div className="max-h-80 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto p-1.5">
               {filteredUsers.length === 0 ? (
-                <div className="p-8 text-center text-sm text-slate-400 dark:text-slate-500">
-                  Aucun utilisateur trouvé.
-                </div>
+                <div className="p-8 text-center text-[13px] text-slate-400">Aucun utilisateur trouvé.</div>
               ) : (
                 filteredUsers.map((user) => (
-                  <button
+                  <ConversationListItem
                     key={user.id}
-                    onClick={() => startNewChat(user.id)}
-                    className="flex w-full items-center gap-3 border-b border-slate-50 dark:border-slate-700/50 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                  >
-                    {user.profilePhotoUrl ? (
-                      <img src={user.profilePhotoUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a] text-sm font-semibold text-white">
-                        {getInitials(user.displayName)}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{user.displayName}</p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.roleLabel}</p>
-                    </div>
-                  </button>
+                    id={user.id}
+                    kind="conversation"
+                    name={user.displayName}
+                    prenom={user.prenom}
+                    nom={user.nom}
+                    photoUrl={user.profilePhotoUrl}
+                    preview={user.roleLabel}
+                    previewKind="text"
+                    isActive={false}
+                    onSelect={() => startNewChat(user)}
+                  />
                 ))
               )}
             </div>

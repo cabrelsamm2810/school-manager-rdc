@@ -11,6 +11,9 @@ type Props = {
   otherUserId: string;
   otherUserName: string;
   otherUserPhoto?: string | null;
+  /** Photo du compte connecté — affichée dans la vignette locale quand la caméra est coupée. */
+  localUserPhoto?: string | null;
+  localUserName?: string;
   callType: CallMode;
   isCaller: boolean;
   incomingCallId?: string;
@@ -39,6 +42,8 @@ export function CallOverlay({
   otherUserId,
   otherUserName,
   otherUserPhoto,
+  localUserPhoto,
+  localUserName,
   callType,
   isCaller,
   incomingCallId,
@@ -50,6 +55,7 @@ export function CallOverlay({
   const [muted, setMuted] = useState(false);
   const [cameraOn, setCameraOn] = useState(callType === 'video');
   const [speakerOn, setSpeakerOn] = useState(true);
+  const [remotePlaying, setRemotePlaying] = useState(false);
   const [error, setError] = useState('');
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -377,12 +383,31 @@ export function CallOverlay({
     >
       {/* Zone vidéo distante (plein écran pour vidéo) */}
       {showRemoteVideo && (
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <>
+          {/* Fond élégant : photo du contact floutée, visible tant qu'aucune image vidéo n'arrive
+              (caméra coupée en face, connexion en cours). */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: otherUserPhoto
+                ? `url(${otherUserPhoto})`
+                : 'linear-gradient(160deg, #0a1729 0%, #0c1e3d 55%, #0a1729 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: otherUserPhoto ? 'blur(26px) saturate(1.1)' : undefined,
+              transform: 'scale(1.15)',
+              opacity: remotePlaying ? 0 : 0.55,
+              transition: 'opacity 0.4s ease-out'
+            }}
+          />
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            onPlaying={() => setRemotePlaying(true)}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </>
       )}
 
       {/* Voile décoratif pour audio-only */}
@@ -404,19 +429,65 @@ export function CallOverlay({
         </>
       )}
 
-      {/* Vidéo locale (picture-in-picture) */}
-      {callType === 'video' && cameraOn && (phase === 'connecting' || phase === 'connected') && (
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          className="absolute right-3 top-20 z-10 h-28 w-20 rounded-2xl border-2 border-white/25 object-cover shadow-2xl sm:h-32 sm:w-24 md:h-40 md:w-28"
-          style={{ animation: 'callSlideUp 0.3s ease-out' }}
-        />
+      {/* Vidéo locale (picture-in-picture) — remplacée par la photo de profil caméra coupée */}
+      {callType === 'video' && (phase === 'connecting' || phase === 'connected') && (
+        cameraOn ? (
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute right-3 top-20 z-10 h-28 w-20 rounded-2xl border-2 border-white/25 object-cover shadow-2xl sm:h-32 sm:w-24 md:h-40 md:w-28"
+            style={{ animation: 'callSlideUp 0.3s ease-out' }}
+          />
+        ) : (
+          <div
+            className="absolute right-3 top-20 z-10 flex h-28 w-20 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-white/25 bg-gradient-to-br from-[#1e3a8a] to-[#2563eb] shadow-2xl sm:h-32 sm:w-24 md:h-40 md:w-28"
+            style={{ animation: 'callSlideUp 0.3s ease-out' }}
+          >
+            {localUserPhoto ? (
+              <img
+                src={localUserPhoto}
+                alt=""
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-white/30 sm:h-12 sm:w-12 md:h-16 md:w-16"
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-sm font-bold text-white ring-2 ring-white/30 sm:h-12 sm:w-12 md:h-16 md:w-16">
+                {getInitials(localUserName || 'Vous')}
+              </div>
+            )}
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-white/70">Vous</span>
+          </div>
+        )
       )}
 
-      {/* En-tête : infos contact */}
+      {/* En-tête : infos contact — version compacte quand la vidéo distante est affichée */}
+      {showRemoteVideo && remotePlaying ? (
+        <div className="relative z-10 flex items-center gap-2.5 px-4 pt-4" style={{ animation: 'callSlideUp 0.3s ease-out' }}>
+          {otherUserPhoto ? (
+            <img src={otherUserPhoto} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/20" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-bold text-white ring-2 ring-white/20">
+              {getInitials(otherUserName)}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold text-white drop-shadow">{otherUserName}</p>
+            <p className="text-[11.5px] font-medium tabular-nums text-white/75">
+              {phase === 'connected'
+                ? formatDuration(duration)
+                : phase === 'connecting'
+                  ? 'Connexion…'
+                  : callType === 'video'
+                    ? 'Appel vidéo…'
+                    : 'Appel audio…'}
+            </p>
+          </div>
+          <span className="rounded-full bg-black/35 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-white/80 backdrop-blur-sm">
+            {callType === 'video' ? 'Vidéo' : 'Audio'}
+          </span>
+        </div>
+      ) : (
       <div className="relative z-10 flex flex-col items-center px-4 pt-14 pb-4 sm:pt-20">
         {/* Avatar avec anneaux pulsants pendant la sonnerie */}
         <div className="relative flex items-center justify-center">
@@ -501,6 +572,7 @@ export function CallOverlay({
 
         {error && <p className="mt-3 rounded-lg bg-red-500/15 px-4 py-2 text-sm text-red-300">{error}</p>}
       </div>
+      )}
 
       {/* Contrôles */}
       <div className="relative z-10 mt-auto px-4 pb-10 sm:pb-14" style={{ animation: 'callSlideUp 0.4s ease-out 0.1s both' }}>

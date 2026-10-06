@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 
 const SIZE_CLASSES = {
+  '2xs': 'h-7 w-7 text-[10px]',
   xs: 'h-8 w-8 text-[11px]',
   sm: 'h-9 w-9 text-xs',
   md: 'h-10 w-10 text-[13px]',
@@ -24,12 +25,15 @@ export function Avatar({
   prenom,
   nom,
   size = 'md',
+  loading = 'eager',
   className
 }: {
   photoUrl?: string | null;
   prenom?: string | null;
   nom?: string | null;
   size?: AvatarSize;
+  /** `lazy` dans les listes longues (conversations) pour ménager la bande passante. */
+  loading?: 'eager' | 'lazy';
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -54,7 +58,7 @@ export function Avatar({
           src={photoUrl as string}
           alt={`${prenom ?? ''} ${nom ?? ''}`.trim() || 'Photo de profil'}
           className="h-full w-full object-cover object-center"
-          loading="eager"
+          loading={loading}
           decoding="async"
           onError={() => setFailed(true)}
         />

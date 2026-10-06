@@ -1,36 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { clsx } from 'clsx';
+import { formatFileSize } from '@/lib/chat-format';
 
 export type FileStatus = 'sent' | 'sending' | 'failed';
 
-function getFileExtension(fileName: string): string {
-  const parts = fileName.split('.');
-  return parts.length > 1 ? parts.pop()!.toUpperCase() : '?';
-}
-
-function getFileIconColor(fileType?: string | null): { bg: string; icon: string } {
-  if (fileType?.includes('pdf')) return { bg: 'bg-red-500', icon: 'PDF' };
-  if (fileType?.includes('word') || fileType?.includes('document')) return { bg: 'bg-blue-600', icon: 'DOC' };
-  if (fileType?.includes('excel') || fileType?.includes('sheet')) return { bg: 'bg-green-600', icon: 'XLS' };
-  if (fileType?.includes('powerpoint') || fileType?.includes('presentation')) return { bg: 'bg-orange-500', icon: 'PPT' };
-  if (fileType?.includes('zip')) return { bg: 'bg-amber-600', icon: 'ZIP' };
-  if (fileType?.includes('video')) return { bg: 'bg-purple-500', icon: 'VID' };
-  if (fileType?.includes('audio')) return { bg: 'bg-pink-500', icon: 'AUD' };
-  if (fileType?.includes('image')) return { bg: 'bg-teal-500', icon: 'IMG' };
-  return { bg: 'bg-slate-500', icon: 'FILE' };
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+function getFileTypeStyle(fileType?: string | null, fileName?: string | null): { bg: string; label: string } {
+  const ext = fileName?.split('.').pop()?.toUpperCase().slice(0, 4);
+  if (fileType?.includes('pdf')) return { bg: 'bg-red-500', label: 'PDF' };
+  if (fileType?.includes('word') || fileType?.includes('document')) return { bg: 'bg-blue-600', label: 'DOC' };
+  if (fileType?.includes('excel') || fileType?.includes('sheet') || fileType?.includes('csv')) return { bg: 'bg-emerald-600', label: 'XLS' };
+  if (fileType?.includes('powerpoint') || fileType?.includes('presentation')) return { bg: 'bg-orange-500', label: 'PPT' };
+  if (fileType?.includes('zip')) return { bg: 'bg-amber-600', label: 'ZIP' };
+  if (fileType?.includes('video')) return { bg: 'bg-purple-500', label: 'VID' };
+  if (fileType?.includes('audio')) return { bg: 'bg-pink-500', label: 'AUD' };
+  if (fileType?.includes('image')) return { bg: 'bg-teal-500', label: 'IMG' };
+  return { bg: 'bg-slate-500', label: ext && ext.length <= 4 ? ext : 'FT' };
 }
 
 /**
- * Bulle pour les fichiers envoyés/reçus dans le chat.
- * Affiche l'icône du type, le nom, l'extension, la taille,
- * un bouton télécharger/ouvrir, et un état d'envoi.
+ * Carte compacte de pièce jointe : icône du type, nom du fichier, extension et taille,
+ * avec ouverture / téléchargement (ou état d'envoi et nouvelle tentative).
  */
 export function FileBubble({
   fileName,
@@ -39,57 +30,60 @@ export function FileBubble({
   fileSize,
   status,
   onRetry,
-  isMe,
+  isMe
 }: {
   fileName: string;
   fileType?: string | null;
   fileUrl: string;
-  fileSize?: number;
+  fileSize?: number | null;
   status?: FileStatus;
   onRetry?: () => void;
   isMe: boolean;
 }) {
-  const ext = getFileExtension(fileName);
-  const { bg, icon } = getFileIconColor(fileType);
+  const { bg, label } = getFileTypeStyle(fileType, fileName);
   const [progress, setProgress] = useState(0);
 
-  // Simule une barre de progression pour l'état "sending"
-  if (status === 'sending' && progress < 95) {
-    setTimeout(() => setProgress((p) => Math.min(95, p + 5)), 100);
-  }
+  // Progression indicatrice pendant l'envoi (jamais dans le rendu).
+  useEffect(() => {
+    if (status !== 'sending') return;
+    const id = setInterval(() => setProgress((p) => Math.min(95, p + 5)), 120);
+    return () => clearInterval(id);
+  }, [status]);
+
+  const sending = status === 'sending';
+  const failed = status === 'failed';
 
   return (
-    <div className="w-[220px] md:w-[260px]">
-      <div className="flex items-center gap-3 rounded-xl bg-slate-100 dark:bg-slate-700/60 p-3 ring-1 ring-slate-200/60 dark:ring-slate-600/40 transition hover:bg-slate-200 dark:hover:bg-slate-700">
-        {/* Icône du type de fichier */}
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${bg} text-white`}>
-          <span className="text-[10px] font-bold tracking-wide">{icon}</span>
-        </div>
+    <div className="w-full">
+      <div
+        className={clsx(
+          'flex items-center gap-2.5 rounded-xl p-2 ring-1',
+          isMe ? 'bg-white/15 ring-white/25' : 'bg-slate-50 ring-slate-200/80'
+        )}
+      >
+        <span className={clsx('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold tracking-wide text-white', bg)}>
+          {label}
+        </span>
 
-        {/* Infos fichier */}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{fileName}</p>
-          <div className="mt-0.5 flex items-center gap-2">
-            <span className="rounded bg-slate-200 dark:bg-slate-600 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
-              {ext}
-            </span>
-            {fileSize != null && (
-              <span className="text-[11px] text-slate-400 dark:text-slate-500">{formatFileSize(fileSize)}</span>
-            )}
-          </div>
+          <p className={clsx('truncate text-[13px] font-medium', isMe ? 'text-white' : 'text-slate-800')}>{fileName}</p>
+          {fileSize != null && (
+            <p className={clsx('mt-0.5 text-[11px]', isMe ? 'text-white/70' : 'text-slate-500')}>
+              {formatFileSize(fileSize)}
+            </p>
+          )}
         </div>
 
-        {/* Bouton télécharger / état */}
-        {status === 'sending' ? (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5 animate-spin text-slate-400">
+        {sending ? (
+          <span className={clsx('flex h-8 w-8 shrink-0 items-center justify-center', isMe ? 'text-white/80' : 'text-slate-400')}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 animate-spin">
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
-          </div>
-        ) : status === 'failed' ? (
+          </span>
+        ) : failed ? (
           <button
             onClick={onRetry}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/30"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-red-200 transition hover:bg-white/15"
             aria-label="Réessayer l'envoi"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
@@ -103,8 +97,12 @@ export function FileBubble({
             download={fileName}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-600"
-            aria-label="Télécharger"
+            onClick={(e) => e.stopPropagation()}
+            className={clsx(
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition',
+              isMe ? 'text-white/85 hover:bg-white/15' : 'text-slate-500 hover:bg-slate-200/70'
+            )}
+            aria-label="Ouvrir le fichier"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -115,15 +113,12 @@ export function FileBubble({
         )}
       </div>
 
-      {/* Barre de progression pendant l'envoi */}
-      {status === 'sending' && (
-        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-600">
-          <div className="h-full rounded-full bg-blue-500 transition-all duration-200" style={{ width: `${progress}%` }} />
+      {sending && (
+        <div className={clsx('mt-1 h-1 w-full overflow-hidden rounded-full', isMe ? 'bg-white/25' : 'bg-slate-200')}>
+          <div className={clsx('h-full rounded-full transition-all duration-200', isMe ? 'bg-white/80' : 'bg-[#2563eb]')} style={{ width: `${progress}%` }} />
         </div>
       )}
-      {status === 'failed' && (
-        <p className="mt-1 text-[11px] font-medium text-red-500">Échec de l&apos;envoi — appuyez pour réessayer</p>
-      )}
+      {failed && <p className="mt-1 text-[11px] font-medium text-red-200">Échec de l&apos;envoi — appuyez pour réessayer</p>}
     </div>
   );
 }

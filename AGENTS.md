@@ -212,6 +212,38 @@ reste dans `AppShell.tsx`) filtre les entrées du menu, puis interroge `/api/ele
 quand la saisie atteint 2 caractères. Ces deux API exigent `DIRECTION_ECOLE` : la recherche n'est proposée
 qu'aux rôles qui peuvent déjà ouvrir ces modules.
 
+## SchoolChat (interface)
+
+`app/schoolchat/page.tsx` → `components/SchoolChat.tsx` (conversations + groupes + appels),
+assisté de composants focalisés dans `components/chat/` : `ChatHeader`, `ConversationListItem`
+(mémoïsé), `ChatBubble`, `ChatComposer`, `VoiceMessagePlayer`, `FileBubble`, `AttachmentMenu`.
+Points à connaître avant d'y toucher :
+
+- **Une seule photo de profil.** Tout passe par `components/ui/Avatar.tsx` (`xs`…`xl`, plus `2xs`
+  pour les bulles). Ne pas réintroduire d'`<img>` de photo concurrent : la synchro est automatique,
+  `/api/chat/*` renvoie `profilePhotoUrl`, rafraîchi par le polling de 5 s, et le compte change sa
+  photo côté profil (URL horodatée `?t=`).
+- **Aucune donnée de présence en base.** Ni `lastSeen` ni `isOnline` dans `User` : ne jamais afficher
+  un indicateur « en ligne » inventé. Le sous-titre d'une conversation est le libellé de rôle.
+- **Hauteur de la page.** Le conteneur racine est `h-[calc(100dvh-3.5rem-68px)] lg:h-[calc(100vh-3.5rem)]` :
+  3.5rem pour la barre supérieure d'`AppShell`, 68 px pour la `BottomNav` mobile (déjà comptés dans le
+  `pb-[68px]` du `<main>`). Une hauteur en `100vh` recouvre la barre de saisie sous la navigation mobile.
+  `app/layout.tsx` exporte `viewport.interactiveWidget = 'resizes-content'` pour que le clavier Android
+  réduise la page au lieu de masquer le champ.
+- **Taille des pièces jointes.** `ChatMessage`/`ChatGroupMessage` n'ont pas de colonne `fileSize` :
+  `lib/chat-files.ts` (`getStoredFileSize`) la lit sur disque côté serveur et les routes messages
+  l'ajoutent à la réponse (POST : taille du fichier reçu). Sans cela la taille disparaissait après l'envoi.
+- **Re-rendus.** `ConversationListItem` et `ChatBubble` sont mémoïsés : `onSelect`/`onReply`… doivent rester
+  stables (`useCallback`). `loadMessages` ignore une réponse identique (clé id+lu) pour ne pas re-rendre
+  tout le fil à chaque polling de 5 s.
+
+Vérification de l'interface (aucune conversation n'existe après un `db push` propre) : se connecter
+(`POST /api/auth/login`) avec les deux comptes de démonstration, `POST /api/chat/conversations`
+`{otherUserId}` puis `POST …/messages` (texte, `-F file=@x.pdf;type=application/pdf`,
+`-F file=@x.wav;type=audio/wav`). Supprimer ensuite la conversation (`DELETE` en base, la cascade
+emporte les messages) **et** les fichiers écrits dans `public/uploads/chat-files/` — ce dossier contient
+des fichiers suivis par git, ne jamais le vider en bloc.
+
 ## Tests
 
 - `npm test` — vitest unit tests (`tests/auth.test.ts`), no database needed. `vitest.config.ts` maps the `@/`
