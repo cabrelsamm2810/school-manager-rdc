@@ -65,26 +65,29 @@ unrelated to each other:
 - With `NODE_ENV=development` the build uses the development React server bundle and every page prerender
   dies with `<Html> should not be imported outside of pages/_document`.
 
-**Never build against the live dev server.** `exec`-ing the build into `web` while `next dev` is running
-fails non-deterministically against the shared `.next` volume — `PageNotFoundError: Cannot find module for
-page: /api/auth/…` during "Collecting page data", because the dev server clobbers build output mid-run.
+**Never build into the dev server's `.next`.** `exec`-ing the build into `web` while `next dev` is running
+fails non-deterministically (`PageNotFoundError: Cannot find module for page: /api/auth/…` during
+"Collecting page data"), and even a build that finishes leaves production chunks in the shared volume: the
+next `next dev` boot then dies with `Error: Cannot find module './7787.js'` and serves `/` as 404/500 until it
+has finished recompiling.
 
-Verified command (`✓ Compiled successfully`, type-check step passed, exit 0): stop `web`, build in a
-throwaway container that **reuses `web`'s volumes**, then start `web` again.
+Verified command (`✓ Compiled successfully`, type-check step passed, exit 0) — a throwaway container that
+reuses `web`'s `node_modules` but gets its **own** `.next` volume, so `next dev` keeps running untouched:
 
 ```bash
+NODE_VOL=$(docker inspect school-manager-rdc-web-1 -f '{{range .Mounts}}{{if eq .Destination "/app/node_modules"}}{{.Name}}{{end}}{{end}}')
 NET=$(docker inspect school-manager-rdc-web-1 -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}')
-docker compose -f docker-compose.base44.yml stop web
-docker run --rm --volumes-from school-manager-rdc-web-1 --network "$NET" --env-file /run/base44/app.env \
+docker run --rm -v "$PWD:/app" -v "$NODE_VOL:/app/node_modules" -v /app/.next \
+  --network "$NET" --env-file /run/base44/app.env \
   -e NODE_ENV=production \
   -e DATABASE_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
   -e DIRECT_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
-  -w /app node:22-bookworm sh -c 'find .next -mindepth 1 -maxdepth 1 -exec rm -rf {} + ; npm run build'
-docker compose -f docker-compose.base44.yml start web
+  -w /app node:22-bookworm npm run build
 ```
 
-`--volumes-from` reuses `web`'s already-installed `node_modules` and its bind mount (no reinstall); the network
-name lets the build resolve `postgres`. `next build` type-checks every file, so this is also the type gate.
+Reusing `node_modules` avoids a reinstall; the network name lets the build resolve `postgres`; `-v /app/.next`
+creates a fresh volume used only by that run. `next build` type-checks every file, so this is also the type
+gate. Verified with `web` up: exit 0, `web` kept answering 200, and `web`'s `.next` entry count was unchanged.
 
 From a clean checkout, keep devDependencies in the install step too:
 
