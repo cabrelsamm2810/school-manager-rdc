@@ -97,7 +97,7 @@ export function ProvincialDashboard({ stats, breakdown, chartData, activite, pro
             <Link href="/coordination-provinciale" className="flex min-h-[40px] items-center gap-2 rounded-full bg-cyan-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-cyan-700">
               <Icon name="region" className="h-4 w-4" /> Coord. provinciale
             </Link>
-            <Link href="/coordination-sous-provinciale" className="flex min-h-[40px] items-center gap-2 rounded-full border border-cyan-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-cyan-600 transition hover:bg-cyan-50">
+            <Link href="/sous-divisions" className="flex min-h-[40px] items-center gap-2 rounded-full border border-cyan-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-cyan-600 transition hover:bg-cyan-50">
               <Icon name="district" className="h-4 w-4" /> Sous-divisions
             </Link>
           </div>

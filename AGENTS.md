@@ -148,19 +148,31 @@ activate with `POST /api/auth/verify` → log in at `/login` (sets the session c
 
 ## Accès restreint par rôle exact
 
-`/enseignant/dashboard` (tableau de bord enseignant) est un espace propre au rôle `ENSEIGNANT` : il ne doit pas
-s'ouvrir aux rôles supérieurs. Deux points le garantissent, à garder cohérents si une autre route de ce type
-est ajoutée :
+Quatre espaces sont propres à un rôle et ne doivent pas s'ouvrir aux rôles supérieurs (SUPER_ADMIN compris) :
+`/enseignant/dashboard` → `ENSEIGNANT`, `/coordination-nationale` → `COORDINATION_NATIONALE`,
+`/coordination-provinciale` → `COORDINATION_PROVINCIALE`, `/coordination-sous-provinciale` →
+`COORDINATION_SOUS_PROVINCIALE`. Trois points les garantissent :
 
-- `lib/navigation.ts` — un élément de menu peut porter `roles: ['ENSEIGNANT']` (rôles exacts, prioritaire sur
-  `minRole`) en plus de la règle de rang par défaut ; `visibleNavigationGroups()` filtre dessus, donc la barre
-  latérale, le drawer mobile et les raccourcis suivent automatiquement.
 - `middleware.ts` — `ROUTE_EXACT_ROLE` impose le rôle exact côté route (toute autre valeur du cookie
   `school_manager_role` est redirigée vers `/dashboard`), car `ROUTE_MIN_ROLE` seul laisse passer les rangs
   supérieurs.
+- `lib/navigation.ts` — un élément de menu peut porter `roles: ['ENSEIGNANT']` (rôles exacts, prioritaire sur
+  `minRole`) ; `visibleNavigationGroups()` filtre dessus, donc la barre latérale, le drawer mobile et la grille
+  de services suivent automatiquement.
+- Les raccourcis codés en dur (`components/dashboards/QuickActions.tsx`, `BottomNav.tsx`, `NationalDashboard`,
+  `ProvincialDashboard`) ne lisent pas cette règle : ils doivent être alignés à la main, sinon ils pointent vers
+  une redirection. L'API d'un espace réservé porte la même règle que sa page
+  (`/api/enseignant/dashboard` → 403 si `user.role !== 'ENSEIGNANT'`, sinon un PARENT lit l'effectif par classe).
+
+`ROUTE_MIN_ROLE` reprend le `minRole` du menu pour les modules CRUD qui n'étaient pas gardés côté route
+(`/cahier-de-cote`, `/classes-rdc`, `/matieres-rdc`, `/options-rdc`, `/import`, `/provinces-educationnelles`,
+`/sous-divisions`) : le menu les masquait déjà, la page s'ouvrait quand même. Reste à trancher :
+`/rappels-cotes` — le menu le réserve à `DIRECTION_ECOLE`, mais les raccourcis ENSEIGNANT y renvoient et
+`/api/rappels-cotes` répond 403 à ENSEIGNANT.
 
 Vérification : `curl` sur `/enseignant/dashboard` avec `school_manager_role=DIRECTION_ECOLE` → 307 vers
-`/dashboard` ; avec `school_manager_role=ENSEIGNANT` → 200.
+`/dashboard` ; avec `school_manager_role=ENSEIGNANT` → 200. Idem `/coordination-nationale` :
+`COORDINATION_NATIONALE` → 200, `SUPER_ADMIN` et `COORDINATION_PROVINCIALE` → 307.
 
 ## Recherche du menu latéral mobile
 

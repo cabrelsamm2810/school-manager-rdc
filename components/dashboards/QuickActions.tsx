@@ -44,7 +44,6 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
   AGENT_SOUS_PROVINCIAL: [
     { label: 'Services', href: '/services', icon: 'services', color: 'cyan' },
     { label: 'Établissements', href: '/etablissements', icon: 'school', color: 'blue' },
-    { label: 'Dossiers', href: '/dossiers', icon: 'folder', color: 'rose' },
     { label: 'Élèves', href: '/eleves', icon: 'users', color: 'emerald' },
   ],
   DIRECTION_ECOLE: [

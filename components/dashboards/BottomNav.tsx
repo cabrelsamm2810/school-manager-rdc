@@ -45,7 +45,7 @@ const ROLE_TABS: Record<string, Tab[]> = {
   AGENT_SOUS_PROVINCIAL: [
     { label: 'Services', href: '/services', icon: 'services' },
     { label: 'Écoles', href: '/etablissements', icon: 'school' },
-    { label: 'Dossiers', href: '/dossiers', icon: 'folder' }
+    { label: 'Élèves', href: '/eleves', icon: 'users' }
   ],
   DIRECTION_ECOLE: [
     { label: 'Élèves', href: '/eleves', icon: 'users' },

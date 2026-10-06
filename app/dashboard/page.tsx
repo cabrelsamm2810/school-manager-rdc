@@ -79,7 +79,7 @@ export default function DashboardPage() {
           <ClockCard institutionLabel={getInstitutionLabel(user)} />
           <WelcomeCard user={user} scope={data.scope} />
           <QuickActions role={user.role} />
-          {data.scope === 'national' && <NationalDashboard {...dashProps} />}
+          {data.scope === 'national' && <NationalDashboard {...dashProps} role={user.role} />}
           {data.scope === 'provincial' && (
             <ProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />
           )}

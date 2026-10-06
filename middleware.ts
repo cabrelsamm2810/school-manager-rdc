@@ -22,12 +22,19 @@ const ROUTE_MIN_ROLE: Record<string, string> = {
   '/eleves': 'DIRECTION_ECOLE',
   '/enseignants': 'DIRECTION_ECOLE',
   '/enseignant/dashboard': 'ENSEIGNANT',
+  '/cahier-de-cote': 'ENSEIGNANT',
   '/cahier-de-notes': 'ENSEIGNANT',
   '/carte-scolaire': 'DIRECTION_ECOLE',
   '/photo-passeport': 'DIRECTION_ECOLE',
   '/cartes-qr': 'DIRECTION_ECOLE',
   '/bulletin-numerique': 'DIRECTION_ECOLE',
   '/dossiers-eleves': 'DIRECTION_ECOLE',
+  '/classes-rdc': 'DIRECTION_ECOLE',
+  '/matieres-rdc': 'DIRECTION_ECOLE',
+  '/options-rdc': 'DIRECTION_ECOLE',
+  '/import': 'DIRECTION_ECOLE',
+  '/provinces-educationnelles': 'COORDINATION_PROVINCIALE',
+  '/sous-divisions': 'COORDINATION_PROVINCIALE',
   '/provinces': 'COORDINATION_PROVINCIALE',
   '/ec-erc': 'COORDINATION_PROVINCIALE',
   '/coordination-nationale': 'COORDINATION_NATIONALE',
@@ -44,11 +51,14 @@ const ROUTE_MIN_ROLE: Record<string, string> = {
 
 /**
  * Routes réservées à un rôle EXACT (pas de règle de rang) : les espaces propres
- * à un rôle, comme le tableau de bord enseignant, ne doivent pas s'ouvrir aux
- * rôles supérieurs (direction, coordination, administration).
+ * à un rôle (tableau de bord enseignant, espaces de coordination) ne doivent pas
+ * s'ouvrir aux rôles supérieurs (direction, coordination, administration).
  */
 const ROUTE_EXACT_ROLE: Record<string, string> = {
   '/enseignant/dashboard': 'ENSEIGNANT',
+  '/coordination-nationale': 'COORDINATION_NATIONALE',
+  '/coordination-provinciale': 'COORDINATION_PROVINCIALE',
+  '/coordination-sous-provinciale': 'COORDINATION_SOUS_PROVINCIALE',
 };
 
 function isPublicRoute(pathname: string): boolean {

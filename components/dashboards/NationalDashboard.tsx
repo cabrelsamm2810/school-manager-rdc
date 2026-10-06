@@ -7,11 +7,12 @@ import { DonutChart, BarCompare } from './Charts';
 import { RecentActivity } from './RecentActivity';
 import type { BreakdownItem, ChartItem, DashboardStats } from './types';
 
-export function NationalDashboard({ stats, breakdown, chartData, activite }: {
+export function NationalDashboard({ stats, breakdown, chartData, activite, role }: {
   stats: DashboardStats;
   breakdown: BreakdownItem[];
   chartData: ChartItem[];
   activite: string[];
+  role: string;
 }) {
   const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -93,9 +94,11 @@ export function NationalDashboard({ stats, breakdown, chartData, activite }: {
             <RecentActivity items={activite} accent="blue" />
           </div>
           <div className="mt-4 flex flex-wrap gap-2.5">
-            <Link href="/coordination-nationale" className="flex min-h-[40px] items-center gap-2 rounded-full bg-blue-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-blue-700">
-              <Icon name="flag" className="h-4 w-4" /> Coordination nationale
-            </Link>
+            {role === 'COORDINATION_NATIONALE' && (
+              <Link href="/coordination-nationale" className="flex min-h-[40px] items-center gap-2 rounded-full bg-blue-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-blue-700">
+                <Icon name="flag" className="h-4 w-4" /> Coordination nationale
+              </Link>
+            )}
             <Link href="/provinces" className="flex min-h-[40px] items-center gap-2 rounded-full border border-blue-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-blue-600 transition hover:bg-blue-50">
               <Icon name="globe" className="h-4 w-4" /> Gérer les provinces
             </Link>

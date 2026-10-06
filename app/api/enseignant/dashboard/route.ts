@@ -9,6 +9,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
   }
 
+  // Espace réservé au rôle ENSEIGNANT — même règle exacte que la page.
+  if (user.role !== 'ENSEIGNANT') {
+    return NextResponse.json({ error: 'Espace réservé au rôle enseignant.' }, { status: 403 });
+  }
+
   // Filtre hiérarchique : un enseignant ne voit que les élèves de son établissement
   const scope = getScopeLevel(user.role);
   const etabId = (user as any).etablissementId || '';
