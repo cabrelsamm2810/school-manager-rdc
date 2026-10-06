@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { clsx } from 'clsx';
 import { Icon } from '@/components/ui/Icon';
+import { Avatar } from '@/components/ui/Avatar';
 import { CallOverlay } from '@/components/CallOverlay';
 import { ChatComposer } from '@/components/chat/ChatComposer';
 import { ChatBubble, type ChatMessageData } from '@/components/chat/ChatBubble';
@@ -602,28 +603,39 @@ export function SchoolChat() {
           mobileShowChat ? 'hidden md:flex' : 'flex w-full'
         )}
       >
-        <div className="flex h-14 shrink-0 items-center gap-2 bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-3">
-          <Icon name="chat" className="h-5 w-5 text-white" />
-          <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold text-white">SchoolChat</h2>
+        <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-100 bg-white px-3">
+          <Icon name="chat" className="h-[21px] w-[21px] shrink-0 text-slate-900" />
+          <h2 className="min-w-0 flex-1 truncate text-[19px] font-bold tracking-tight text-slate-900">SchoolChat</h2>
+
+          {currentUser && (
+            <Avatar
+              photoUrl={currentUser.profilePhotoUrl}
+              prenom={currentUser.prenom}
+              nom={currentUser.nom}
+              size="sm"
+            />
+          )}
+
+          <button
+            onClick={() => setShowNewChat(true)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-90"
+            aria-label="Nouvelle conversation"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+
           <button
             onClick={() => setShowNewGroup(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-white/15 hover:text-white active:scale-90"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:scale-90"
             aria-label="Nouveau groupe"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setShowNewChat(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-white/15 hover:text-white active:scale-90"
-            aria-label="Nouvelle conversation"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
           </button>
         </div>
