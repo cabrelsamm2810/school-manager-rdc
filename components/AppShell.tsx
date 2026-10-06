@@ -9,6 +9,7 @@ import { ROLE_LABELS } from '@/lib/rbac';
 import { useSessionUser, type SessionUser } from '@/lib/use-session-user';
 import { Icon } from '@/components/ui/Icon';
 import { Avatar } from '@/components/ui/Avatar';
+import { SchoolChatMark } from '@/components/ui/SchoolChatMark';
 import { DigitalClock } from '@/components/dashboards/DigitalClock';
 import { BottomNav } from '@/components/dashboards/BottomNav';
 import { RefreshButton } from '@/components/ui/RefreshButton';
@@ -279,10 +280,14 @@ function SidebarContent({
                           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100'
                       )}
                     >
-                      <Icon
-                        name={item.icon}
-                        className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-blue-600' : 'text-slate-400')}
-                      />
+                      {item.href === '/schoolchat' ? (
+                        <SchoolChatMark className="h-[18px] w-[18px]" />
+                      ) : (
+                        <Icon
+                          name={item.icon}
+                          className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-blue-600' : 'text-slate-400')}
+                        />
+                      )}
                       <span className="min-w-0 truncate">{item.label}</span>
                       {active && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}
                     </Link>

@@ -7,6 +7,7 @@ import type { NavGroup } from '@/lib/navigation';
 import { ROLE_LABELS, hasAtLeastRole } from '@/lib/rbac';
 import { Icon } from '@/components/ui/Icon';
 import { Avatar } from '@/components/ui/Avatar';
+import { SchoolChatMark } from '@/components/ui/SchoolChatMark';
 import type { SessionUser } from '@/lib/use-session-user';
 
 /**
@@ -292,10 +293,14 @@ export function MobileNavDrawer({
                             : 'text-[#a0a0a0] hover:bg-white/5 hover:text-white'
                         )}
                       >
-                        <Icon
-                          name={item.icon}
-                          className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-[#7d8798]')}
-                        />
+                        {item.href === '/schoolchat' ? (
+                          <SchoolChatMark className="h-[18px] w-[18px] rounded-[4px]" />
+                        ) : (
+                          <Icon
+                            name={item.icon}
+                            className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-[#7d8798]')}
+                          />
+                        )}
                         <span className="min-w-0 truncate">{item.label}</span>
                       </Link>
                     </li>
