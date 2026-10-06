@@ -14,6 +14,9 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'matricule', 'etablissement'],
     defaultSort: { field: 'nom', order: 'asc' },
+    // L'enseignant n'a pas de province ni de lien vers un établissement (le champ
+    // `etablissement` est un simple libellé) : aucun filtre de périmètre n'est applicable.
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true },

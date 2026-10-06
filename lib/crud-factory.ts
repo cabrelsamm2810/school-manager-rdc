@@ -20,7 +20,7 @@ export type CrudModelConfig = {
   searchFields: string[];
   fields: CrudFieldDef[];
   defaultSort?: { field: string; order: 'asc' | 'desc' };
-  provinceField?: string;
+  provinceField?: string | false;
   sousProvincialeField?: string;
   etablissementField?: string;
   institutionField?: string | false;

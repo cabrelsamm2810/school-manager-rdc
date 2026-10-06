@@ -43,6 +43,12 @@ export default function RechercheElevesPage() {
     }
   }
 
+  // Préremplissage depuis le menu latéral (?search=…)
+  useEffect(() => {
+    const initial = new URLSearchParams(window.location.search).get('search');
+    if (initial) setSearch(initial);
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);

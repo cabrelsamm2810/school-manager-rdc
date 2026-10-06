@@ -53,6 +53,12 @@ credentials. Nothing external is required to boot.
 - `.env.example` lists Supabase and S3 settings, but those integrations are **not implemented** — only
   `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
   is declared there but referenced nowhere in the code.
+- **Le modèle `Enseignant` n'a aucun champ territorial.** `etablissement` y est un simple libellé (pas de FK),
+  et il n'existe ni province ni `etablissementId`. `crud-models.ts` marque donc `provinceField: false` pour ce
+  module : sans cela `buildScopeWhere()` ajoutait un `where.province` inexistant et `/api/enseignants` répondait
+  500 (`PrismaClientValidationError`) à tout rôle non national — y compris le compte de démonstration
+  DIRECTION_ECOLE. Conséquence assumée : la liste des enseignants n'est pas filtrée par périmètre. Les autres
+  modules déclarant `institutionField: false` sans `provinceField` ont le même défaut latent.
 
 ## Ouverture de l'application
 
@@ -130,6 +136,13 @@ The generated stylesheet must contain real Tailwind output:
 Full flow: register at `/register` (the account starts inactive and a 6-digit code is emailed) →
 activate with `POST /api/auth/verify` → log in at `/login` (sets the session cookie) →
 `GET /api/auth/session` → `GET /api/users/me`.
+
+## Recherche du menu latéral mobile
+
+`components/dashboards/MobileNavDrawer.tsx` (drawer sombre, mobile uniquement — la barre latérale desktop
+reste dans `AppShell.tsx`) filtre les entrées du menu, puis interroge `/api/eleves` et `/api/enseignants`
+quand la saisie atteint 2 caractères. Ces deux API exigent `DIRECTION_ECOLE` : la recherche n'est proposée
+qu'aux rôles qui peuvent déjà ouvrir ces modules.
 
 ## Tests
 

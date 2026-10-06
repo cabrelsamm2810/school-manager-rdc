@@ -13,8 +13,8 @@ export type AuthUser = {
 export type ScopeLevel = 'national' | 'provincial' | 'sousProvincial' | 'school';
 
 export type ScopeConfig = {
-  /** Champ du modèle correspondant à la province (défaut: 'province'). */
-  provinceField?: string;
+  /** Champ du modèle correspondant à la province (défaut: 'province'). Mettre à false pour désactiver le filtre. */
+  provinceField?: string | false;
   /** Champ du modèle correspondant à coordSousProvincialeId (FK). Utiliser 'id' si le modèle EST CoordSousProvinciale. */
   sousProvincialeField?: string;
   /** Champ du modèle correspondant à etablissementId (FK). Utiliser 'id' si le modèle EST Etablissement. */
@@ -68,9 +68,13 @@ export function buildScopeWhere(
 
   if (scope === 'national') return where;
 
+  // Certains modèles n'ont aucun champ territorial (provinceField: false) :
+  // ils ne peuvent pas être filtrés par périmètre.
+  const provinceField = config.provinceField === false ? null : config.provinceField ?? 'province';
+
   if (scope === 'provincial') {
     const prov = user.provinceAdministrative;
-    if (prov) where[config.provinceField ?? 'province'] = prov;
+    if (provinceField && prov) where[provinceField] = prov;
     return where;
   }
 
@@ -81,7 +85,7 @@ export function buildScopeWhere(
     } else {
       // Sinon, repli sur la province
       const prov = user.provinceAdministrative;
-      if (prov) where[config.provinceField ?? 'province'] = prov;
+      if (provinceField && prov) where[provinceField] = prov;
     }
     return where;
   }
@@ -92,7 +96,7 @@ export function buildScopeWhere(
   } else {
     // Repli sur la province pour les modèles sans lien direct à un établissement
     const prov = user.provinceAdministrative;
-    if (prov) where[config.provinceField ?? 'province'] = prov;
+    if (provinceField && prov) where[provinceField] = prov;
   }
   return where;
 }

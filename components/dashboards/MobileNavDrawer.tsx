@@ -4,10 +4,37 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { clsx } from 'clsx';
 import type { NavGroup } from '@/lib/navigation';
-import { ROLE_LABELS } from '@/lib/rbac';
+import { ROLE_LABELS, hasAtLeastRole } from '@/lib/rbac';
 import { Icon } from '@/components/ui/Icon';
 import { Avatar } from '@/components/ui/Avatar';
 import type { SessionUser } from '@/lib/use-session-user';
+
+/**
+ * Rôle minimal attendu par les API `/api/eleves` et `/api/enseignants`.
+ * La recherche du menu ne propose donc que ce que le rôle peut déjà consulter.
+ */
+const SCHOOL_SEARCH_MIN_ROLE = 'DIRECTION_ECOLE';
+
+/** Nombre de résultats affichés par catégorie dans le menu. */
+const RESULTS_PER_CATEGORY = 4;
+
+type EleveResult = {
+  id: string;
+  matricule: string;
+  nom: string;
+  prenom: string;
+  classe: string;
+  etablissement?: { nom: string } | null;
+};
+
+type EnseignantResult = {
+  id: string;
+  nom: string;
+  matricule: string;
+  grade?: string;
+  etablissement?: string;
+  specialite?: string;
+};
 
 /** Ignore la casse et les accents : « eleve » retrouve « Élèves ». */
 function normalize(value: string) {
@@ -17,11 +44,18 @@ function normalize(value: string) {
     .toLowerCase();
 }
 
+/** Assemble les informations secondaires d'un résultat (« matricule · classe · école »). */
+function details(parts: (string | undefined | null)[]) {
+  return parts.filter((part) => !!part && part !== '').join(' · ');
+}
+
 /**
  * Menu latéral mobile (drawer sombre).
  *
  * Présentation uniquement : les groupes et les droits viennent toujours de
  * `visibleNavigationGroups`, et les liens pointent sur les routes existantes.
+ * La recherche filtre le menu, puis interroge les modules Élèves et Enseignants
+ * par leurs API existantes (mêmes contrôles de rôle que ces modules).
  */
 export function MobileNavDrawer({
   open,
@@ -39,19 +73,69 @@ export function MobileNavDrawer({
   onLogout: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<{ eleves: EleveResult[]; enseignants: EnseignantResult[] }>({
+    eleves: [],
+    enseignants: []
+  });
+  const [searching, setSearching] = useState(false);
+
+  const trimmed = query.trim();
+  const canSearchSchool = !!user && hasAtLeastRole(user.role, SCHOOL_SEARCH_MIN_ROLE);
 
   // Recherche remise à zéro à la fermeture : le menu se rouvre toujours complet
   useEffect(() => {
-    if (!open) setQuery('');
+    if (!open) {
+      setQuery('');
+      setResults({ eleves: [], enseignants: [] });
+      setSearching(false);
+    }
   }, [open]);
 
+  // Recherche des élèves et des enseignants (mêmes API et mêmes droits que les modules)
+  useEffect(() => {
+    if (!canSearchSchool || trimmed.length < 2) {
+      setResults({ eleves: [], enseignants: [] });
+      setSearching(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const params = `search=${encodeURIComponent(trimmed)}`;
+        const [elevesRes, enseignantsRes] = await Promise.all([
+          fetch(`/api/eleves?${params}`, { signal: controller.signal }),
+          fetch(`/api/enseignants?${params}`, { signal: controller.signal })
+        ]);
+        const elevesJson = elevesRes.ok ? await elevesRes.json() : null;
+        const enseignantsJson = enseignantsRes.ok ? await enseignantsRes.json() : null;
+        setResults({
+          eleves: (elevesJson?.eleves ?? []).slice(0, RESULTS_PER_CATEGORY),
+          enseignants: (enseignantsJson?.enseignants ?? []).slice(0, RESULTS_PER_CATEGORY)
+        });
+      } catch {
+        // Requête annulée (frappe suivante) ou réseau indisponible : aucun résultat
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [trimmed, canSearchSchool]);
+
   const filteredGroups = useMemo(() => {
-    const q = normalize(query.trim());
+    const q = normalize(trimmed);
     if (!q) return groups;
     return groups
       .map((group) => ({ ...group, items: group.items.filter((item) => normalize(item.label).includes(q)) }))
       .filter((group) => group.items.length > 0);
-  }, [groups, query]);
+  }, [groups, trimmed]);
+
+  const resultCount = results.eleves.length + results.enseignants.length;
 
   return (
     <>
@@ -91,7 +175,7 @@ export function MobileNavDrawer({
           </button>
         </div>
 
-        {/* Recherche dans le menu */}
+        {/* Recherche : menu, élèves et enseignants */}
         <div className="shrink-0 px-3.5 pb-2.5">
           <div className="flex items-center gap-2 rounded-xl bg-[#162030] px-3 py-2.5">
             <Icon name="search" className="h-4 w-4 shrink-0 text-[#6e7a8f]" />
@@ -99,8 +183,8 @@ export function MobileNavDrawer({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher dans le menu"
-              aria-label="Rechercher dans le menu"
+              placeholder={canSearchSchool ? 'Rechercher élève, enseignant…' : 'Rechercher dans le menu'}
+              aria-label={canSearchSchool ? 'Rechercher un élève, un enseignant ou un module' : 'Rechercher dans le menu'}
               className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-[#6e7a8f]"
             />
             {query && (
@@ -118,6 +202,75 @@ export function MobileNavDrawer({
 
         {/* Navigation */}
         <nav className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3" aria-label="Navigation principale">
+          {/* Résultats : élèves */}
+          {results.eleves.length > 0 && (
+            <section className="mb-4">
+              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e7a8f]">
+                Élèves
+              </h2>
+              <ul className="space-y-1">
+                {results.eleves.map((eleve) => (
+                  <li key={eleve.id}>
+                    <Link
+                      href={`/recherche-eleves?search=${encodeURIComponent(`${eleve.nom} ${eleve.prenom}`)}`}
+                      onClick={onClose}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition hover:bg-white/5"
+                    >
+                      <Icon name="users" className="h-[18px] w-[18px] shrink-0 text-[#7d8798]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-medium text-white">
+                          {eleve.nom} {eleve.prenom}
+                        </span>
+                        <span className="block truncate text-[11px] text-[#8b94a6]">
+                          {details([eleve.matricule, eleve.classe, eleve.etablissement?.nom])}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Résultats : enseignants */}
+          {results.enseignants.length > 0 && (
+            <section className="mb-4">
+              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e7a8f]">
+                Enseignants
+              </h2>
+              <ul className="space-y-1">
+                {results.enseignants.map((enseignant) => (
+                  <li key={enseignant.id}>
+                    <Link
+                      href="/enseignants"
+                      onClick={onClose}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition hover:bg-white/5"
+                    >
+                      <Icon name="teacher" className="h-[18px] w-[18px] shrink-0 text-[#7d8798]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-medium text-white">{enseignant.nom}</span>
+                        <span className="block truncate text-[11px] text-[#8b94a6]">
+                          {details([enseignant.matricule, enseignant.grade, enseignant.etablissement])}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* État de la recherche */}
+          {canSearchSchool && trimmed.length >= 2 && searching && (
+            <p className="px-2.5 pb-3 text-[12px] text-[#6e7a8f]">Recherche…</p>
+          )}
+          {canSearchSchool && trimmed.length >= 2 && !searching && resultCount === 0 && (
+            <p className="px-2.5 pb-3 text-[12px] text-[#6e7a8f]">
+              Aucun élève ni enseignant ne correspond à « {trimmed} ».
+            </p>
+          )}
+
+          {/* Menu filtré */}
           {filteredGroups.map((group) => (
             <section key={group.title} className="mb-4 last:mb-0">
               <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e7a8f]">
@@ -152,7 +305,7 @@ export function MobileNavDrawer({
             </section>
           ))}
 
-          {filteredGroups.length === 0 && (
+          {filteredGroups.length === 0 && resultCount === 0 && (
             <p className="px-2.5 py-8 text-center text-[13px] text-[#6e7a8f]">Aucun élément ne correspond.</p>
           )}
         </nav>
