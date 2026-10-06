@@ -1,0 +1,76 @@
+# Base44 development environment for School Manager RDC (Next.js 14 + Prisma + PostgreSQL).
+# Runs the app from the cloned source with live reload. Never use the project's production image here.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: on-failure
+    environment:
+      POSTGRES_USER: school_manager
+      POSTGRES_PASSWORD: school_manager_dev
+      POSTGRES_DB: school_manager
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U school_manager -d school_manager"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # One-shot: install dependencies and apply the existing Prisma migrations, then exit.
+  setup:
+    image: node:20-bookworm
+    restart: "no"
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - node-modules:/app/node_modules
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - CI=true
+    command:
+      - sh
+      - -ec
+      - npm install --no-audit --no-fund && npx prisma migrate deploy
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:20-bookworm
+    restart: on-failure
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - node-modules:/app/node_modules
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    command:
+      - sh
+      - -ec
+      - npm install --no-audit --no-fund && exec npm run dev
+    depends_on:
+      db:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:3000/api/meta').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+volumes:
+  postgres-data:
+  node-modules:

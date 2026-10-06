@@ -1,0 +1,47 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d --build",
+  "secrets": [
+    {
+      "name": "DATABASE_URL",
+      "description": "Optional external PostgreSQL URL (e.g. Supabase transaction pooler). Leave unset to use the local compose PostgreSQL.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "DIRECT_URL",
+      "description": "Optional direct/session PostgreSQL URL used by Prisma CLI migrations against an external database. Leave unset to use the local compose PostgreSQL.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SESSION_SECRET",
+      "description": "Server-only session secret. Reserved for future signed sessions; not read by the current code.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SMTP_HOST",
+      "description": "SMTP server host for transactional email. Not used by the current code.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SMTP_PORT",
+      "description": "SMTP server port for transactional email. Not used by the current code.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SMTP_USER",
+      "description": "SMTP username for transactional email. Not used by the current code.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SMTP_PASS",
+      "description": "SMTP password for transactional email. Not used by the current code.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SMTP_FROM",
+      "description": "Sender address for transactional email. Not used by the current code.",
+      "requiredAtBoot": false
+    }
+  ]
+}
