@@ -30,9 +30,12 @@ export type StatConfig = {
 export type FilterConfig = {
   name: string;          // field name to filter on
   label: string;         // dropdown label
-  options?: { value: string; label: string }[]; // static options; if omitted, derived from data
+  options?: { value: string; label: string; [key: string]: any }[]; // static options; if omitted, derived from data
   optionsEndpoint?: string;   // fetch options from API
   optionsDataKey?: string;    // key in the JSON response
+  dependsOn?: string;         // parent filter name (cascading)
+  matchField?: string;        // field in this filter's options to match against parent value
+  parentMatchField?: string;  // field in parent's options to get match value (default: parent's value)
 };
 
 export type CrudConfig = {
@@ -103,7 +106,7 @@ export function CrudManager({ config }: { config: CrudConfig }) {
   const [formLoading, setFormLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [asyncOptions, setAsyncOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const [asyncOptions, setAsyncOptions] = useState<Record<string, { value: string; label: string; [key: string]: any }[]>>({});
 
   // Load async options for fields and filters with optionsEndpoint
   useEffect(() => {
@@ -131,7 +134,7 @@ export function CrudManager({ config }: { config: CrudConfig }) {
             const data = await res.json();
             const key = e.dataKey || 'items';
             const items = data[key] ?? [];
-            return [e.name, items.map((i: any) => ({ value: i.id, label: i.nom }))] as const;
+            return [e.name, items.map((i: any) => ({ ...i, value: i.id, label: i.nom }))] as const;
           } catch {
             return [e.name, []] as const;
           }
@@ -576,13 +579,41 @@ export function CrudManager({ config }: { config: CrudConfig }) {
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
             {config.filters?.map((f) => {
-              const options = f.options ?? asyncOptions[f.name] ?? [...new Set(items.map((i) => i[f.name]).filter(Boolean))].sort().map((v) => ({ value: String(v), label: String(v) }));
+              let options = f.options ?? asyncOptions[f.name] ?? [...new Set(items.map((i) => i[f.name]).filter(Boolean))].sort().map((v) => ({ value: String(v), label: String(v) }));
+
+              // Cascading: filter options based on parent filter's value
+              if (f.dependsOn && f.matchField) {
+                const parentValue = filters[f.dependsOn];
+                if (parentValue) {
+                  let matchValue: string = parentValue;
+                  if (f.parentMatchField) {
+                    const parentFilter = config.filters?.find((ff) => ff.name === f.dependsOn);
+                    const parentOptions = parentFilter?.options ?? asyncOptions[f.dependsOn] ?? [];
+                    const parentRecord = parentOptions.find((o: any) => o.value === parentValue);
+                    if (parentRecord) matchValue = (parentRecord as any)[f.parentMatchField];
+                  }
+                  options = options.filter((o: any) => (o as any)[f.matchField!] === matchValue);
+                } else {
+                  options = [];
+                }
+              }
+
               return (
                 <select
                   key={f.name}
                   value={filters[f.name] ?? ''}
-                  onChange={(e) => setFilters({ ...filters, [f.name]: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-52"
+                  disabled={!!f.dependsOn && !filters[f.dependsOn]}
+                  onChange={(e) => {
+                    const newFilters = { ...filters, [f.name]: e.target.value };
+                    // Reset child filters that depend on this one
+                    for (const child of config.filters ?? []) {
+                      if (child.dependsOn === f.name) {
+                        newFilters[child.name] = '';
+                      }
+                    }
+                    setFilters(newFilters);
+                  }}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-40 sm:w-52"
                 >
                   <option value="">{f.label}</option>
                   {options.map((o) => (

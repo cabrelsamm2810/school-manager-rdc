@@ -1,6 +1,6 @@
 import type { CrudConfig } from '@/components/CrudManager';
 import { StatutBadge } from '@/components/ui/StatutBadge';
-import { PROVINCE_EDUCATIONNELLE_NAMES } from '@/lib/provinces-rdc';
+import { PROVINCE_EDUCATIONNELLE_NAMES, PROVINCE_NAMES, PROVINCES_EDUCATIONNELLES } from '@/lib/provinces-rdc';
 import { CYCLES_RDC } from '@/lib/curriculum-rdc';
 
 const OPTION_TYPES = [
@@ -41,6 +41,9 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
+      { name: 'provinceAdministrative', label: 'Toutes les provinces', options: PROVINCE_NAMES.map((p) => ({ value: p, label: p })) },
+      { name: 'provinceEducationnelle', label: 'Toutes les provinces éduc.', options: PROVINCES_EDUCATIONNELLES.map((p) => ({ value: p.nom, label: p.nom, provinceAdministrative: p.provinceAdministrative })), dependsOn: 'provinceAdministrative', matchField: 'provinceAdministrative' },
+      { name: 'coordSousProvincialeId', label: 'Toutes les coord. SP', optionsEndpoint: '/api/coordination-sous-provinciale', optionsDataKey: 'coordSousProvinciales', dependsOn: 'provinceEducationnelle', matchField: 'province', parentMatchField: 'provinceAdministrative' },
       { name: 'ecoleId', label: 'Toutes les écoles', optionsEndpoint: '/api/ecoles', optionsDataKey: 'ecoles' },
       { name: 'statut', label: 'Tous les statuts', options: [
         { value: 'Actif', label: 'Actif' },

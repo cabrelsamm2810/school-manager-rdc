@@ -26,6 +26,7 @@ export type CrudModelConfig = {
   ecoleField?: string;
   institutionField?: string | false;
   include?: Record<string, unknown>; // Prisma relations to include in GET
+  extraFilters?: Record<string, (val: string) => Record<string, unknown>>; // custom filters (e.g. through relations)
 };
 
 function buildSchema(fields: CrudFieldDef[]) {
@@ -104,6 +105,16 @@ export function createCrudHandlers(config: CrudModelConfig) {
       // La province peut déjà être positionnée par un filtre explicite — on la remplace
       for (const key of Object.keys(scopeWhere)) {
         where[key] = scopeWhere[key];
+      }
+    }
+
+    // Apply extra custom filters (e.g. through relations)
+    if (config.extraFilters) {
+      for (const [paramName, filterFn] of Object.entries(config.extraFilters)) {
+        const val = searchParams.get(paramName);
+        if (val) {
+          Object.assign(where, filterFn(val));
+        }
       }
     }
 

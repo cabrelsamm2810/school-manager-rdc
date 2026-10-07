@@ -23,6 +23,12 @@ export const crudModels: Record<string, CrudModelConfig> = {
     provinceField: false,
     institutionField: false,
     include: { ecoleRattachee: { select: { id: true, nom: true } } },
+    // Filtres territoriaux cascades via la relation ecoleRattachee
+    extraFilters: {
+      provinceAdministrative: (val) => ({ ecoleRattachee: { province: val } }),
+      provinceEducationnelle: (val) => ({ ecoleRattachee: { provinceEducationnelle: val } }),
+      coordSousProvincialeId: (val) => ({ ecoleRattachee: { coordSousProvincialeId: val } }),
+    },
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'matricule', type: 'string', required: true, unique: true },
