@@ -112,7 +112,7 @@ export function ClockCard({ institutionLabel }: { institutionLabel?: string | nu
           <img
             src="/illustrations/ec-erc-logo.jpg"
             alt="Logo EC-ERC"
-            className="h-12 w-12 shrink-0 rounded-lg bg-white object-contain p-0.5"
+            className="h-14 w-14 shrink-0 rounded-lg bg-white object-contain p-0.5"
           />
           <div className="min-w-0">
             <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-100">Institution</p>
