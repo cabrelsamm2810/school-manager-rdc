@@ -79,7 +79,19 @@ export function QRScannerModal({
       const scanner = new Html5Qrcode(containerId, { verbose: false });
       // Empêcher la bibliothèque de lancer « Scanning is not in running state »
       // quand stop() ou applyVideoConstraints() est appelé alors que la caméra
-      // n'a jamais démarré (l'erreur échappe au try/catch car levée en interne).
+      // n'a jamais démarré (l'erreur échappe au try/catch car levée en interne
+      // sous forme de chaîne, pas d'Error, et remonte jusqu'au ErrorBoundary
+      // de Next.js qui démonte tout le composant).
+      const noopCamera = {
+        applyVideoConstraints: () => Promise.resolve(),
+        getRunningTrackCapabilities: () => ({}),
+        getRunningTrackSettings: () => ({}),
+        getCapabilities: () => ({}),
+      };
+      scanner.getRenderedCameraOrFail = function () {
+        if (scanner.renderedCamera == null) return noopCamera as any;
+        return scanner.renderedCamera;
+      };
       const origStop = scanner.stop.bind(scanner);
       scanner.stop = function () {
         if (!isRunningRef.current) return Promise.resolve();
@@ -90,14 +102,27 @@ export function QRScannerModal({
         if (!isRunningRef.current) return Promise.resolve();
         return origApply(constraints);
       };
+      const origClear = scanner.clear.bind(scanner);
+      scanner.clear = function () {
+        try {
+          origClear();
+        } catch {
+          // « Cannot clear while scan is ongoing » — ignoré si le scanner n'a pas démarré
+        }
+      };
       scannerRef.current = scanner;
 
-      await scanner.start(
+      // Timeout pour éviter que start() reste bloqué indéfiniment
+      const startPromise = scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 220, height: 220 } },
         (decodedText: string) => handleScanResult(decodedText),
         () => {},
       );
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 8000),
+      );
+      await Promise.race([startPromise, timeoutPromise]);
       isRunningRef.current = true;
       setScanning(true);
 
@@ -117,15 +142,20 @@ export function QRScannerModal({
   }, [handleScanResult, flashOn]);
 
   const stopScanner = useCallback(async () => {
-    if (scannerRef.current) {
+    const scanner = scannerRef.current;
+    if (scanner) {
       try {
         if (isRunningRef.current) {
-          await scannerRef.current.stop();
+          await scanner.stop();
           isRunningRef.current = false;
         }
-        scannerRef.current.clear();
       } catch {
         // ignore
+      }
+      try {
+        scanner.clear();
+      } catch {
+        // ignore — « Cannot clear while scan is ongoing »
       }
       scannerRef.current = null;
     }
