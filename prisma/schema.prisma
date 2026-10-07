@@ -264,6 +264,7 @@ model Ecole {
   enseignants          Enseignant[] @relation("EnseignantEcole")
   chatGroups           ChatGroup[]
   documents            EcoleDocument[]
+  documentAudits       EcoleDocumentAudit[]
   validationLogs       EcoleValidationLog[]
   cahierDeCotes        CahierDeCote[]
   bulletins            Bulletin[]
@@ -293,6 +294,26 @@ model EcoleDocument {
   @@index([ecoleId])
   @@index([type])
   @@map("ecole_documents")
+}
+
+model EcoleDocumentAudit {
+  id            String   @id @default(cuid())
+  ecoleId       String
+  ecole         Ecole   @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  documentId    String?  // null si l'action porte sur le dossier entier
+  documentTitre String   @default("")
+  action        String   // UPLOAD, SUBMIT, VALIDATE, REJECT, DELETE
+  userId        String   @default("")
+  userName      String   @default("")
+  userRole      String   @default("")
+  commentaire   String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([ecoleId])
+  @@index([documentId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("ecole_document_audits")
 }
 
 model EcoleValidationLog {

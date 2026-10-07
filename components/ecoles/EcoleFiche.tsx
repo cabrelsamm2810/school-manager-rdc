@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { INSTITUTION_MAP, DOCUMENT_TYPES } from '@/lib/institutions';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { useSessionUser } from '@/lib/use-session-user';
+import { DocumentAuditTrail } from '@/components/ecoles/DocumentAuditTrail';
+import type { DocumentAudit } from '@/components/ecoles/DocumentAuditTrail';
 
 /** Rôles autorisés à téléverser/supprimer des documents (école uniquement). */
 const SCHOOL_ROLES = ['DIRECTION_ECOLE', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'];
@@ -53,6 +55,7 @@ type Ecole = {
   ecErcId: string | null;
   ecErc?: { id: string; nom: string; type: string } | null;
   documents: Document[];
+  documentAudits: DocumentAudit[];
   validationLogs: ValidationLog[];
 };
 
@@ -322,6 +325,16 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
         </form>
         )}
       </div>
+
+      {/* Historique d'audit des documents */}
+      {ecole.documentAudits && ecole.documentAudits.length > 0 && (
+        <div className={sectionClass}>
+          <h3 className="mb-3 text-sm font-bold text-slate-900">
+            Historique d'audit des documents ({ecole.documentAudits.length})
+          </h3>
+          <DocumentAuditTrail audits={ecole.documentAudits} />
+        </div>
+      )}
 
       {/* Historique de validation */}
       {ecole.validationLogs.length > 0 && (

@@ -5,6 +5,10 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
+function fullName(user: any) {
+  return `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email ?? 'Inconnu';
+}
+
 /**
  * GET /api/ecoles/[id]/documents
  * Liste les documents justificatifs d'un école.
@@ -78,6 +82,21 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     },
   });
 
+  // ── Audit : téléversement du document ──
+  const user = (auth as any).user;
+  await prisma.ecoleDocumentAudit.create({
+    data: {
+      ecoleId: params.id,
+      documentId: document.id,
+      documentTitre: titre,
+      action: 'UPLOAD',
+      userId: user?.id ?? '',
+      userName: fullName(user),
+      userRole: user?.role ?? '',
+      commentaire: `Document « ${titre} » téléversé`,
+    },
+  });
+
   return NextResponse.json({ document }, { status: 201 });
 }
 
@@ -96,8 +115,30 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ error: 'ID du document requis.' }, { status: 400 });
   }
 
+  const doc = await prisma.ecoleDocument.findUnique({
+    where: { id: body.documentId, ecoleId: params.id },
+  });
+  if (!doc) {
+    return NextResponse.json({ error: 'Document introuvable.' }, { status: 404 });
+  }
+
   await prisma.ecoleDocument.delete({
     where: { id: body.documentId, ecoleId: params.id },
+  });
+
+  // ── Audit : suppression du document ──
+  const user = (auth as any).user;
+  await prisma.ecoleDocumentAudit.create({
+    data: {
+      ecoleId: params.id,
+      documentId: null,
+      documentTitre: doc.titre,
+      action: 'DELETE',
+      userId: user?.id ?? '',
+      userName: fullName(user),
+      userRole: user?.role ?? '',
+      commentaire: `Document « ${doc.titre} » supprimé`,
+    },
   });
 
   return NextResponse.json({ ok: true });

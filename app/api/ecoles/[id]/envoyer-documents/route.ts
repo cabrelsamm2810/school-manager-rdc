@@ -91,6 +91,20 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     },
   });
 
+  // ── Audit par document : soumission du dossier ──
+  await prisma.ecoleDocumentAudit.createMany({
+    data: existing.documents.map((doc) => ({
+      ecoleId: params.id,
+      documentId: doc.id,
+      documentTitre: doc.titre,
+      action: 'SUBMIT',
+      userId: user.id,
+      userName,
+      userRole: user.role,
+      commentaire: `Document « ${doc.titre} » soumis à la coordination`,
+    })),
+  });
+
   // Journal d'audit central
   await logAudit({
     userId: user.id,

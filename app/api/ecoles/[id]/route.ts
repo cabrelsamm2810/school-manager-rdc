@@ -41,6 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       coordSousProvinciale: { select: { id: true, nom: true, province: true } },
       ecErc: { select: { id: true, nom: true, type: true } },
       documents: { orderBy: { createdAt: 'desc' } },
+      documentAudits: { orderBy: { createdAt: 'desc' }, take: 50 },
       validationLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
     },
   });

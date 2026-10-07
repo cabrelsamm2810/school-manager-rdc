@@ -134,6 +134,25 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     },
   });
 
+  // ── Audit par document : validation ou rejet du dossier ──
+  const docs = await prisma.ecoleDocument.findMany({ where: { ecoleId: params.id } });
+  const auditAction = action === 'valider' ? 'VALIDATE' : 'REJECT';
+  const auditComment = action === 'valider'
+    ? `Document « {titre} » validé par ${userName}`
+    : `Document « {titre} » rejeté par ${userName}`;
+  await prisma.ecoleDocumentAudit.createMany({
+    data: docs.map((doc) => ({
+      ecoleId: params.id,
+      documentId: doc.id,
+      documentTitre: doc.titre,
+      action: auditAction,
+      userId: user.id,
+      userName,
+      userRole: user.role,
+      commentaire: auditComment.replace('{titre}', doc.titre) + (commentaire ? ` — ${commentaire}` : ''),
+    })),
+  });
+
   // ── Journal d'audit central ──
   await logAudit({
     userId: user.id,
