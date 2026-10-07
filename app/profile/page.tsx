@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { Icon } from '@/components/ui/Icon';
 import { ROLE_LABELS } from '@/lib/rbac';
+import { PointageProfileSection } from '@/components/enseignant/PointageProfileSection';
 
 type Profile = {
   id: string;
@@ -311,6 +312,9 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* ── Pointage matinal (enseignant uniquement) ── */}
+                  {profile.role === 'ENSEIGNANT' && <PointageProfileSection />}
 
                   {/* ── Action buttons ── */}
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row">
