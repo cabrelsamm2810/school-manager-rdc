@@ -42,6 +42,18 @@ const icons: Record<string, string> = {
   book: 'M4 4v16a2 2 0 0 0 2 2h14V4H6a2 2 0 0 0-2 2zM8 8h8M8 12h6',
   scan: 'M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18',
   calendar: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4M8 14h2M14 14h2',
+  check: 'M5 12l5 5L20 7',
+  'check-circle': 'M12 2a10 10 0 100 20 10 10 0 000-20zM8 12l3 3 5-6',
+  alert: 'M12 2L2 21h20L12 2zM12 9v5M12 17h.01',
+  clock: 'M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2',
+  activity: 'M3 12h4l3 8 4-16 3 8h4',
+  'x-circle': 'M12 2a10 10 0 100 20 10 10 0 000-20zM8 8l8 8M16 8l-8 8',
+  'arrow-up': 'M12 19V5M5 12l7-7 7 7',
+  'arrow-down': 'M12 5v14M5 12l7 7 7-7',
+  'external': 'M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h5',
+  filter: 'M3 4h18l-7 8v8l-4-2v-6L3 4z',
+  'file-text': 'M6 2h9l5 5v15H6zM15 2v5h5M9 12h6M9 16h6M9 8h2',
+  database: 'M12 2C7 2 3 3.5 3 5v14c0 1.5 4 3 9 3s9-1.5 9-3V5c0-1.5-4-3-9-3zM3 5c0 1.5 4 3 9 3s9-1.5 9-3M3 12c0 1.5 4 3 9 3s9-1.5 9-3',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

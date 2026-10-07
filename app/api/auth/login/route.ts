@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
 
     return createSessionCookieResponse(response, result.user.id, result.user.role);
   } catch (error) {
+    console.error('[login] Error:', error);
     return NextResponse.json({ error: 'Une erreur est survenue lors de la connexion.' }, { status: 500 });
   }
 }
