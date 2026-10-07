@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
 import { ClockCard } from '@/components/dashboards/ClockCard';
-import { EcErcBrandingCard } from '@/components/dashboards/EcErcBrandingCard';
 import { WelcomeCard } from '@/components/dashboards/WelcomeCard';
 import { QuickActions } from '@/components/dashboards/QuickActions';
 import { ServicesGrid } from '@/components/dashboards/ServicesGrid';
@@ -77,8 +76,7 @@ export default function DashboardPage() {
     <AppShell>
       <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
         <div className="mx-auto max-w-5xl">
-          <EcErcBrandingCard />
-          <ClockCard institutionLabel={getInstitutionLabel(user)} />
+          <ClockCard institutionLabel={getInstitutionLabel(user)} typeInstitution={user.typeInstitution} />
           <WelcomeCard user={user} scope={data.scope} />
           <QuickActions role={user.role} />
           {data.scope === 'national' && <NationalDashboard {...dashProps} role={user.role} />}
