@@ -3,7 +3,7 @@
  *
  * Stratégie de cache :
  *  - Precache des ressources statiques essentielles (logo, manifest)
- *  - Cache-first pour les assets Next.js (_next/static) — noms hashés, immuables
+ *  - Cache-first pour les assets Next.js (_next/static) à nom hashé uniquement (immuables)
  *  - Network-first pour les pages HTML — fallback cache hors connexion
  *  - Network-only pour les API — jamais de cache pour les données serveur
  *  - Stale-while-revalidate pour les images et polices
@@ -12,7 +12,7 @@
  * Le SW précédent est supprimé et le nouveau prend le contrôle après skipWaiting.
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `sm-rdc-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `sm-rdc-pages-${CACHE_VERSION}`;
 const ASSET_CACHE = `sm-rdc-assets-${CACHE_VERSION}`;
@@ -30,6 +30,12 @@ const PRECACHE_URLS = [
   '/apple-touch-icon.png',
   '/favicon.ico'
 ];
+
+/* Fichier _next/static à nom hashé (ex: page-4b9f1c2a3d5e6f70.js, 472-2c9f7a8e.js, font.8a1b2c3d.woff2) */
+function isImmutableAsset(pathname) {
+  if (pathname.includes('hot-update')) return false;
+  return /[-./][0-9a-f]{8,}\.[a-z0-9]+$/i.test(pathname);
+}
 
 /* ── Installation : precache des ressources essentielles ── */
 self.addEventListener('install', (event) => {
@@ -72,8 +78,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  /* Assets Next.js (_next/static) : cache-first, immuable */
+  /* Assets Next.js (_next/static) : cache-first uniquement pour les fichiers à nom hashé
+     (immuables, build de production). Les fichiers non hashés (next dev, hot-update)
+     changent à chaque modification : on les laisse au réseau, jamais en cache. */
   if (url.pathname.startsWith('/_next/static/')) {
+    if (!isImmutableAsset(url.pathname)) return;
     event.respondWith(
       caches.match(request).then(
         (cached) =>

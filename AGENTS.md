@@ -69,6 +69,13 @@ credentials. Nothing external is required to boot.
   `lib/territory-filter.ts` (utilisé par `/api/eleves` et `/api/cahier-de-cote/options`).
   Vérification : `GET /api/<module>` avec un compte DIRECTION_ECOLE actif doit répondre 200, jamais 500.
 
+- **Service worker (`public/sw.js`) et `next dev`.** En dev, les fichiers `_next/static/chunks/app/<page>/page.js`
+  ne sont pas hashés : un cache-first dessus servait d'anciens bundles indéfiniment (page « Ce module est en cours
+  de développement » + erreur d'hydratation alors que le serveur rendait la bonne page). `sw.js` ne met donc en
+  cache `_next/static` que les fichiers à nom hashé (`isImmutableAsset`). Si un symptôme « le navigateur montre
+  du vieux code » réapparaît : bumper `CACHE_VERSION` dans `sw.js` (purge les anciens caches à l'activation) et
+  recharger deux fois (la 1re installe le nouveau SW, la 2e charge du code frais).
+
 ## Comptes de démonstration
 
 - **Enseignant** : `enseignant.demo@schoolmanager-rdc.cd` / `Enseignant2026`, rattaché à l'« École de
