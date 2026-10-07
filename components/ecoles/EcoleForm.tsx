@@ -92,7 +92,20 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
   function handleProvinceChange(prov: string) {
     update('province', prov);
     update('provinceEducationnelle', '');
+    update('coordSousProvincialeId', '');
+    update('structureRattachementId', '');
   }
+
+  function handleProvinceEducChange(provEduc: string) {
+    update('provinceEducationnelle', provEduc);
+    update('coordSousProvincialeId', '');
+    update('structureRattachementId', '');
+  }
+
+  // Filtrer les structures par province administrative sélectionnée (cascade)
+  const filteredStructures = form.province
+    ? structures.filter((s) => s.province === form.province)
+    : structures;
 
   function canProceedStep1() {
     return !!form.institution;
@@ -194,18 +207,18 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
 
           {/* Chemin visuel */}
           <div className="rounded-xl bg-slate-50 p-4">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span className="font-medium text-slate-600">{selectedInstitution?.label}</span>
               <span className="text-slate-400">→</span>
               <span className="font-medium text-slate-600">{form.province || 'Province'}</span>
               <span className="text-slate-400">→</span>
               <span className="font-medium text-slate-600">{form.provinceEducationnelle || 'Province éduc.'}</span>
               <span className="text-slate-400">→</span>
-              <span className="font-medium text-slate-600">
-                {structures.find((s) => s.id === form.coordSousProvincialeId)?.nom || 'Structure compétente'}
+              <span className="whitespace-nowrap font-medium text-slate-600">
+                {filteredStructures.find((s) => s.id === form.coordSousProvincialeId)?.nom || 'Structure compétente'}
               </span>
               <span className="text-slate-400">→</span>
-              <span className="font-medium text-blue-600">École</span>
+              <span className="whitespace-nowrap font-medium text-blue-600">École</span>
             </div>
           </div>
 
@@ -222,7 +235,7 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
             <div>
               <label className={labelClass} htmlFor="etab-prov-educ">Province éducationnelle{requiredMark}</label>
               <select id="etab-prov-educ" value={form.provinceEducationnelle}
-                onChange={(e) => update('provinceEducationnelle', e.target.value)}
+                onChange={(e) => handleProvinceEducChange(e.target.value)}
                 className={inputClass} required disabled={!form.province}>
                 <option value="">— Sélectionner —</option>
                 {educationProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -235,15 +248,15 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
                   update('coordSousProvincialeId', e.target.value);
                   update('structureRattachementId', e.target.value);
                 }}
-                className={inputClass} required disabled={structuresLoading}>
+                className={inputClass} required disabled={structuresLoading || !form.province}>
                 <option value="">— Sélectionner —</option>
-                {structures.map((s) => (
-                  <option key={s.id} value={s.id}>{s.nom}{s.province ? ` (${s.province})` : ''}</option>
+                {filteredStructures.map((s) => (
+                  <option key={s.id} value={s.id}>{s.nom}</option>
                 ))}
               </select>
-              {structures.length === 0 && !structuresLoading && form.institution && (
+              {filteredStructures.length === 0 && !structuresLoading && form.institution && form.province && (
                 <p className="mt-1 text-xs text-amber-600">
-                  Aucune structure enregistrée pour cette institution. Créez-en une dans le module correspondant.
+                  Aucune structure enregistrée pour cette province. Créez-en une dans le module correspondant.
                 </p>
               )}
             </div>
