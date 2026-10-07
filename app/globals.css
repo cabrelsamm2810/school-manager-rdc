@@ -561,35 +561,34 @@ select.sm-input {
 /* ── Registration page ── */
 .register-bg {
   position: relative;
-  background: linear-gradient(140deg, #0a1729 0%, #002868 35%, #003d99 65%, #0a1729 100%);
+  background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 60%, #f4f8ff 100%);
   overflow: hidden;
 }
 .register-bg::before {
   content: '';
   position: absolute;
-  top: -15%;
-  right: -10%;
-  width: 50%;
-  height: 50%;
-  background: radial-gradient(circle, rgba(0, 102, 255, 0.18) 0%, transparent 65%);
+  top: -10%;
+  right: -8%;
+  width: 45%;
+  height: 45%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.10) 0%, transparent 65%);
   pointer-events: none;
 }
 .register-bg::after {
   content: '';
   position: absolute;
-  bottom: -15%;
-  left: -10%;
-  width: 45%;
-  height: 45%;
-  background: radial-gradient(circle, rgba(0, 102, 255, 0.12) 0%, transparent 65%);
+  bottom: -12%;
+  left: -8%;
+  width: 40%;
+  height: 40%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 65%);
   pointer-events: none;
 }
 
 .register-card {
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 10px 40px rgba(0, 30, 80, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid #eaeff7;
+  box-shadow: 0 8px 30px rgba(11, 37, 69, 0.08), 0 0 0 1px rgba(37, 99, 235, 0.04);
   overflow: hidden;
 }
 
@@ -772,7 +771,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 }
 
 .login-page {
-  background: linear-gradient(150deg, #0a1729 0%, #002868 45%, #003d99 75%, #0a1729 100%);
+  background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 60%, #f4f8ff 100%);
 }
 
 .login-bg-shape {
@@ -790,7 +789,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   height: 60vw;
   max-width: 420px;
   max-height: 420px;
-  background: radial-gradient(circle, rgba(0, 102, 255, 0.30) 0%, rgba(0, 102, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0) 70%);
 }
 
 .login-bg-shape-2 {
@@ -800,7 +799,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   height: 55vw;
   max-width: 380px;
   max-height: 380px;
-  background: radial-gradient(circle, rgba(56, 130, 255, 0.20) 0%, rgba(56, 130, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.10) 0%, rgba(37, 99, 235, 0) 70%);
 }
 
 .login-bg-shape-3 {
@@ -810,7 +809,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   height: 40vw;
   max-width: 280px;
   max-height: 280px;
-  background: radial-gradient(circle, rgba(96, 165, 250, 0.12) 0%, rgba(96, 165, 250, 0) 70%);
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.08) 0%, rgba(96, 165, 250, 0) 70%);
   transform: translateX(-50%);
 }
 
@@ -843,14 +842,14 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #60a5fa;
+  color: #1d4ed8;
 }
 
 .login-title {
   margin-top: 0.5rem;
   font-size: 1.6rem;
   font-weight: 800;
-  color: #ffffff;
+  color: #0b2545;
   letter-spacing: -0.01em;
 }
 @media (min-width: 768px) {
@@ -862,7 +861,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 .login-subtitle {
   margin-top: 0.4rem;
   font-size: 0.85rem;
-  color: #cbd5e1;
+  color: #5a6b85;
 }
 
 .login-card {
@@ -870,14 +869,12 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   width: 100%;
   max-width: 24rem;
   border-radius: 1.75rem;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: #ffffff;
+  border: 1px solid #eaeff7;
   padding: 1.75rem 1.25rem;
   box-shadow:
-    0 20px 60px rgba(0, 30, 80, 0.35),
-    0 0 0 1px rgba(0, 102, 255, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 8px 30px rgba(11, 37, 69, 0.10),
+    0 0 0 1px rgba(37, 99, 235, 0.04);
   animation: loginFadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
   opacity: 0;
 }
@@ -899,11 +896,11 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 .login-link {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #0066FF;
+  color: #1d4ed8;
   transition: color 0.2s ease;
 }
 .login-link:hover {
-  color: #0052cc;
+  color: #1e3a8a;
 }
 
 .login-input-wrap {
@@ -938,9 +935,9 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   color: #94a3b8;
 }
 .login-input:focus {
-  border-color: rgba(0, 102, 255, 0.6);
+  border-color: rgba(37, 99, 235, 0.6);
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .login-eye-btn {
@@ -995,7 +992,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   gap: 0.5rem;
   width: 100%;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #0066FF 0%, #002868 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.95rem;
@@ -1003,14 +1000,14 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   padding: 0.85rem 1.5rem;
   border: none;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 40, 104, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, filter 0.18s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 .login-btn-primary:hover {
   filter: brightness(1.08);
-  box-shadow: 0 10px 30px rgba(0, 40, 104, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 24px rgba(29, 78, 216, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 .login-btn-primary:active {
@@ -1036,7 +1033,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 
 .login-secondary-text {
   font-size: 0.82rem;
-  color: #cbd5e1;
+  color: #5a6b85;
 }
 
 .login-btn-secondary {
@@ -1046,20 +1043,20 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   width: 100%;
   max-width: 24rem;
   border-radius: 9999px;
-  border: 1.5px solid rgba(96, 165, 250, 0.5);
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  border: 1.5px solid rgba(37, 99, 235, 0.4);
+  background: rgba(37, 99, 235, 0.04);
+  color: #1d4ed8;
   font-weight: 700;
   font-size: 0.9rem;
   padding: 0.75rem 1.5rem;
   text-decoration: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(11, 37, 69, 0.06);
   transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
   -webkit-tap-highlight-color: transparent;
 }
 .login-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(96, 165, 250, 0.8);
+  background: rgba(37, 99, 235, 0.10);
+  border-color: rgba(37, 99, 235, 0.7);
   transform: translateY(-2px);
 }
 .login-btn-secondary:active {
