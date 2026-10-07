@@ -193,6 +193,7 @@ export type ValidationTransition = {
 export const VALIDATION_TRANSITIONS: ValidationTransition[] = [
   { from: 'Brouillon', to: 'En attente de vérification', minRole: 'DIRECTION_ECOLE' },
   { from: 'En attente de vérification', to: 'En cours de vérification', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'En attente de vérification', to: 'Validée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
   { from: 'En attente de vérification', to: 'Rejetée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
   { from: 'En cours de vérification', to: 'Validée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
   { from: 'En cours de vérification', to: 'Rejetée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },

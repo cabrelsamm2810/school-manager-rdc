@@ -43,6 +43,7 @@ export const ROUTE_MIN_ROLE: Record<string, string> = {
   '/coordination-provinciale': 'COORDINATION_PROVINCIALE',
   '/coordination-sous-provinciale': 'COORDINATION_SOUS_PROVINCIALE',
   '/admin-smd/ecoles': 'ADMIN_SCHOOL_MANAGER_RDC',
+  '/admin-smd/ecoles-en-attente': 'ADMIN_SCHOOL_MANAGER_RDC',
   '/admin/users': 'ADMIN_SCHOOL_MANAGER_RDC',
   '/bureaux-fonctions': 'COORDINATION_PROVINCIALE',
   '/grades': 'COORDINATION_PROVINCIALE',

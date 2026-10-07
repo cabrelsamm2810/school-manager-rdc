@@ -365,10 +365,10 @@ export function AdminSMDDashboard() {
               <p className="text-lg font-bold text-green-700">{data.ecoles.active}</p>
               <p className="text-[10px] text-green-600">Actifs</p>
             </div>
-            <div className="rounded-lg bg-amber-50 p-2">
+            <Link href="/admin-smd/ecoles-en-attente" className="rounded-lg bg-amber-50 p-2 transition hover:bg-amber-100">
               <p className="text-lg font-bold text-amber-700">{data.ecoles.pending}</p>
-              <p className="text-[10px] text-amber-600">En attente</p>
-            </div>
+              <p className="text-[10px] text-amber-600">En attente →</p>
+            </Link>
             <div className="rounded-lg bg-red-50 p-2">
               <p className="text-lg font-bold text-red-700">{data.ecoles.suspended}</p>
               <p className="text-[10px] text-red-600">Suspendus</p>
@@ -610,6 +610,7 @@ export function AdminSMDDashboard() {
         {[
           { label: 'Utilisateurs', href: '/admin/users', icon: 'people' },
           { label: 'Établissements', href: '/ecoles', icon: 'school' },
+          { label: 'Écoles en attente', href: '/admin-smd/ecoles-en-attente', icon: 'clock' },
           { label: 'Dossiers', href: '/dossiers', icon: 'folder' },
           { label: 'Notifications', href: '/notifications', icon: 'bell' },
           { label: 'SchoolChat', href: '/schoolchat', icon: 'chat' },
