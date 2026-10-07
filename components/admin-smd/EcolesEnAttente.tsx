@@ -64,17 +64,10 @@ export function EcolesEnAttente() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch les deux statuts "en attente" en parallèle
-      const [res1, res2] = await Promise.all([
-        fetch('/api/admin-smd/ecoles?statutValidation=' + encodeURIComponent('En attente de vérification') + '&pageSize=100'),
-        fetch('/api/admin-smd/ecoles?statutValidation=' + encodeURIComponent('En cours de vérification') + '&pageSize=100'),
-      ]);
-      const [data1, data2] = await Promise.all([res1.json(), res2.json()]);
-      if (!res1.ok || !res2.ok) throw new Error('Erreur lors du chargement');
-      const merged = [...(data1.ecoles ?? []), ...(data2.ecoles ?? [])];
-      // Trier : plus récent d'abord
-      merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setEcoles(merged);
+      const res = await fetch('/api/ecoles-en-attente');
+      const data = await res.json();
+      if (!res.ok) throw new Error('Erreur lors du chargement');
+      setEcoles(data.ecoles ?? []);
     } catch {
       setError('Impossible de charger les écoles en attente.');
     } finally {

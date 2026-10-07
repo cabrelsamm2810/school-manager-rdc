@@ -81,9 +81,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         { status: 403 },
       );
     }
-    // Périmètre provincial (COORDINATION_PROVINCIALE et au-dessus sauf SUPER_ADMIN)
+    // Périmètre provincial (COORDINATION_PROVINCIALE, AGENT_PROVINCIAL et au-dessus sauf SUPER_ADMIN)
     if (
-      hasAtLeastRole(user.role, 'COORDINATION_PROVINCIALE') &&
+      (hasAtLeastRole(user.role, 'COORDINATION_PROVINCIALE') || user.role === 'AGENT_PROVINCIAL') &&
       user.provinceAdministrative &&
       existing.province !== user.provinceAdministrative
     ) {
