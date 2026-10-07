@@ -83,6 +83,13 @@ function matchRoute(map: Record<string, string>, pathname: string): string | und
 
 /** Rôle exact imposé à un chemin donné (gère les préfixes). */
 export function getExactRoleForPath(pathname: string): string | undefined {
+  // Si le chemin a une entrée exacte dans ROUTE_MIN_ROLE mais pas dans
+  // ROUTE_EXACT_ROLE, on n'applique pas la restriction de rôle exact du parent.
+  // Exemple : /admin/users a minRole ADMIN_SCHOOL_MANAGER_RDC mais pas de
+  // rôle exact → ne pas hériter de ROUTE_EXACT_ROLE['/admin'] = SUPER_ADMIN.
+  if (ROUTE_MIN_ROLE[pathname] && !ROUTE_EXACT_ROLE[pathname]) {
+    return undefined;
+  }
   return matchRoute(ROUTE_EXACT_ROLE, pathname);
 }
 

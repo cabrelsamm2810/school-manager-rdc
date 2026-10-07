@@ -47,6 +47,7 @@ model User {
   profilePhotoUrl       String?
   validationCode        String?
   isActive              Boolean  @default(false)
+  userStatus            String   @default("EN_ATTENTE")
   coordSousProvincialeId String?
   coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
   ecoleId       String?
@@ -61,6 +62,7 @@ model User {
 
   @@index([role])
   @@index([isActive])
+  @@index([userStatus])
   @@index([coordSousProvincialeId])
   @@index([ecoleId])
   @@index([classe])
