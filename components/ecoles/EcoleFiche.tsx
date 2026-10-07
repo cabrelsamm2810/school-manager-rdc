@@ -67,6 +67,8 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
   const [ecole, setEcole] = useState<Ecole | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [docType, setDocType] = useState('');
   const [docTitre, setDocTitre] = useState('');
   const [docFile, setDocFile] = useState<File | null>(null);
@@ -111,6 +113,26 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
       // ignore
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleSendDocuments() {
+    if (!confirm('Envoyer le dossier de documents à la coordination pour vérification ?')) return;
+    setSending(true);
+    setSendResult(null);
+    try {
+      const res = await fetch(`/api/ecoles/${id}/envoyer-documents`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setSendResult({ type: 'success', message: data.message || 'Dossier envoyé avec succès.' });
+        loadData();
+      } else {
+        setSendResult({ type: 'error', message: data.error || 'Erreur lors de l\'envoi.' });
+      }
+    } catch {
+      setSendResult({ type: 'error', message: 'Erreur lors de l\'envoi du dossier.' });
+    } finally {
+      setSending(false);
     }
   }
 
@@ -251,6 +273,27 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
           </div>
         ) : (
           <p className="text-sm text-slate-500">Aucun document justificatif.</p>
+        )}
+
+        {/* Bouton d'envoi du dossier à la coordination — réservé aux rôles de l'école */}
+        {canManageDocs && ['Brouillon', 'Rejetée'].includes(ecole.statutValidation) && (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            {sendResult && (
+              <div className={`mb-3 rounded-xl px-4 py-2.5 text-sm font-medium ${sendResult.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                {sendResult.message}
+              </div>
+            )}
+            <button
+              onClick={handleSendDocuments}
+              disabled={sending || ecole.documents.length === 0}
+              className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 sm:w-auto"
+            >
+              {sending ? 'Envoi en cours…' : '📤 Envoyer le dossier à la coordination'}
+            </button>
+            {ecole.documents.length === 0 && (
+              <p className="mt-2 text-xs text-amber-600">Veuillez ajouter au moins un document avant d'envoyer le dossier.</p>
+            )}
+          </div>
         )}
 
         {/* Upload form — réservé aux rôles de l'école */}

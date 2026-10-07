@@ -199,6 +199,7 @@ export const VALIDATION_TRANSITIONS: ValidationTransition[] = [
   { from: 'En cours de vérification', to: 'Rejetée', minRole: 'AGENT_SOUS_PROVINCIAL' },
   { from: 'Validée', to: 'Suspendue', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
   { from: 'Rejetée', to: 'Brouillon', minRole: 'DIRECTION_ECOLE' },
+  { from: 'Rejetée', to: 'En attente de vérification', minRole: 'DIRECTION_ECOLE' },
   { from: 'Suspendue', to: 'Brouillon', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
   { from: 'Suspendue', to: 'Validée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
 ];
