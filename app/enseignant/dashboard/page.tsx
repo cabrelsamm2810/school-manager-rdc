@@ -10,6 +10,7 @@ import { getInstitutionLabel } from '@/lib/institution';
 import { PresenceManager } from '@/components/enseignant/PresenceManager';
 import { PresenceStatsJour } from '@/components/enseignant/PresenceStatsJour';
 import { RapportAbsences } from '@/components/enseignant/RapportAbsences';
+import { PresenceCheckInCard } from '@/components/enseignant/PresenceCheckInCard';
 
 type ClassData = { classe: string; effectif: number };
 type PresenceData = { classe: string; taux: number | null; totalRecords: number };
@@ -48,6 +49,7 @@ export default function EnseignantDashboardPage() {
             <>
               <ClockCard institutionLabel={getInstitutionLabel(user)} />
               <WelcomeCard user={user} scope="enseignant" />
+              <PresenceCheckInCard />
             </>
           )}
 
