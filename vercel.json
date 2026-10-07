@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "prisma generate && next build",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_APP_NAME": "School Manager RDC"
+  }
+}
