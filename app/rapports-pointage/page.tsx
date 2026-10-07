@@ -14,6 +14,7 @@ type ReportData = {
   daily: DailyRow[];
   weekly: WeeklyRow[];
   enseignants: EnseignantRow[];
+  filters: { classes: string[]; departements: string[] };
 };
 
 function formatDateFr(dateStr: string, opts?: Intl.DateTimeFormatOptions) {
@@ -34,10 +35,20 @@ export default function RapportsPointagePage() {
   const [error, setError] = useState('');
   const [view, setView] = useState<'day' | 'week'>('day');
   const [days, setDays] = useState(30);
+  const [filterClasse, setFilterClasse] = useState('');
+  const [filterDepartement, setFilterDepartement] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
+
+  const filterQuery = [
+    `days=${days}`,
+    filterClasse && `classe=${encodeURIComponent(filterClasse)}`,
+    filterDepartement && `departement=${encodeURIComponent(filterDepartement)}`,
+    filterSearch && `search=${encodeURIComponent(filterSearch)}`,
+  ].filter(Boolean).join('&');
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/rapports/pointage?days=${days}`)
+    fetch(`/api/rapports/pointage?${filterQuery}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) { setError('Impossible de charger les rapports.'); return; }
@@ -45,12 +56,12 @@ export default function RapportsPointagePage() {
       })
       .catch(() => setError('Erreur de connexion.'))
       .finally(() => setLoading(false));
-  }, [days]);
+  }, [days, filterClasse, filterDepartement, filterSearch]);
 
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   function handleExport(format: 'csv' | 'xlsx' | 'pdf') {
-    window.open(`/api/rapports/pointage?days=${days}&export=${format}`, '_blank');
+    window.open(`/api/rapports/pointage?${filterQuery}&export=${format}`, '_blank');
     setShowExportMenu(false);
   }
 
@@ -118,6 +129,56 @@ export default function RapportsPointagePage() {
                     </button>
                   </div>
                 </>
+              )}
+            </div>
+          </div>
+
+          {/* ── Filtres ── */}
+          <div className="mb-4 rounded-2xl bg-white p-4 shadow-soft">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-slate-400">Département</label>
+                <select
+                  value={filterDepartement}
+                  onChange={(e) => setFilterDepartement(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-400"
+                >
+                  <option value="">Tous</option>
+                  {data?.filters?.departements.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-slate-400">Classe</label>
+                <select
+                  value={filterClasse}
+                  onChange={(e) => setFilterClasse(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-400"
+                >
+                  <option value="">Toutes</option>
+                  {data?.filters?.classes.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-slate-400">Enseignant</label>
+                <input
+                  type="text"
+                  value={filterSearch}
+                  onChange={(e) => setFilterSearch(e.target.value)}
+                  placeholder="Rechercher par nom…"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-400"
+                />
+              </div>
+              {(filterClasse || filterDepartement || filterSearch) && (
+                <button
+                  onClick={() => { setFilterClasse(''); setFilterDepartement(''); setFilterSearch(''); }}
+                  className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200"
+                >
+                  Réinitialiser
+                </button>
               )}
             </div>
           </div>

@@ -40,12 +40,36 @@ export async function GET(request: NextRequest) {
   const days = Math.min(Math.max(parseInt(searchParams.get('days') ?? '30', 10) || 30, 1), 90);
   const exportFmt = searchParams.get('export'); // 'csv' | 'xlsx' | 'pdf' | null
 
-  // ── Effectif enseignant de l'école ──
+  // ── Filtres ──
+  const filterClasse = searchParams.get('classe') ?? '';
+  const filterDepartement = searchParams.get('departement') ?? '';
+  const filterSearch = searchParams.get('search') ?? '';
+
+  // ── Effectif enseignant de l'école (avec filtres) ──
+  const enseignantWhere: Record<string, unknown> = { role: 'ENSEIGNANT', ecoleId, isActive: true };
+  if (filterClasse) enseignantWhere.classe = filterClasse;
+  if (filterDepartement) enseignantWhere.fonction = filterDepartement;
+  if (filterSearch) {
+    enseignantWhere.OR = [
+      { nom: { contains: filterSearch, mode: 'insensitive' } },
+      { prenom: { contains: filterSearch, mode: 'insensitive' } },
+      { postNom: { contains: filterSearch, mode: 'insensitive' } },
+    ];
+  }
+
   const enseignants = await prisma.user.findMany({
-    where: { role: 'ENSEIGNANT', ecoleId, isActive: true },
-    select: { id: true, nom: true, postNom: true, prenom: true },
+    where: enseignantWhere as never,
+    select: { id: true, nom: true, postNom: true, prenom: true, classe: true, fonction: true },
     orderBy: { nom: 'asc' },
   });
+
+  // ── Options de filtres disponibles (tous les enseignants de l'école) ──
+  const allEnseignants = await prisma.user.findMany({
+    where: { role: 'ENSEIGNANT', ecoleId, isActive: true },
+    select: { classe: true, fonction: true },
+  });
+  const availableClasses = [...new Set(allEnseignants.map((e) => e.classe).filter(Boolean))].sort();
+  const availableDepartements = [...new Set(allEnseignants.map((e) => e.fonction).filter(Boolean))].sort();
 
   const enseignantIds = enseignants.map((e) => e.id);
   const totalEnseignants = enseignantIds.length;
@@ -60,12 +84,19 @@ export async function GET(request: NextRequest) {
   const startStr = startDate.toISOString().split('T')[0];
   const endStr = endDate.toISOString().split('T')[0];
 
-  // ── Tous les pointages sur la période ──
+  // ── Tous les pointages sur la période (filtrés par enseignant) ──
+  const pointageWhere: Record<string, unknown> = {
+    ecoleId,
+    jour: { gte: startStr, lte: endStr },
+  };
+  if (enseignantIds.length > 0) {
+    pointageWhere.enseignantId = { in: enseignantIds };
+  } else if (filterClasse || filterDepartement || filterSearch) {
+    // Aucun enseignant ne correspond aux filtres → aucun pointage
+    pointageWhere.enseignantId = '__none__';
+  }
   const pointages = await prisma.pointageEnseignant.findMany({
-    where: {
-      ecoleId,
-      jour: { gte: startStr, lte: endStr },
-    },
+    where: pointageWhere as never,
     orderBy: { jour: 'asc' },
   });
 
@@ -294,5 +325,6 @@ export async function GET(request: NextRequest) {
     daily,
     weekly,
     enseignants: enseignantDetails,
+    filters: { classes: availableClasses, departements: availableDepartements },
   });
 }
