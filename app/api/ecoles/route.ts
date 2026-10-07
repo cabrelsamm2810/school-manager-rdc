@@ -124,6 +124,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ── Périmètre territorial ──
+  // La coordination provinciale ne peut créer que dans sa province ;
+  // la coordination sous-provinciale ne peut créer que dans sa sous-division.
+  const scope = getScopeLevel(auth.user.role);
+  if (scope === 'provincial' && (auth.user as any).provinceAdministrative && data.province !== (auth.user as any).provinceAdministrative) {
+    return NextResponse.json(
+      { error: 'Vous ne pouvez créer un école que dans votre province.' },
+      { status: 403 },
+    );
+  }
+  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
+    if (data.coordSousProvincialeId && data.coordSousProvincialeId !== (auth.user as any).coordSousProvincialeId) {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez créer un école que dans votre sous-division.' },
+        { status: 403 },
+      );
+    }
+    // Auto-remplir la sous-division si non spécifiée
+    if (!data.coordSousProvincialeId) {
+      data.coordSousProvincialeId = (auth.user as any).coordSousProvincialeId;
+    }
+  }
+
   // Générer un identifiant School Manager unique
   let identifiantSM = generateIdentifiantSM(data.institution);
   let attempts = 0;
