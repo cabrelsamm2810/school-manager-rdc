@@ -351,9 +351,9 @@ export function EcoleDetailPanel({
       </div>
 
       {/* Documents */}
-      {ecole.documents.length > 0 && (
-        <div className={sectionClass}>
-          <h3 className="mb-3 text-sm font-bold text-slate-900">Documents ({ecole.documents.length})</h3>
+      <div className={sectionClass}>
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Documents officiels ({ecole.documents.length})</h3>
+        {ecole.documents.length > 0 ? (
           <div className="space-y-2">
             {ecole.documents.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2">
@@ -370,8 +370,10 @@ export function EcoleDetailPanel({
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-slate-500">Aucun document officiel téléversé par l'établissement pour l'instant.</p>
+        )}
+      </div>
     </div>
   );
 }
