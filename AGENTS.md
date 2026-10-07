@@ -76,6 +76,14 @@ credentials. Nothing external is required to boot.
   du vieux code » réapparaît : bumper `CACHE_VERSION` dans `sw.js` (purge les anciens caches à l'activation) et
   recharger deux fois (la 1re installe le nouveau SW, la 2e charge du code frais).
 
+- **Diagnostics SQL : rôle et base sont `school` / `school`, rien d'autre.** Un `psql -U schoolmanager …` ou
+  `-U school_manager …` (noms devinés) ne touche pas l'application mais écrit `FATAL: role "…" does not exist`
+  dans les logs `postgres`, que la validation de la plateforme remonte ensuite comme une panne de base. Commande
+  exacte : `docker compose -f docker-compose.base44.yml exec -T postgres psql -U school -d school -c '…'`.
+  Les colonnes Prisma sont en camelCase : en SQL brut il faut les guillemeter (`"ecoleId"`, `e."ecoleId"`),
+  sinon PostgreSQL les passe en minuscules et répond `column "ecoleid" does not exist`. Pour une simple lecture,
+  préférer le client Prisma (`prisma.eleve.findMany(…)`) à du SQL brut.
+
 ## Comptes de démonstration
 
 - **Enseignant** : `enseignant.demo@schoolmanager-rdc.cd` / `Enseignant2026`, rattaché à l'« École de
