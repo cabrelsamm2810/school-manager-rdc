@@ -66,7 +66,7 @@ export function AttachmentMenu({
 
   return (
     <div
-      className="absolute bottom-full left-0 mb-2 flex gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700"
+      className="absolute bottom-full left-0 z-20 mb-2 flex gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700"
       style={{ animation: 'attachmentMenuIn 0.2s ease-out' }}
     >
       {items.map((item, i) => (
