@@ -1570,3 +1570,10 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 
   .lp-footer { padding: 44px 28px 22px; }
 }
+
+/* ── Animation ligne de scan QR ── */
+@keyframes scanline {
+  0% { top: 0; opacity: 1; }
+  50% { top: calc(100% - 2px); opacity: 1; }
+  100% { top: 0; opacity: 1; }
+}

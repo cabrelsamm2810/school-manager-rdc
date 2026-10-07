@@ -7,12 +7,13 @@ import { sendAbsenceNotification, sendPresenceNotification } from '@/lib/mail';
 const updateSchema = z.object({
   date: z.string().trim().min(1, 'La date est obligatoire.'),
   present: z.boolean(),
+  statut: z.enum(['PRESENT', 'RETARD', 'ABSENT', 'JUSTIFIE']).optional(),
   classe: z.string().trim().min(1, 'La classe est obligatoire.'),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
 });
 
-/** PUT /api/presences/[id] — modifier une présence. */
+/** PUT /api/presences/[id] — modifier une présence (statut, etc.). */
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireRole(request, 'ENSEIGNANT');
   if (!auth.ok) {
@@ -24,42 +25,53 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? 'Données invalides.' },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const data = parsed.data;
   const existing = await prisma.presence.findUnique({
     where: { id: params.id },
-    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, emailTuteur: true, nomTuteur: true, ecole: { select: { nom: true } } } } },
+    include: {
+      eleve: {
+        select: {
+          id: true, matricule: true, nom: true, postNom: true, prenom: true,
+          emailTuteur: true, nomTuteur: true,
+          ecole: { select: { nom: true } },
+        },
+      },
+    },
   });
   if (!existing) {
     return NextResponse.json({ error: 'Présence introuvable.' }, { status: 404 });
   }
+
+  const statut = data.statut || (data.present ? 'PRESENT' : 'ABSENT');
 
   const presence = await prisma.presence.update({
     where: { id: params.id },
     data: {
       date: new Date(data.date),
       present: data.present,
+      statut,
       classe: data.classe,
       latitude: data.latitude ?? null,
       longitude: data.longitude ?? null,
     },
-    include: { eleve: { select: { id: true, matricule: true, nom: true, postNom: true, prenom: true } } },
+    include: {
+      eleve: {
+        select: { id: true, matricule: true, nom: true, postNom: true, prenom: true },
+      },
+    },
   });
 
   const dateStr = new Date(data.date).toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  // Envoyer un email au parent selon le changement de statut
+  // Email au parent selon le changement de statut
   if (existing.eleve?.emailTuteur) {
     if (!data.present && existing.present) {
-      // Passage de présent à absent
       sendAbsenceNotification({
         parentEmail: existing.eleve.emailTuteur,
         parentNom: existing.eleve.nomTuteur,
@@ -69,7 +81,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         dateAbsence: dateStr,
       }).catch(() => {});
     } else if (data.present && !existing.present) {
-      // Passage d'absent à présent
       sendPresenceNotification({
         parentEmail: existing.eleve.emailTuteur,
         parentNom: existing.eleve.nomTuteur,
@@ -78,7 +89,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         ecoleNom: existing.eleve.ecole?.nom || 'École',
         datePresence: dateStr,
         heurePresence: new Date(data.date).toLocaleTimeString('fr-FR'),
-        localisation: data.latitude != null && data.longitude != null ? `${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}` : undefined,
+        localisation: data.latitude != null && data.longitude != null
+          ? `${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)}` : undefined,
       }).catch(() => {});
     }
   }

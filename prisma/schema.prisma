@@ -182,19 +182,54 @@ model DossierEleveInteraction {
   @@map("dossier_eleve_interactions")
 }
 
+model SeancePresence {
+  id            String     @id @default(cuid())
+  classe        String
+  matiere       String     @default("")
+  enseignantId  String     @default("")
+  enseignantNom String     @default("")
+  ecoleId       String?
+  anneeScolaire String     @default("")
+  date          DateTime   @default(now())
+  heureDebut    DateTime   @default(now())
+  heureFin      DateTime?
+  statut        String     @default("EN_COURS") // EN_COURS | TERMINEE
+  presences     Presence[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([classe])
+  @@index([enseignantId])
+  @@index([date])
+  @@index([statut])
+  @@index([ecoleId])
+  @@map("seances_presence")
+}
+
 model Presence {
-  id        String   @id @default(cuid())
-  eleveId   String
-  eleve     Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
-  date      DateTime @default(now())
-  present   Boolean  @default(true)
-  classe    String
-  latitude  Float?
-  longitude Float?
+  id            String          @id @default(cuid())
+  eleveId       String
+  eleve         Eleve           @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  date          DateTime        @default(now())
+  present       Boolean         @default(true)
+  statut        String          @default("PRESENT") // PRESENT | RETARD | ABSENT | JUSTIFIE
+  classe        String
+  matiere       String          @default("")
+  anneeScolaire String          @default("")
+  enseignantId  String          @default("")
+  ecoleId       String?
+  seanceId      String?
+  seance        SeancePresence? @relation(fields: [seanceId], references: [id], onDelete: SetNull)
+  heureArrivee  DateTime?
+  latitude      Float?
+  longitude     Float?
 
   @@index([eleveId])
   @@index([date])
   @@index([classe])
+  @@index([statut])
+  @@index([seanceId])
+  @@index([enseignantId])
   @@map("presences")
 }
 
