@@ -14,5 +14,7 @@ export async function GET(request: NextRequest) {
     ecoleNom: user.ecole?.nom ?? null,
     typeInstitution: user.typeInstitution,
     institutionName: user.institutionName,
+    bureauAffectation: user.bureauAffectation,
+    fonction: user.fonction,
   }});
 }

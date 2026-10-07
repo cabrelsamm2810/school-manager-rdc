@@ -16,6 +16,8 @@ export type SessionUser = {
   ecoleNom?: string | null;
   typeInstitution?: string | null;
   institutionName?: string | null;
+  bureauAffectation?: string | null;
+  fonction?: string | null;
 };
 
 /**
