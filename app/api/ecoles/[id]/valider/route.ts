@@ -146,6 +146,19 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     ipAddress,
   });
 
+  // ── Notification ──
+  await prisma.notification.create({
+    data: {
+      titre: action === 'valider'
+        ? `École validée : ${existing.nom}`
+        : `École rejetée : ${existing.nom}`,
+      message: action === 'valider'
+        ? `L'école « ${existing.nom} » a été validée par ${userName}.${commentaire ? ` — ${commentaire}` : ''}`
+        : `L'école « ${existing.nom} » a été rejetée par ${userName}.${commentaire ? ` — ${commentaire}` : ''}`,
+      type: 'École',
+    },
+  });
+
   return NextResponse.json({
     ecole,
     action,

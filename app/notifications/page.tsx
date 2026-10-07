@@ -19,6 +19,7 @@ const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string; hre
   'Évaluation': { icon: 'chart', color: 'text-amber-600', bg: 'bg-amber-50', href: '/cahier-de-cote' },
   'Dossier': { icon: 'folder', color: 'text-teal-600', bg: 'bg-teal-50', href: '/dossiers-eleves' },
   'Personnel': { icon: 'shield', color: 'text-slate-600', bg: 'bg-slate-100', href: '/profile' },
+  'École': { icon: 'school', color: 'text-emerald-600', bg: 'bg-emerald-50', href: '/ecoles' },
 };
 
 function getTypeConfig(type: string) {
