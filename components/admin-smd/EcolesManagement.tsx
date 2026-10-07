@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { EcoleDetailPanel } from '@/components/admin-smd/EcoleDetailPanel';
 import { INSTITUTION_MAP } from '@/lib/institutions';
 import { PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
+import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
 
 type Ecole = {
   id: string;
@@ -61,6 +62,7 @@ export function EcolesManagement() {
   const [statutFilter, setStatutFilter] = useState('');
   const [provinceFilter, setProvinceFilter] = useState('');
   const [provinceEducFilter, setProvinceEducFilter] = useState('');
+  const [communeFilter, setCommuneFilter] = useState('');
   const [niveauFilter, setNiveauFilter] = useState('');
   const [institutionFilter, setInstitutionFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -84,6 +86,7 @@ export function EcolesManagement() {
       if (statutFilter) params.set('statut', statutFilter);
       if (provinceFilter) params.set('province', provinceFilter);
       if (provinceEducFilter) params.set('provinceEducationnelle', provinceEducFilter);
+      if (communeFilter) params.set('commune', communeFilter);
       if (niveauFilter) params.set('niveau', niveauFilter);
       if (institutionFilter) params.set('institution', institutionFilter);
       params.set('page', String(page));
@@ -103,7 +106,7 @@ export function EcolesManagement() {
     } finally {
       setLoading(false);
     }
-  }, [search, typeFilter, statutFilter, provinceFilter, provinceEducFilter, niveauFilter, institutionFilter, page, refreshKey]);
+  }, [search, typeFilter, statutFilter, provinceFilter, provinceEducFilter, communeFilter, niveauFilter, institutionFilter, page, refreshKey]);
 
   useEffect(() => {
     const timer = setTimeout(loadData, search ? 300 : 0);
@@ -113,7 +116,7 @@ export function EcolesManagement() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, typeFilter, statutFilter, provinceFilter, provinceEducFilter, niveauFilter, institutionFilter]);
+  }, [search, typeFilter, statutFilter, provinceFilter, provinceEducFilter, communeFilter, niveauFilter, institutionFilter]);
 
   function handleRefresh() {
     setRefreshKey((k) => k + 1);
@@ -216,17 +219,23 @@ export function EcolesManagement() {
             onChange={(v) => { setProvinceFilter(v); setProvinceEducFilter(''); }}
             options={filterData?.provinces ?? []} />
           {/* Cascade : la province éducationnelle suit la province choisie */}
-          <FilterSelect label="Province éduc." value={provinceEducFilter} onChange={setProvinceEducFilter}
+          <FilterSelect label="Province éduc." value={provinceEducFilter}
+            onChange={(v) => { setProvinceEducFilter(v); setCommuneFilter(''); }}
             options={provinceFilter
               ? (PROVINCES_EDUC_BY_ADMIN[provinceFilter] ?? []).map((pe) => pe.nom)
               : filterData?.provincesEducationnelles ?? []} />
+          {/* Cascade : la commune suit la province éducationnelle choisie */}
+          <FilterSelect label="Commune" value={communeFilter} onChange={setCommuneFilter}
+            options={provinceEducFilter
+              ? getCommunesForProvinceEduc(provinceEducFilter)
+              : []} />
           <FilterSelect label="Niveau" value={niveauFilter} onChange={setNiveauFilter} options={NIVEAUX} />
           <FilterSelect label="Institution" value={institutionFilter} onChange={setInstitutionFilter}
             options={filterData?.institutions.map((i) => i.code) ?? []} labels={filterData?.institutions} />
         </div>
-        {(typeFilter || statutFilter || provinceFilter || provinceEducFilter || niveauFilter || institutionFilter) && (
+        {(typeFilter || statutFilter || provinceFilter || provinceEducFilter || communeFilter || niveauFilter || institutionFilter) && (
           <button
-            onClick={() => { setTypeFilter(''); setStatutFilter(''); setProvinceFilter(''); setProvinceEducFilter(''); setNiveauFilter(''); setInstitutionFilter(''); }}
+            onClick={() => { setTypeFilter(''); setStatutFilter(''); setProvinceFilter(''); setProvinceEducFilter(''); setCommuneFilter(''); setNiveauFilter(''); setInstitutionFilter(''); }}
             className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700"
           >
             ✕ Réinitialiser les filtres

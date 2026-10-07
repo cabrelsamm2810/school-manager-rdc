@@ -11,6 +11,7 @@ import { EcoleFiche } from '@/components/ecoles/EcoleFiche';
 import { NiveauScolaireSelector } from '@/components/ecoles/NiveauScolaireSelector';
 import { INSTITUTIONS, INSTITUTION_MAP, VALIDATION_STATUTS } from '@/lib/institutions';
 import { PROVINCE_NAMES, PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
+import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
 
 type Ecole = {
   id: string;
@@ -46,6 +47,7 @@ export default function EcolesPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [provinceFilter, setProvinceFilter] = useState('');
   const [provinceEducFilter, setProvinceEducFilter] = useState('');
+  const [communeFilter, setCommuneFilter] = useState('');
   const [institutionFilter, setInstitutionFilter] = useState('');
   const [statutFilter, setStatutFilter] = useState('');
   const [view, setView] = useState<View>('list');
@@ -66,6 +68,7 @@ export default function EcolesPage() {
       if (typeFilter) params.set('type', typeFilter);
       if (provinceFilter) params.set('province', provinceFilter);
       if (provinceEducFilter) params.set('provinceEducationnelle', provinceEducFilter);
+      if (communeFilter) params.set('commune', communeFilter);
       if (institutionFilter) params.set('institution', institutionFilter);
       if (statutFilter) params.set('statutValidation', statutFilter);
       const res = await fetch(`/api/ecoles?${params.toString()}`);
@@ -82,7 +85,7 @@ export default function EcolesPage() {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, typeFilter, provinceFilter, provinceEducFilter, institutionFilter, statutFilter]);
+  }, [search, typeFilter, provinceFilter, provinceEducFilter, communeFilter, institutionFilter, statutFilter]);
 
   function startCreate() {
     setEditingId(null);
@@ -202,12 +205,21 @@ export default function EcolesPage() {
               <option value="">Toutes les provinces</option>
               {PROVINCE_NAMES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
-            <select value={provinceEducFilter} onChange={(e) => setProvinceEducFilter(e.target.value)}
+            <select value={provinceEducFilter}
+              onChange={(e) => { setProvinceEducFilter(e.target.value); setCommuneFilter(''); }}
               disabled={!provinceFilter}
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 disabled:opacity-40">
               <option value="">Toutes les provinces éduc.</option>
               {(PROVINCES_EDUC_BY_ADMIN[provinceFilter] ?? []).map((pe) => (
                 <option key={pe.nom} value={pe.nom}>{pe.nom}</option>
+              ))}
+            </select>
+            <select value={communeFilter} onChange={(e) => setCommuneFilter(e.target.value)}
+              disabled={!provinceEducFilter}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 disabled:opacity-40">
+              <option value="">Toutes les communes</option>
+              {getCommunesForProvinceEduc(provinceEducFilter).map((c) => (
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </div>

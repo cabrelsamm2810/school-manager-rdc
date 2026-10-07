@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') || undefined;
   const province = searchParams.get('province') || undefined;
   const provinceEducationnelle = searchParams.get('provinceEducationnelle') || undefined;
+  const commune = searchParams.get('commune') || undefined;
   const type = searchParams.get('type') || undefined;
   const institution = searchParams.get('institution') || undefined;
   const statutValidation = searchParams.get('statutValidation') || undefined;
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
   const where: Record<string, unknown> = {};
   if (province) where.province = province;
   if (provinceEducationnelle) where.provinceEducationnelle = provinceEducationnelle;
+  if (commune) where.commune = commune;
   if (type) where.type = type;
   if (institution) where.institution = institution;
   if (statutValidation) where.statutValidation = statutValidation;

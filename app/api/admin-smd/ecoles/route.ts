@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
   const statutValidationFilter = searchParams.get('statutValidation') || '';
   const provinceFilter = searchParams.get('province') || '';
   const provinceEducFilter = searchParams.get('provinceEducationnelle') || '';
+  const communeFilter = searchParams.get('commune') || '';
   const niveauFilter = searchParams.get('niveau') || '';
   const institutionFilter = searchParams.get('institution') || '';
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
   if (statutValidationFilter) where.statutValidation = statutValidationFilter;
   if (provinceFilter) where.province = provinceFilter;
   if (provinceEducFilter) where.provinceEducationnelle = provinceEducFilter;
+  if (communeFilter) where.commune = communeFilter;
   if (niveauFilter) where.type = niveauFilter; // niveau scolaire stocké dans `type`
   if (institutionFilter) where.institution = institutionFilter;
 
