@@ -76,7 +76,7 @@ export default function DashboardPage() {
     <AppShell>
       <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
         <div className="mx-auto max-w-5xl">
-          <ClockCard institutionLabel={getInstitutionLabel(user)} typeInstitution={user.typeInstitution} />
+          <ClockCard institutionLabel={getInstitutionLabel(user)} />
           <WelcomeCard user={user} scope={data.scope} />
           <QuickActions role={user.role} />
           {data.scope === 'national' && <NationalDashboard {...dashProps} role={user.role} />}

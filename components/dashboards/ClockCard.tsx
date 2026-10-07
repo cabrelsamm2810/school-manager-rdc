@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
+import { useSessionUser } from '@/lib/use-session-user';
+
+const OTHER_INSTITUTION_TYPES = new Set(['PUBLIQUE', 'CATHOLIQUE', 'ISLAMIQUE', 'INDEPENDANTE']);
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -19,13 +22,10 @@ function hand(value: number, max: number) {
  * cadran ne re-rend que lui-même chaque seconde. Le nom affiché est celui de la
  * session serveur — aucune donnée n'est simulée.
  */
-export function ClockCard({
-  institutionLabel,
-  typeInstitution
-}: {
-  institutionLabel?: string | null;
-  typeInstitution?: string | null;
-}) {
+export function ClockCard({ institutionLabel }: { institutionLabel?: string | null }) {
+  const user = useSessionUser();
+  /* Logo EC-ERC par défaut (coordination, direction…), sauf pour un autre type d'école connu. */
+  const showEcErc = !OTHER_INSTITUTION_TYPES.has(user?.typeInstitution ?? '');
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -107,17 +107,17 @@ export function ClockCard({
         </div>
       </div>
 
-      {typeInstitution === 'EC-ERC' ? (
-        <div className="relative mt-3.5 flex items-center gap-2.5 rounded-xl bg-white/15 px-3 py-2">
+      {showEcErc ? (
+        <div className="relative mt-3.5 flex items-center gap-3 rounded-xl bg-white/15 px-3 py-2.5">
           <img
             src="/illustrations/ec-erc-logo.jpg"
             alt="Logo EC-ERC"
-            className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain p-0.5"
+            className="h-12 w-12 shrink-0 rounded-lg bg-white object-contain p-0.5"
           />
           <div className="min-w-0">
             <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-100">Institution</p>
-            <p className="truncate text-[13px] font-semibold">EC-ERC</p>
-            <p className="truncate text-[10px] font-medium text-violet-100">
+            <p className="text-[14px] font-bold leading-tight">EC-ERC</p>
+            <p className="mt-0.5 text-[10.5px] font-medium leading-snug text-violet-100">
               Écoles Conventionnées des Églises du Réveil du Congo
             </p>
           </div>
