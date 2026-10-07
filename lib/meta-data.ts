@@ -23,15 +23,17 @@ export const defaultInstitutionTypes: InstitutionType[] = [
 
 export const defaultRoleOptions: RoleOption[] = [
   { value: 'ELEVE', label: 'Élève' },
-  { value: 'PARENT', label: 'Parent' },
+  { value: 'PARENT', label: 'Parent / Tuteur' },
   { value: 'ENSEIGNANT', label: 'Enseignant' },
+  { value: 'COMPTABLE', label: 'Comptable' },
+  { value: 'SECRETAIRE', label: 'Secrétaire' },
   { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
-  { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent sous provincial' },
-  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
+  { value: 'PROMOTEUR', label: 'Promoteur' },
+  { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent de coordination sous-provinciale' },
+  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
   { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
-  { value: 'SUPER_ADMIN', label: 'Super administrateur' }
 ];
 
 /* ── Données d'inscription ── */
@@ -47,11 +49,14 @@ export const registrationInstitutionTypes = [
 export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
-  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
+  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
   { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
+  { value: 'PROMOTEUR', label: 'Promoteur' },
+  { value: 'SECRETAIRE', label: 'Secrétaire' },
+  { value: 'COMPTABLE', label: 'Comptable' },
   { value: 'ENSEIGNANT', label: 'Enseignant' },
   { value: 'ELEVE', label: 'Élève' },
-  { value: 'PARENT', label: 'Parent' },
+  { value: 'PARENT', label: 'Parent / Tuteur' },
 ];
 
 /** Les 26 provinces administratives de la RDC. */
@@ -138,6 +143,9 @@ export const fonctionsByRole: Record<string, string[]> = {
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur sous-provincial', 'Coordonnateur sous-provincial adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   DIRECTION_ECOLE: ['Directeur', 'Directeur adjoint', 'Directeur des études'],
+  PROMOTEUR: ['Promoteur', 'Promoteur adjoint'],
+  SECRETAIRE: ['Secrétaire', 'Secrétaire adjoint'],
+  COMPTABLE: ['Comptable', 'Comptable adjoint'],
   ENSEIGNANT: ['Professeur', 'Instituteur', 'Chef de travaux'],
   ELEVE: ['Élève'],
   PARENT: ['Parent', 'Tuteur'],
@@ -151,6 +159,9 @@ export const gradesByRole: Record<string, string[]> = {
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur principal', 'Coordonnateur', 'Coordonnateur adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   DIRECTION_ECOLE: ['Directeur', 'Directeur adjoint'],
+  PROMOTEUR: ['Promoteur principal', 'Promoteur'],
+  SECRETAIRE: ['Secrétaire principal', 'Secrétaire'],
+  COMPTABLE: ['Comptable principal', 'Comptable'],
   ENSEIGNANT: ['Chef de travaux', 'Professeur', 'Instituteur principal', 'Instituteur'],
   ELEVE: [],
   PARENT: [],
@@ -189,6 +200,9 @@ export const rolesNeedingAffectation = new Set([
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
   'DIRECTION_ECOLE',
+  'PROMOTEUR',
+  'SECRETAIRE',
+  'COMPTABLE',
   'ENSEIGNANT',
   'ELEVE',
   'PARENT',
@@ -201,6 +215,9 @@ export const rolesNeedingFonctionGrade = new Set([
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
   'DIRECTION_ECOLE',
+  'PROMOTEUR',
+  'SECRETAIRE',
+  'COMPTABLE',
   'ENSEIGNANT',
 ]);
 
@@ -218,6 +235,9 @@ export const rolesNeedingEducationProvince = new Set([
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
   'DIRECTION_ECOLE',
+  'PROMOTEUR',
+  'SECRETAIRE',
+  'COMPTABLE',
   'ENSEIGNANT',
   'ELEVE',
   'PARENT',

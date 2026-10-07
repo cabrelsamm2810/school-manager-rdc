@@ -20,14 +20,14 @@ export type NavGroup = {
  * Configuration centrale de la navigation School Manager RDC.
  * Les modules sont organisés par groupe fonctionnel.
  * `minRole` restreint l'affichage aux rôles suffisants (optionnel).
- * `excludeRoles` masque un élément pour les rôles listés (utile quand un
- * groupe dédié existe, par exemple l'espace enseignant).
+ * `roles` restreint à des rôles exacts (prioritaire sur `minRole`).
+ * `excludeRoles` masque un élément pour les rôles listés.
  */
 export const navigationGroups: NavGroup[] = [
   {
     title: 'Accueil',
     items: [
-      { label: 'Tableau de bord', href: '/dashboard', icon: 'home', excludeRoles: ['ENSEIGNANT'] },
+      { label: 'Tableau de bord', href: '/dashboard', icon: 'home', excludeRoles: ['ENSEIGNANT', 'SUPER_ADMIN', 'ADMIN_SCHOOL_MANAGER_RDC', 'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'] },
     ]
   },
   {
@@ -66,6 +66,38 @@ export const navigationGroups: NavGroup[] = [
     ]
   },
   {
+    title: 'Espace promoteur',
+    items: [
+      { label: 'Tableau de bord', href: '/promoteur', icon: 'home', roles: ['PROMOTEUR'] },
+      { label: 'Mon école', href: '/ecoles', icon: 'school', roles: ['PROMOTEUR'] },
+      { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['PROMOTEUR'] },
+      { label: 'Enseignants', href: '/enseignants', icon: 'teacher', roles: ['PROMOTEUR'] },
+      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['PROMOTEUR'] },
+      { label: 'Notifications', href: '/notifications', icon: 'bell', roles: ['PROMOTEUR'] },
+    ]
+  },
+  {
+    title: 'Espace secrétaire',
+    items: [
+      { label: 'Tableau de bord', href: '/secretaire', icon: 'home', roles: ['SECRETAIRE'] },
+      { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['SECRETAIRE'] },
+      { label: 'Dossiers des élèves', href: '/dossiers-eleves', icon: 'folder', roles: ['SECRETAIRE'] },
+      { label: 'Visites numériques', href: '/visites', icon: 'visit', roles: ['SECRETAIRE'] },
+      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['SECRETAIRE'] },
+      { label: 'Notifications', href: '/notifications', icon: 'bell', roles: ['SECRETAIRE'] },
+    ]
+  },
+  {
+    title: 'Espace comptable',
+    items: [
+      { label: 'Tableau de bord', href: '/comptable', icon: 'home', roles: ['COMPTABLE'] },
+      { label: 'Paiements', href: '/paiements', icon: 'card', roles: ['COMPTABLE'] },
+      { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['COMPTABLE'] },
+      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['COMPTABLE'] },
+      { label: 'Notifications', href: '/notifications', icon: 'bell', roles: ['COMPTABLE'] },
+    ]
+  },
+  {
     title: 'Organisation territoriale',
     items: [
       { label: 'Provinces', href: '/provinces', icon: 'globe', minRole: 'COORDINATION_PROVINCIALE' },
@@ -80,26 +112,27 @@ export const navigationGroups: NavGroup[] = [
   {
     title: 'Administration',
     items: [
-      { label: 'Utilisateurs', href: '/admin/users', icon: 'people', minRole: 'COORDINATION_PROVINCIALE' },
+      { label: 'Administration School Manager RDC', href: '/admin-smd', icon: 'shield', roles: ['ADMIN_SCHOOL_MANAGER_RDC'] },
+      { label: 'Utilisateurs', href: '/admin/users', icon: 'people', minRole: 'ADMIN_SCHOOL_MANAGER_RDC' },
       { label: 'Bureaux & fonctions', href: '/bureaux-fonctions', icon: 'office', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Grades', href: '/grades', icon: 'badge', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Dossiers', href: '/dossiers', icon: 'folder', minRole: 'AGENT_PROVINCIAL' },
-      { label: 'Visites numériques', href: '/visites', icon: 'visit', minRole: 'AGENT_PROVINCIAL' },
+      { label: 'Visites numériques', href: '/visites', icon: 'visit', minRole: 'AGENT_SOUS_PROVINCIAL' },
       { label: 'Services administratifs', href: '/services', icon: 'services', minRole: 'AGENT_SOUS_PROVINCIAL' },
-      { label: 'Administration générale', href: '/admin', icon: 'shield', minRole: 'SUPER_ADMIN' },
+      { label: 'Administration technique', href: '/admin', icon: 'shield', roles: ['SUPER_ADMIN'] },
     ]
   },
   {
     title: 'Communication',
     items: [
-      { label: 'Notifications', href: '/notifications', icon: 'bell', excludeRoles: ['ENSEIGNANT'] },
-      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', excludeRoles: ['ENSEIGNANT'] },
+      { label: 'Notifications', href: '/notifications', icon: 'bell', excludeRoles: ['ENSEIGNANT', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'] },
+      { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', excludeRoles: ['ENSEIGNANT', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'] },
     ]
   },
   {
     title: 'Services',
     items: [
-      { label: 'Paiements & premium', href: '/paiements', icon: 'card', excludeRoles: ['ENSEIGNANT'] },
+      { label: 'Paiements & premium', href: '/paiements', icon: 'card', excludeRoles: ['ENSEIGNANT', 'COMPTABLE'] },
       { label: 'Géolocalisation', href: '/geolocalisation', icon: 'location', excludeRoles: ['ENSEIGNANT'] },
       { label: 'Config. géolocalisation', href: '/config-geolocalisation', icon: 'location', excludeRoles: ['ENSEIGNANT'] },
     ]

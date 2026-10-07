@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ROLE_RANK } from '@/lib/roles';
 import { getExactRoleForPath, getMinRoleForPath } from '@/lib/route-access';
 
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/verify', '/about', '/verifier-bulletin'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/verify', '/about', '/verifier-bulletin', '/access-denied'];
 
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some((route) => pathname === route);
@@ -30,7 +30,7 @@ export function middleware(request: NextRequest) {
   if (roleCookie) {
     const exactRole = getExactRoleForPath(pathname);
     if (exactRole && roleCookie !== exactRole) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/access-denied', request.url));
     }
 
     const requiredRole = getMinRoleForPath(pathname);
@@ -38,7 +38,7 @@ export function middleware(request: NextRequest) {
       const userRank = ROLE_RANK[roleCookie] ?? 0;
       const requiredRank = ROLE_RANK[requiredRole] ?? 0;
       if (userRank < requiredRank) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL('/access-denied', request.url));
       }
     }
   }
@@ -47,5 +47,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|school-background|logo|illustrations).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|school-background|logo|illustrations|sw.js|manifest.json|offline.html|icon-|apple-touch-icon|favicon-).*)']
 };

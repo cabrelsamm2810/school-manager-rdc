@@ -10,15 +10,20 @@ datasource db {
 
 enum Role {
   SUPER_ADMIN
+  ADMIN_SCHOOL_MANAGER_RDC
   COORDINATION_NATIONALE
   COORDINATION_PROVINCIALE
   AGENT_PROVINCIAL
   COORDINATION_SOUS_PROVINCIALE
   AGENT_SOUS_PROVINCIAL
+  PROMOTEUR
   DIRECTION_ECOLE
+  SECRETAIRE
+  COMPTABLE
   ENSEIGNANT
   PARENT
   ELEVE
+  VISITEUR
 }
 
 model User {
@@ -786,4 +791,25 @@ model Bulletin {
   @@index([ecoleId])
   @@index([qrToken])
   @@map("bulletins")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String   @default("")
+  userRole    String   @default("")
+  userName    String   @default("")
+  action      String
+  module      String   @default("")
+  resource    String   @default("")
+  resourceId  String   @default("")
+  result      String   @default("success")
+  details     String   @default("")
+  ipAddress   String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

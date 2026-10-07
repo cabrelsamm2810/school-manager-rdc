@@ -13,6 +13,14 @@ export function isSuperAdmin(role: string): boolean {
   return role === 'SUPER_ADMIN';
 }
 
+export function isAdminSMD(role: string): boolean {
+  return role === 'ADMIN_SCHOOL_MANAGER_RDC';
+}
+
+export function isRestrictedRole(role: string): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ADMIN_SCHOOL_MANAGER_RDC';
+}
+
 export function hasAtLeastRole(userRole: string, requiredRole: string): boolean {
   return (ROLE_RANK[userRole] ?? 0) >= (ROLE_RANK[requiredRole] ?? 0);
 }

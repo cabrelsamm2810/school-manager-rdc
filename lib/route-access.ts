@@ -40,13 +40,18 @@ export const ROUTE_MIN_ROLE: Record<string, string> = {
   '/coordination-nationale': 'COORDINATION_NATIONALE',
   '/coordination-provinciale': 'COORDINATION_PROVINCIALE',
   '/coordination-sous-provinciale': 'COORDINATION_SOUS_PROVINCIALE',
-  '/admin/users': 'COORDINATION_PROVINCIALE',
+  '/admin/users': 'ADMIN_SCHOOL_MANAGER_RDC',
   '/bureaux-fonctions': 'COORDINATION_PROVINCIALE',
   '/grades': 'COORDINATION_PROVINCIALE',
   '/dossiers': 'AGENT_PROVINCIAL',
-  '/visites': 'AGENT_PROVINCIAL',
+  '/visites': 'AGENT_SOUS_PROVINCIAL',
   '/services': 'AGENT_SOUS_PROVINCIAL',
   '/admin': 'SUPER_ADMIN',
+  '/admin-smd': 'ADMIN_SCHOOL_MANAGER_RDC',
+  '/promoteur': 'PROMOTEUR',
+  '/secretaire': 'SECRETAIRE',
+  '/comptable': 'COMPTABLE',
+  '/paiements': 'COMPTABLE',
 };
 
 /**
@@ -59,6 +64,11 @@ export const ROUTE_EXACT_ROLE: Record<string, string> = {
   '/coordination-nationale': 'COORDINATION_NATIONALE',
   '/coordination-provinciale': 'COORDINATION_PROVINCIALE',
   '/coordination-sous-provinciale': 'COORDINATION_SOUS_PROVINCIALE',
+  '/admin': 'SUPER_ADMIN',
+  '/admin-smd': 'ADMIN_SCHOOL_MANAGER_RDC',
+  '/promoteur': 'PROMOTEUR',
+  '/secretaire': 'SECRETAIRE',
+  '/comptable': 'COMPTABLE',
 };
 
 /** Trouve la règle applicable à un chemin : correspondance exacte, puis préfixe. */

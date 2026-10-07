@@ -24,7 +24,7 @@ const createSchema = z.object({
 
 /** GET /api/eleves — liste des élèves (filtrable par classe et recherche). */
 export async function GET(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
 /** POST /api/eleves — enregistrer un nouvel élève. */
 export async function POST(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
 /** PATCH /api/eleves — mise à jour groupée de plusieurs élèves. */
 export async function PATCH(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
@@ -143,7 +143,7 @@ export async function PATCH(request: NextRequest) {
 
 /** DELETE /api/eleves — suppression groupée de plusieurs élèves. */
 export async function DELETE(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
