@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import { INSTITUTION_MAP, DOCUMENT_TYPES } from '@/lib/institutions';
 import { StatutBadge } from '@/components/ui/StatutBadge';
+import { useSessionUser } from '@/lib/use-session-user';
+
+/** Rôles autorisés à téléverser/supprimer des documents (école uniquement). */
+const SCHOOL_ROLES = ['DIRECTION_ECOLE', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'];
 
 type Document = {
   id: string;
@@ -57,6 +61,9 @@ const labelClass = 'text-xs font-medium uppercase tracking-wide text-slate-400';
 const valueClass = 'mt-0.5 text-sm font-medium text-slate-900';
 
 export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => void; onClose: () => void }) {
+  const session = useSessionUser();
+  const canManageDocs = !!session && SCHOOL_ROLES.includes(session.role);
+
   const [ecole, setEcole] = useState<Ecole | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -232,10 +239,12 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
                     className="rounded-lg px-3 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-50">
                     Voir
                   </a>
-                  <button onClick={() => handleDeleteDoc(doc.id)}
-                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50">
-                    Suppr.
-                  </button>
+                  {canManageDocs && (
+                    <button onClick={() => handleDeleteDoc(doc.id)}
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50">
+                      Suppr.
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -244,7 +253,8 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
           <p className="text-sm text-slate-500">Aucun document justificatif.</p>
         )}
 
-        {/* Upload form */}
+        {/* Upload form — réservé aux rôles de l'école */}
+        {canManageDocs && (
         <form onSubmit={handleUpload} className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <input type="text" placeholder="Titre du document" value={docTitre}
@@ -267,6 +277,7 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
             {uploading ? '…' : 'Ajouter'}
           </button>
         </form>
+        )}
       </div>
 
       {/* Historique de validation */}
