@@ -1,5 +1,3 @@
-import { ROLE_RANK } from '@/lib/rbac';
-
 export type AuthUser = {
   id: string;
   role: string;
@@ -31,11 +29,20 @@ export type ScopeConfig = {
  * - school : DIRECTION_ECOLE, ENSEIGNANT → voient leur école
  */
 export function getScopeLevel(role: string): ScopeLevel {
-  const rank = ROLE_RANK[role] ?? 0;
-  if (rank >= ROLE_RANK['COORDINATION_NATIONALE']) return 'national';
-  if (rank >= ROLE_RANK['COORDINATION_PROVINCIALE']) return 'provincial';
-  if (rank >= ROLE_RANK['COORDINATION_SOUS_PROVINCIALE']) return 'sousProvincial';
-  return 'school';
+  switch (role) {
+    case 'SUPER_ADMIN':
+    case 'ADMIN_SCHOOL_MANAGER_RDC':
+    case 'COORDINATION_NATIONALE':
+      return 'national';
+    case 'COORDINATION_PROVINCIALE':
+    case 'AGENT_PROVINCIAL':
+      return 'provincial';
+    case 'COORDINATION_SOUS_PROVINCIALE':
+    case 'AGENT_SOUS_PROVINCIAL':
+      return 'sousProvincial';
+    default:
+      return 'school';
+  }
 }
 
 /** Renvoie true si l'utilisateur a un accès national (voit toutes les données). */
