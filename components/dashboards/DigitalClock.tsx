@@ -48,8 +48,13 @@ export function DigitalClock({
 
   return (
     <div className={clsx('text-center sm:text-right', className)} aria-live="off">
-      <p className="tabular-nums text-2xl font-bold tracking-tight text-white sm:text-3xl">{time}</p>
-      <p className="mt-0.5 text-[11px] font-medium text-blue-100 sm:text-xs">{date || '\u00A0'}</p>
+      <p
+        className="tabular-nums text-2xl font-bold tracking-tight text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.25)] sm:text-3xl"
+        style={{ fontVariantNumeric: 'tabular-nums' }}
+      >
+        {time}
+      </p>
+      <p className="mt-1 text-[11px] font-medium tracking-wide text-blue-100/80 sm:text-xs">{date || '\u00A0'}</p>
     </div>
   );
 }

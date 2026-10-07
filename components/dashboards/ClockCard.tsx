@@ -53,52 +53,66 @@ export function ClockCard({ institutionLabel }: { institutionLabel?: string | nu
       <span className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
 
       <div className="relative flex items-center gap-4">
-        <svg viewBox="0 0 48 48" className="h-16 w-16 shrink-0 sm:h-[70px] sm:w-[70px]" aria-hidden="true">
-          <circle cx="24" cy="24" r="21" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
-          {[0, 90, 180, 270].map((angle) => (
-            <line
-              key={angle}
-              x1="24"
-              y1="5"
-              x2="24"
-              y2="9"
-              stroke="rgba(255,255,255,0.55)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              transform={`rotate(${angle} 24 24)`}
-            />
-          ))}
+        <svg viewBox="0 0 48 48" className="h-[72px] w-[72px] shrink-0 drop-shadow-[0_2px_6px_rgba(124,58,237,0.4)] sm:h-[80px] sm:w-[80px]" aria-hidden="true">
+          {/* Cadran extérieur */}
+          <circle cx="24" cy="24" r="22" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.6" />
+          {/* Anneau intérieur */}
+          <circle cx="24" cy="24" r="19" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.12)" strokeWidth="0.4" />
+          {/* 12 graduations — majeures aux quarts, mineures ailleurs */}
+          {Array.from({ length: 12 }, (_, i) => {
+            const angle = i * 30;
+            const isMajor = i % 3 === 0;
+            return (
+              <line
+                key={i}
+                x1="24"
+                y1="3.5"
+                x2="24"
+                y2={isMajor ? 6 : 4.8}
+                stroke={isMajor ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)'}
+                strokeWidth={isMajor ? 1.4 : 0.7}
+                strokeLinecap="round"
+                transform={`rotate(${angle} 24 24)`}
+              />
+            );
+          })}
+          {/* Aiguille des heures */}
           <line
             x1="24"
-            y1="24"
+            y1="26"
             x2="24"
-            y2="13.5"
+            y2="14"
             stroke="#ffffff"
-            strokeWidth="2.4"
+            strokeWidth="2.6"
             strokeLinecap="round"
             transform={hand(hours + minutes / 60, 12)}
           />
+          {/* Aiguille des minutes */}
           <line
             x1="24"
-            y1="24"
+            y1="27"
             x2="24"
-            y2="9"
-            stroke="#ffffff"
-            strokeWidth="1.7"
+            y2="8.5"
+            stroke="rgba(255,255,255,0.9)"
+            strokeWidth="1.8"
             strokeLinecap="round"
             transform={hand(minutes + seconds / 60, 60)}
           />
+          {/* Aiguille des secondes avec contre-poids */}
           <line
             x1="24"
-            y1="24"
+            y1="29"
             x2="24"
-            y2="8"
-            stroke="#DDD6FE"
-            strokeWidth="1"
+            y2="7"
+            stroke="#FBBF24"
+            strokeWidth="0.9"
             strokeLinecap="round"
             transform={hand(seconds, 60)}
           />
-          <circle cx="24" cy="24" r="1.8" fill="#ffffff" />
+          <circle cx="24" cy="29" r="1.6" fill="#FBBF24" transform={hand(seconds, 60)} />
+          {/* Centre */}
+          <circle cx="24" cy="24" r="2.2" fill="#ffffff" />
+          <circle cx="24" cy="24" r="1" fill="#7C3AED" />
         </svg>
 
         <div className="min-w-0 flex-1">
