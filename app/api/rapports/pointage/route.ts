@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
+import PDFDocument from 'pdfkit';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 
 /**
- * GET /api/rapports/pointage?days=30&export=csv
+ * GET /api/rapports/pointage?days=30&export=csv|xlsx|pdf
  *
  * Agrège les pointages des enseignants de l'école du directeur connecté.
  * Renvoie :
@@ -14,7 +15,13 @@ import { getSessionUser } from '@/lib/session-user';
  *   - enseignants : [{ id, nom, prenom, pointages: [{ jour, statut, heureArrivee }] }]
  *
  * ?export=csv → renvoie un fichier CSV (un ligne par enseignant × jour).
+ * ?export=xlsx → renvoie un fichier Excel.
+ * ?export=pdf → renvoie un résumé PDF imprimable.
  */
+
+function formatDateFr(dateStr: string, opts?: Intl.DateTimeFormatOptions) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', opts ?? { day: '2-digit', month: 'short' });
+}
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
   if (!user) {
@@ -31,8 +38,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const days = Math.min(Math.max(parseInt(searchParams.get('days') ?? '30', 10) || 30, 1), 90);
-  const exportFmt = searchParams.get('export'); // 'csv' | 'xlsx' | null
-  const wantExport = exportFmt === 'csv' || exportFmt === 'xlsx';
+  const exportFmt = searchParams.get('export'); // 'csv' | 'xlsx' | 'pdf' | null
 
   // ── Effectif enseignant de l'école ──
   const enseignants = await prisma.user.findMany({
@@ -162,6 +168,111 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="rapport_pointage_${startStr}_${endStr}.xlsx"`,
+      },
+    });
+  }
+
+  // ── Export PDF (résumé imprimable) ──
+  if (exportFmt === 'pdf') {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (c: Buffer) => chunks.push(c));
+
+    const periodeLabel = `${formatDateFr(startStr)} — ${formatDateFr(endStr)}`;
+    const avgTaux = daily.length > 0 ? Math.round(daily.reduce((s, d) => s + d.taux, 0) / daily.length) : 0;
+    const totalRetardsPdf = daily.reduce((s, d) => s + d.retard, 0);
+
+    // ── En-tête ──
+    doc.fontSize(18).font('Helvetica-Bold').text('Rapport de présence des enseignants', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.fontSize(10).font('Helvetica').text(`Période : ${periodeLabel} (${days} jours)`, { align: 'center' });
+    doc.moveDown(0.2);
+    doc.text(`Édité le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}`, { align: 'center' });
+    doc.moveDown(1);
+
+    // ── Synthèse ──
+    doc.fontSize(13).font('Helvetica-Bold').text('Synthèse', { underline: true });
+    doc.moveDown(0.3);
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`  Effectif enseignants : ${totalEnseignants}`);
+    doc.text(`  Taux de présence moyen : ${avgTaux}%`);
+    doc.text(`  Total retards (période) : ${totalRetardsPdf}`);
+    doc.moveDown(1);
+
+    // ── Tableau quotidien ──
+    doc.fontSize(13).font('Helvetica-Bold').text('Détail par jour', { underline: true });
+    doc.moveDown(0.3);
+
+    const colW = [150, 80, 80, 80, 80];
+    const tableX = 50;
+    let y = doc.y;
+
+    // En-tête du tableau
+    doc.fontSize(9).font('Helvetica-Bold');
+    const headers = ['Jour', 'Présents', 'Retards', 'Absents', 'Taux'];
+    headers.forEach((h, i) => {
+      doc.text(h, tableX + colW.slice(0, i).reduce((a, b) => a + b, 0), y, { width: colW[i], align: i === 0 ? 'left' : 'center' });
+    });
+    doc.moveTo(tableX, y + 14).lineTo(tableX + colW.reduce((a, b) => a + b, 0), y + 14).stroke();
+    y += 20;
+
+    // Lignes
+    doc.font('Helvetica');
+    for (const row of daily.slice().reverse()) {
+      if (y > 720) { doc.addPage(); y = 50; }
+      const label = formatDateFr(row.jour, { weekday: 'short', day: '2-digit', month: 'short' });
+      const cells = [label, String(row.present), String(row.retard), String(row.absent), `${row.taux}%`];
+      cells.forEach((c, i) => {
+        doc.text(c, tableX + colW.slice(0, i).reduce((a, b) => a + b, 0), y, { width: colW[i], align: i === 0 ? 'left' : 'center' });
+      });
+      y += 16;
+    }
+
+    doc.moveDown(1);
+
+    // ── Détail par enseignant ──
+    if (enseignantDetails.length > 0) {
+      if (doc.y > 680) doc.addPage();
+      doc.fontSize(13).font('Helvetica-Bold').text('Détail par enseignant', { underline: true });
+      doc.moveDown(0.3);
+
+      y = doc.y;
+      doc.fontSize(9).font('Helvetica-Bold');
+      const ensHeaders = ['Enseignant', 'Pointages', 'Retards'];
+      const ensColW = [250, 100, 100];
+      ensHeaders.forEach((h, i) => {
+        doc.text(h, tableX + ensColW.slice(0, i).reduce((a, b) => a + b, 0), y, { width: ensColW[i], align: i === 0 ? 'left' : 'center' });
+      });
+      doc.moveTo(tableX, y + 14).lineTo(tableX + ensColW.reduce((a, b) => a + b, 0), y + 14).stroke();
+      y += 20;
+
+      doc.font('Helvetica');
+      for (const ens of enseignantDetails) {
+        if (y > 760) { doc.addPage(); y = 50; }
+        const cells = [ens.nom, String(ens.totalPointages), String(ens.totalRetards)];
+        cells.forEach((c, i) => {
+          doc.text(c, tableX + ensColW.slice(0, i).reduce((a, b) => a + b, 0), y, { width: ensColW[i], align: i === 0 ? 'left' : 'center' });
+        });
+        y += 16;
+      }
+    }
+
+    // ── Pied de page ──
+    doc.moveDown(2);
+    doc.fontSize(8).font('Helvetica-Oblique').fillColor('gray')
+      .text('Document généré automatiquement par School Manager RDC', { align: 'center' });
+
+    doc.end();
+
+    const pdfBuffer = await new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+
+    return new NextResponse(pdfBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="rapport_pointage_${startStr}_${endStr}.pdf"`,
       },
     });
   }

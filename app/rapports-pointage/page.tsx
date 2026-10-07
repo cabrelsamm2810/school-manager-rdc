@@ -49,7 +49,7 @@ export default function RapportsPointagePage() {
 
   const [showExportMenu, setShowExportMenu] = useState(false);
 
-  function handleExport(format: 'csv' | 'xlsx') {
+  function handleExport(format: 'csv' | 'xlsx' | 'pdf') {
     window.open(`/api/rapports/pointage?days=${days}&export=${format}`, '_blank');
     setShowExportMenu(false);
   }
@@ -106,6 +106,15 @@ export default function RapportsPointagePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-6h2m0 0V5h2m4 12H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z" />
                       </svg>
                       CSV
+                    </button>
+                    <button
+                      onClick={() => handleExport('pdf')}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-rose-50"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 text-rose-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-6h2m0 0V5h2m4 12H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z" />
+                      </svg>
+                      PDF imprimable
                     </button>
                   </div>
                 </>
