@@ -4,29 +4,7 @@ import { getSessionUser } from '@/lib/session-user';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-import { getStoredFileSize } from '@/lib/chat-files';
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ALLOWED_FILE_TYPES = [
-  ...ALLOWED_IMAGE_TYPES,
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain',
-  'text/csv',
-  'application/zip',
-  'video/mp4',
-  'audio/mpeg',
-  'audio/mp4',
-  'audio/webm',
-  'audio/ogg',
-  'audio/wav',
-];
+import { getStoredFileSize, validateChatFile } from '@/lib/chat-files';
 
 export async function GET(
   request: NextRequest,
@@ -136,16 +114,12 @@ export async function POST(
       return NextResponse.json({ error: 'Aucun fichier reçu.' }, { status: 400 });
     }
 
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Type de fichier non supporté.' }, { status: 400 });
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'Le fichier dépasse 10 Mo.' }, { status: 400 });
+    const validationError = validateChatFile(file);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
     // Sauvegarde le fichier
-    const ext = file.name.split('.').pop() || 'bin';
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const uniqueName = `${Date.now()}-${safeName}`;
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'chat-files');

@@ -29,6 +29,7 @@ export function ChatComposer({
   recordingError,
   uploading,
   sending,
+  uploadError,
   replyTo,
   onCancelReply
 }: {
@@ -44,6 +45,7 @@ export function ChatComposer({
   recordingError: string;
   uploading: boolean;
   sending: boolean;
+  uploadError: string;
   replyTo: { name: string; preview: string } | null;
   onCancelReply: () => void;
 }) {
@@ -123,7 +125,7 @@ export function ChatComposer({
         type="file"
         onChange={handleFileSelect}
         className="hidden"
-        accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,video/mp4,audio/mpeg,audio/mp4,audio/webm,audio/ogg"
+        accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,video/mp4,audio/mpeg,audio/mp4,audio/webm,audio/ogg,.heic,.heif"
       />
       <input ref={cameraInputRef} type="file" onChange={handleFileSelect} className="hidden" accept="image/*" capture="environment" />
       <input ref={audioInputRef} type="file" onChange={handleFileSelect} className="hidden" accept="audio/*" />
@@ -242,6 +244,16 @@ export function ChatComposer({
       </div>
 
       {uploading && <p className="mt-1 text-center text-[11px] text-slate-400">Envoi du fichier…</p>}
+      {uploadError && !uploading && (
+        <div className="mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-[11px] font-medium text-red-600">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-3.5 w-3.5 shrink-0">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {uploadError}
+        </div>
+      )}
     </div>
   );
 }

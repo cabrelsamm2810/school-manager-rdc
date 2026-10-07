@@ -90,6 +90,7 @@ export function SchoolChat() {
   const [loading, setLoading] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [activeCall, setActiveCall] = useState<{
     callId?: string;
     offer?: string;
@@ -185,6 +186,7 @@ export function SchoolChat() {
       setReplyTo(null);
       setShowSearchInConv(false);
       setConvSearchQuery('');
+      setUploadError('');
       messagesKeyRef.current = '';
       setMessages([]);
       loadMessages(id, kind);
@@ -283,6 +285,7 @@ export function SchoolChat() {
     const content = inputText.trim();
     setInputText('');
     setLoading(true);
+    setUploadError('');
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: Message = {
@@ -324,6 +327,7 @@ export function SchoolChat() {
     (file: File) => {
       if (!activeConversationId) return;
       setUploading(true);
+      setUploadError('');
 
       const formData = new FormData();
       formData.append('file', file);
@@ -352,20 +356,23 @@ export function SchoolChat() {
           ? `/api/chat/groups/${activeConversationId}/messages`
           : `/api/chat/conversations/${activeConversationId}/messages`;
       fetch(endpoint, { method: 'POST', body: formData })
-        .then((r) => r.json())
-        .then((data) => {
+        .then(async (r) => {
+          const data = await r.json();
           if (data.id) {
             URL.revokeObjectURL(previewUrl);
             setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...data, status: 'sent' } : m)));
             if (activeChatType === 'group') loadGroups();
             else loadConversations();
           } else {
+            URL.revokeObjectURL(previewUrl);
             setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)));
+            setUploadError(data.error || 'Échec de l\'envoi du fichier.');
           }
         })
         .catch(() => {
           URL.revokeObjectURL(previewUrl);
           setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)));
+          setUploadError('Échec de l\'envoi du fichier.');
         })
         .finally(() => setUploading(false));
     },
@@ -878,6 +885,7 @@ export function SchoolChat() {
               recordingError={recordingError}
               uploading={uploading}
               sending={loading}
+              uploadError={uploadError}
               replyTo={
                 replyTo
                   ? {
