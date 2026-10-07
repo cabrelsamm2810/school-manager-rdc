@@ -27,24 +27,24 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
   COORDINATION_PROVINCIALE: [
     { label: 'Coord. provinciale', href: '/coordination-provinciale', icon: 'region', color: 'cyan' },
     { label: 'Sous-divisions', href: '/sous-divisions', icon: 'district', color: 'violet' },
-    { label: 'Écoles', href: '/ecoles', icon: 'school', color: 'blue' },
+    { label: 'Institutions', href: '/ecoles', icon: 'school', color: 'blue' },
     { label: 'Bureaux & fonctions', href: '/bureaux-fonctions', icon: 'office', color: 'amber' },
   ],
   AGENT_PROVINCIAL: [
     { label: 'Dossiers', href: '/dossiers', icon: 'folder', color: 'rose' },
     { label: 'Visites', href: '/visites', icon: 'visit', color: 'blue' },
-    { label: 'Écoles', href: '/ecoles', icon: 'school', color: 'violet' },
+    { label: 'Institutions', href: '/ecoles', icon: 'school', color: 'violet' },
     { label: 'Élèves', href: '/eleves', icon: 'users', color: 'emerald' },
   ],
   COORDINATION_SOUS_PROVINCIALE: [
     { label: 'Coord. sous-provinciale', href: '/coordination-sous-provinciale', icon: 'district', color: 'violet' },
-    { label: 'Écoles', href: '/ecoles', icon: 'school', color: 'blue' },
+    { label: 'Institutions', href: '/ecoles', icon: 'school', color: 'blue' },
     { label: 'Services', href: '/services', icon: 'services', color: 'cyan' },
     { label: 'Élèves', href: '/eleves', icon: 'users', color: 'emerald' },
   ],
   AGENT_SOUS_PROVINCIAL: [
     { label: 'Services', href: '/services', icon: 'services', color: 'cyan' },
-    { label: 'Écoles', href: '/ecoles', icon: 'school', color: 'blue' },
+    { label: 'Institutions', href: '/ecoles', icon: 'school', color: 'blue' },
     { label: 'Élèves', href: '/eleves', icon: 'users', color: 'emerald' },
   ],
   DIRECTION_ECOLE: [

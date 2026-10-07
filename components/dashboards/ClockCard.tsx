@@ -13,7 +13,7 @@ function hand(value: number, max: number) {
 }
 
 /**
- * Carte montre : heure, date et école.
+ * Carte montre : heure, date et institution.
  *
  * L'heure vient de l'appareil de l'utilisateur et avance en temps réel ; le
  * cadran ne re-rend que lui-même chaque seconde. Le nom affiché est celui de la
@@ -106,7 +106,7 @@ export function ClockCard({ institutionLabel }: { institutionLabel?: string | nu
           <Icon name="teacher" className="h-[18px] w-[18px]" />
         </span>
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-100">École</p>
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-100">Institution</p>
           <p className="truncate text-[13px] font-semibold">{institutionLabel || 'School Manager RDC'}</p>
         </div>
       </div>
