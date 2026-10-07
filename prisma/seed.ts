@@ -123,55 +123,203 @@ async function main() {
     await prisma.provinceEducationnelle.upsert({ where: { nom: pe.nom }, create: pe, update: {} });
   }
 
-  // ── EC-ERC ──
+  // ── EC-ERC : une entité par province (26 provinces) ──
   const ecErc = [
     { nom: 'EC Kinshasa-Est', type: 'Entité EC', province: 'Kinshasa', nbEcoles: 160, statut: 'Actif' },
     { nom: 'ERC Kinshasa-Ouest', type: 'Entité ERC', province: 'Kinshasa', nbEcoles: 160, statut: 'Actif' },
     { nom: 'EC Lubumbashi', type: 'Entité EC', province: 'Haut-Katanga', nbEcoles: 120, statut: 'Actif' },
     { nom: 'ERC Goma', type: 'Entité ERC', province: 'Nord-Kivu', nbEcoles: 75, statut: 'Actif' },
     { nom: 'EC Matadi', type: 'Entité EC', province: 'Kongo Central', nbEcoles: 90, statut: 'En setup' },
+    { nom: 'EC Kenge', type: 'Entité EC', province: 'Kwango', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Bandundu', type: 'Entité EC', province: 'Kwilu', nbEcoles: 45, statut: 'Actif' },
+    { nom: 'EC Inongo', type: 'Entité EC', province: 'Mai-Ndombe', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Tshikapa', type: 'Entité EC', province: 'Kasaï', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kananga', type: 'Entité EC', province: 'Kasaï Central', nbEcoles: 40, statut: 'Actif' },
+    { nom: 'EC Mbuji-Mayi', type: 'Entité EC', province: 'Kasaï Oriental', nbEcoles: 65, statut: 'Actif' },
+    { nom: 'EC Kabinda', type: 'Entité EC', province: 'Lomami', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Lusambo', type: 'Entité EC', province: 'Sankuru', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kindu', type: 'Entité EC', province: 'Maniema', nbEcoles: 30, statut: 'Actif' },
+    { nom: 'EC Bukavu', type: 'Entité EC', province: 'Sud-Kivu', nbEcoles: 60, statut: 'Actif' },
+    { nom: 'EC Bunia', type: 'Entité EC', province: 'Ituri', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Isiro', type: 'Entité EC', province: 'Haut-Uele', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Buta', type: 'Entité EC', province: 'Bas-Uele', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kisangani', type: 'Entité EC', province: 'Tshopo', nbEcoles: 55, statut: 'Actif' },
+    { nom: 'EC Lisala', type: 'Entité EC', province: 'Mongala', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Gbadolite', type: 'Entité EC', province: 'Nord-Ubangi', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Gemena', type: 'Entité EC', province: 'Sud-Ubangi', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Mbandaka', type: 'Entité EC', province: 'Équateur', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Boende', type: 'Entité EC', province: 'Tshuapa', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kamina', type: 'Entité EC', province: 'Haut-Lomami', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kolwezi', type: 'Entité EC', province: 'Lualaba', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kalemie', type: 'Entité EC', province: 'Tanganyika', nbEcoles: 0, statut: 'En setup' },
   ];
   for (const e of ecErc) {
     const existing = await prisma.ecErc.findFirst({ where: { nom: e.nom } });
     if (!existing) await prisma.ecErc.create({ data: e });
   }
+  console.log(`Seed terminé : ${ecErc.length} entités EC-ERC (26 provinces couvertes).`);
 
-  // ── Coordination nationale ──
+  // ── Coordination nationale : une par province (26 provinces) ──
   const coordNat = [
     { province: 'Kinshasa', coordonnateur: 'Dr. Mukendi Kalonji', ecoles: 320, eleves: 485000, statut: 'Actif' },
     { province: 'Haut-Katanga', coordonnateur: 'Prof. Kabeya Tshibangu', ecoles: 240, eleves: 320000, statut: 'Actif' },
     { province: 'Nord-Kivu', coordonnateur: 'M. Mwamba Ilunga', ecoles: 150, eleves: 180000, statut: 'Actif' },
     { province: 'Kongo Central', coordonnateur: 'Mme. Mujinga Tshisekedi', ecoles: 180, eleves: 210000, statut: 'Actif' },
     { province: 'Kwilu', coordonnateur: '', ecoles: 95, eleves: 120000, statut: 'Vacant' },
+    { province: 'Kwango', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Mai-Ndombe', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Kasaï', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Kasaï Central', coordonnateur: '', ecoles: 85, eleves: 110000, statut: 'Actif' },
+    { province: 'Kasaï Oriental', coordonnateur: '', ecoles: 130, eleves: 170000, statut: 'Actif' },
+    { province: 'Lomami', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Sankuru', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Maniema', coordonnateur: '', ecoles: 60, eleves: 75000, statut: 'Actif' },
+    { province: 'Sud-Kivu', coordonnateur: '', ecoles: 120, eleves: 160000, statut: 'Actif' },
+    { province: 'Ituri', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Haut-Uele', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Bas-Uele', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Tshopo', coordonnateur: '', ecoles: 110, eleves: 140000, statut: 'Actif' },
+    { province: 'Mongala', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Nord-Ubangi', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Sud-Ubangi', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Équateur', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Tshuapa', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Haut-Lomami', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Lualaba', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Tanganyika', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
   ];
   for (const c of coordNat) {
     const existing = await prisma.coordNationale.findFirst({ where: { province: c.province } });
     if (!existing) await prisma.coordNationale.create({ data: c });
   }
+  console.log(`Seed terminé : ${coordNat.length} coordinations nationales (26 provinces).`);
 
-  // ── Coordination provinciale ──
+  // ── Coordination provinciale : une par province (26 provinces) ──
   const coordProv = [
-    { province: 'Kinshasa', bureaux: 4, agents: 28, dossiers: 1450, statut: 'Actif' },
-    { province: 'Haut-Katanga', bureaux: 3, agents: 18, dossiers: 820, statut: 'Actif' },
-    { province: 'Nord-Kivu', bureaux: 2, agents: 12, dossiers: 540, statut: 'Actif' },
+    { province: 'Kinshasa', bureaux: 5, agents: 28, dossiers: 1450, statut: 'Actif' },
     { province: 'Kongo Central', bureaux: 2, agents: 10, dossiers: 430, statut: 'Actif' },
+    { province: 'Kwango', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Kwilu', bureaux: 2, agents: 8, dossiers: 210, statut: 'Actif' },
+    { province: 'Mai-Ndombe', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Kasaï', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Kasaï Central', bureaux: 2, agents: 8, dossiers: 180, statut: 'Actif' },
+    { province: 'Kasaï Oriental', bureaux: 2, agents: 10, dossiers: 250, statut: 'Actif' },
+    { province: 'Lomami', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Sankuru', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Maniema', bureaux: 1, agents: 5, dossiers: 90, statut: 'Actif' },
+    { province: 'Sud-Kivu', bureaux: 2, agents: 10, dossiers: 280, statut: 'Actif' },
+    { province: 'Nord-Kivu', bureaux: 2, agents: 12, dossiers: 540, statut: 'Actif' },
+    { province: 'Ituri', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Haut-Uele', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Bas-Uele', bureaux: 1, agents: 2, dossiers: 0, statut: 'En setup' },
+    { province: 'Tshopo', bureaux: 2, agents: 8, dossiers: 160, statut: 'Actif' },
+    { province: 'Mongala', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Nord-Ubangi', bureaux: 1, agents: 2, dossiers: 0, statut: 'En setup' },
+    { province: 'Sud-Ubangi', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Équateur', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Tshuapa', bureaux: 1, agents: 2, dossiers: 0, statut: 'En setup' },
+    { province: 'Haut-Lomami', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Lualaba', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Haut-Katanga', bureaux: 3, agents: 18, dossiers: 820, statut: 'Actif' },
+    { province: 'Tanganyika', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
   ];
+  const coordProvIds: Record<string, string> = {};
   for (const c of coordProv) {
     const existing = await prisma.coordProvinciale.findFirst({ where: { province: c.province } });
-    if (!existing) await prisma.coordProvinciale.create({ data: c });
+    if (existing) {
+      coordProvIds[c.province] = existing.id;
+    } else {
+      const created = await prisma.coordProvinciale.create({ data: c });
+      coordProvIds[c.province] = created.id;
+    }
   }
+  console.log(`Seed terminé : ${coordProv.length} coordinations provinciales (26 provinces).`);
 
   // ── Coordination sous-provinciale ──
+  // Kinshasa : 5 coordinations sous-provinciales (Lukunga, Funa, Mont-Amba, Tshangu, Plateau)
+  // Autres provinces : au moins une par province, liée à sa coordination provinciale
   const coordSous = [
-    { nom: 'Sous-division Lukunga', province: 'Kinshasa', bureaux: 2, agents: 8, statut: 'Actif' },
-    { nom: 'Sous-division Tshangu', province: 'Kinshasa', bureaux: 2, agents: 7, statut: 'Actif' },
-    { nom: 'Sous-division Likasi', province: 'Haut-Katanga', bureaux: 1, agents: 5, statut: 'Actif' },
-    { nom: 'Sous-division Beni', province: 'Nord-Kivu', bureaux: 1, agents: 4, statut: 'En setup' },
+    // Kinshasa — 5 coordinations sous-provinciales
+    { nom: 'Coordination SP Lukunga', province: 'Kinshasa', bureaux: 2, agents: 8, statut: 'Actif' },
+    { nom: 'Coordination SP Funa', province: 'Kinshasa', bureaux: 2, agents: 7, statut: 'Actif' },
+    { nom: 'Coordination SP Mont-Amba', province: 'Kinshasa', bureaux: 1, agents: 6, statut: 'Actif' },
+    { nom: 'Coordination SP Tshangu', province: 'Kinshasa', bureaux: 2, agents: 7, statut: 'Actif' },
+    { nom: 'Coordination SP Plateau', province: 'Kinshasa', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Kongo Central
+    { nom: 'Coordination SP Matadi', province: 'Kongo Central', bureaux: 1, agents: 5, statut: 'Actif' },
+    { nom: 'Coordination SP Boma', province: 'Kongo Central', bureaux: 1, agents: 4, statut: 'En setup' },
+    { nom: 'Coordination SP Moanda', province: 'Kongo Central', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Kwango
+    { nom: 'Coordination SP Kenge', province: 'Kwango', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Kwilu
+    { nom: 'Coordination SP Bandundu', province: 'Kwilu', bureaux: 1, agents: 4, statut: 'Actif' },
+    { nom: 'Coordination SP Kikwit', province: 'Kwilu', bureaux: 1, agents: 4, statut: 'Actif' },
+    // Mai-Ndombe
+    { nom: 'Coordination SP Inongo', province: 'Mai-Ndombe', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Kasaï
+    { nom: 'Coordination SP Tshikapa', province: 'Kasaï', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Kasaï Central
+    { nom: 'Coordination SP Kananga', province: 'Kasaï Central', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Kasaï Oriental
+    { nom: 'Coordination SP Mbuji-Mayi', province: 'Kasaï Oriental', bureaux: 1, agents: 6, statut: 'Actif' },
+    // Lomami
+    { nom: 'Coordination SP Kabinda', province: 'Lomami', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Sankuru
+    { nom: 'Coordination SP Lusambo', province: 'Sankuru', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Maniema
+    { nom: 'Coordination SP Kindu', province: 'Maniema', bureaux: 1, agents: 4, statut: 'Actif' },
+    // Sud-Kivu
+    { nom: 'Coordination SP Bukavu', province: 'Sud-Kivu', bureaux: 1, agents: 5, statut: 'Actif' },
+    { nom: 'Coordination SP Uvira', province: 'Sud-Kivu', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Nord-Kivu
+    { nom: 'Coordination SP Goma', province: 'Nord-Kivu', bureaux: 1, agents: 5, statut: 'Actif' },
+    { nom: 'Coordination SP Beni', province: 'Nord-Kivu', bureaux: 1, agents: 4, statut: 'En setup' },
+    // Ituri
+    { nom: 'Coordination SP Bunia', province: 'Ituri', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Haut-Uele
+    { nom: 'Coordination SP Isiro', province: 'Haut-Uele', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Bas-Uele
+    { nom: 'Coordination SP Buta', province: 'Bas-Uele', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Tshopo
+    { nom: 'Coordination SP Kisangani', province: 'Tshopo', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Mongala
+    { nom: 'Coordination SP Lisala', province: 'Mongala', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Nord-Ubangi
+    { nom: 'Coordination SP Gbadolite', province: 'Nord-Ubangi', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Sud-Ubangi
+    { nom: 'Coordination SP Gemena', province: 'Sud-Ubangi', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Équateur
+    { nom: 'Coordination SP Mbandaka', province: 'Équateur', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Tshuapa
+    { nom: 'Coordination SP Boende', province: 'Tshuapa', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Haut-Lomami
+    { nom: 'Coordination SP Kamina', province: 'Haut-Lomami', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Lualaba
+    { nom: 'Coordination SP Kolwezi', province: 'Lualaba', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Haut-Katanga
+    { nom: 'Coordination SP Lubumbashi', province: 'Haut-Katanga', bureaux: 2, agents: 8, statut: 'Actif' },
+    { nom: 'Coordination SP Likasi', province: 'Haut-Katanga', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Tanganyika
+    { nom: 'Coordination SP Kalemie', province: 'Tanganyika', bureaux: 1, agents: 2, statut: 'En setup' },
   ];
   for (const c of coordSous) {
     const existing = await prisma.coordSousProvinciale.findFirst({ where: { nom: c.nom } });
-    if (!existing) await prisma.coordSousProvinciale.create({ data: c });
+    const coordProvincialeId = coordProvIds[c.province] || null;
+    if (existing) {
+      // Mettre à jour le lien avec la coordination provinciale si manquant
+      if (!existing.coordProvincialeId && coordProvincialeId) {
+        await prisma.coordSousProvinciale.update({
+          where: { id: existing.id },
+          data: { coordProvincialeId },
+        });
+      }
+    } else {
+      await prisma.coordSousProvinciale.create({
+        data: { ...c, coordProvincialeId },
+      });
+    }
   }
+  console.log(`Seed terminé : ${coordSous.length} coordinations sous-provinciales (5 à Kinshasa, 26 provinces couvertes).`);
 
   // ── Bureaux ──
   const bureaux = [
