@@ -24,6 +24,9 @@ type Props = {
   onToggleFlash: () => void;
   lastResult: ScanResult | null;
   submitting: boolean;
+  title?: string;
+  subtitle?: string;
+  renderResult?: (result: ScanResult) => React.ReactNode;
 };
 
 export function QRScannerModal({
@@ -33,6 +36,9 @@ export function QRScannerModal({
   onToggleFlash,
   lastResult,
   submitting,
+  title = 'Scan de présence',
+  subtitle = 'Scannez le QR code de la carte scolaire',
+  renderResult,
 }: Props) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
@@ -301,7 +307,7 @@ export function QRScannerModal({
                     : 'bg-green-500/15'
               }`}
             >
-              {lastResult.error ? (
+              {renderResult ? renderResult(lastResult) : lastResult.error ? (
                 <p className="text-sm font-medium text-red-300">⚠️ {lastResult.error}</p>
               ) : lastResult.status === 'alreadyPresent' ? (
                 <p className="text-sm font-medium text-amber-300">
