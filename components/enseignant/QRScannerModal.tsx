@@ -35,6 +35,7 @@ export function QRScannerModal({
   submitting,
 }: Props) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isRunningRef = useRef(false);
   const containerId = 'qr-presence-scanner';
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
@@ -59,7 +60,36 @@ export function QRScannerModal({
   const startScanner = useCallback(async () => {
     setError('');
     try {
+      // Vérifier l'accès caméra avant de créer le scanner Html5Qrcode.
+      // Sans cela, l'échec de start() provoque un stop() interne qui lève
+      // « Scanning is not in running state » en dehors de tout try/catch.
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError('Caméra non disponible. Utilisez la saisie manuelle ci-dessous.');
+        return;
+      }
+      let probeStream: MediaStream;
+      try {
+        probeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch {
+        setError('Caméra inaccessible. Utilisez la saisie manuelle ci-dessous.');
+        return;
+      }
+      probeStream.getTracks().forEach((t) => t.stop());
+
       const scanner = new Html5Qrcode(containerId, { verbose: false });
+      // Empêcher la bibliothèque de lancer « Scanning is not in running state »
+      // quand stop() ou applyVideoConstraints() est appelé alors que la caméra
+      // n'a jamais démarré (l'erreur échappe au try/catch car levée en interne).
+      const origStop = scanner.stop.bind(scanner);
+      scanner.stop = function () {
+        if (!isRunningRef.current) return Promise.resolve();
+        return origStop();
+      };
+      const origApply = scanner.applyVideoConstraints.bind(scanner);
+      scanner.applyVideoConstraints = function (constraints: MediaTrackConstraints) {
+        if (!isRunningRef.current) return Promise.resolve();
+        return origApply(constraints);
+      };
       scannerRef.current = scanner;
 
       await scanner.start(
@@ -68,6 +98,7 @@ export function QRScannerModal({
         (decodedText: string) => handleScanResult(decodedText),
         () => {},
       );
+      isRunningRef.current = true;
       setScanning(true);
 
       // Activer le flash si demandé
@@ -88,7 +119,10 @@ export function QRScannerModal({
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (isRunningRef.current) {
+          await scannerRef.current.stop();
+          isRunningRef.current = false;
+        }
         scannerRef.current.clear();
       } catch {
         // ignore
@@ -112,6 +146,31 @@ export function QRScannerModal({
         .catch(() => {});
     }
   }, [flashOn, scanning]);
+
+  // Intercepter l'erreur « Scanning is not in running state » lancée par
+  // html5-qrcode (sous forme de chaîne, pas d'Error) quand la caméra échoue.
+  // Cette erreur échappe à tout try/catch car elle est levée en interne par
+  // la bibliothèque dans un callback asynchrone.
+  useEffect(() => {
+    const errorHandler = (e: ErrorEvent) => {
+      if (e.message?.includes?.('Scanning is not in running state')) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    };
+    const rejectionHandler = (e: PromiseRejectionEvent) => {
+      const reason = typeof e.reason === 'string' ? e.reason : String(e.reason ?? '');
+      if (reason.includes('Scanning is not in running state')) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('error', errorHandler);
+    window.addEventListener('unhandledrejection', rejectionHandler);
+    return () => {
+      window.removeEventListener('error', errorHandler);
+      window.removeEventListener('unhandledrejection', rejectionHandler);
+    };
+  }, []);
 
   useEffect(() => {
     startScanner();
