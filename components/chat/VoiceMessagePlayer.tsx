@@ -7,8 +7,9 @@ import { formatDuration } from '@/lib/chat-format';
 const SPEEDS = [1, 1.5, 2] as const;
 
 /**
- * Lecteur de message vocal compact et professionnel :
+ * Lecteur de message vocal moderne et compact :
  * lecture/pause, progression sur la forme d'onde, durée restante, vitesse 1× / 1,5× / 2×.
+ * Design distinct entre audio envoyé (bulle bleue) et reçu (bulle blanche).
  */
 export const VoiceMessagePlayer = memo(function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -69,51 +70,51 @@ export const VoiceMessagePlayer = memo(function VoiceMessagePlayer({ src, isMe }
   const progress = duration > 0 ? (current / duration) * 100 : 0;
   const remaining = Math.max(0, duration - current);
 
-  // Pseudo-forme d'onde : 24 barres stables, purement décoratives.
-  const bars = Array.from({ length: 24 }, (_, i) => 28 + (Math.sin(i * 2.4) * 0.5 + 0.5) * 66);
+  // Pseudo-forme d'onde : 28 barres stables, purement décoratives.
+  const bars = Array.from({ length: 28 }, (_, i) => 24 + (Math.sin(i * 2.1) * 0.5 + 0.5) * 70);
 
   const playedColor = isMe ? '#ffffff' : '#2563eb';
-  const trackColor = isMe ? 'bg-white/35' : 'bg-slate-200';
+  const trackColor = isMe ? 'bg-white/30' : 'bg-slate-200';
 
   return (
-    <div className="flex items-center gap-2.5 py-0.5">
+    <div className="flex items-center gap-2.5 py-1">
       <audio ref={audioRef} src={src} preload="metadata" className="hidden" />
 
       <button
         onClick={togglePlay}
         className={clsx(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-sm transition active:scale-90',
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm transition active:scale-90',
           isMe ? 'bg-white text-[#1d4ed8]' : 'bg-[#2563eb] text-white'
         )}
         aria-label={playing ? 'Pause' : 'Lecture'}
       >
         {playing ? (
-          <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
             <rect x="6" y="5" width="4" height="14" rx="1" />
             <rect x="14" y="5" width="4" height="14" rx="1" />
           </svg>
         ) : (
-          <svg viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-3.5 w-3.5">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-4 w-4">
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
       </button>
 
       <div className="min-w-0 flex-1">
-        <div onClick={seek} className="flex h-7 cursor-pointer items-center gap-[2px]">
+        <div onClick={seek} className="flex h-8 cursor-pointer items-center gap-[2px]">
           {bars.map((h, i) => {
             const played = (i / bars.length) * 100 <= progress;
             return (
               <span
                 key={i}
-                className={clsx('flex-1 rounded-full transition-colors', played ? '' : trackColor)}
+                className={clsx('flex-1 rounded-full transition-colors duration-150', played ? '' : trackColor)}
                 style={{ height: `${h}%`, backgroundColor: played ? playedColor : undefined }}
               />
             );
           })}
         </div>
-        <div className="mt-0.5 flex items-center justify-between">
-          <span className={clsx('text-[11px] font-medium tabular-nums', isMe ? 'text-white/80' : 'text-slate-500')}>
+        <div className="mt-1 flex items-center justify-between">
+          <span className={clsx('text-[11px] font-medium tabular-nums', isMe ? 'text-white/75' : 'text-slate-500')}>
             {playing || current > 0 ? formatDuration(remaining) : formatDuration(duration)}
           </span>
           <button

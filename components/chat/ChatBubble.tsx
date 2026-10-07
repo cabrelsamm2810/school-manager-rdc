@@ -40,7 +40,7 @@ function MessageStatus({ msg }: { msg: ChatMessageData }) {
 
   if (msg.status === 'sending') {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-white/70" aria-label="Envoi en cours">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-white/60" aria-label="Envoi en cours">
         <circle cx="12" cy="12" r="9" />
         <polyline points="12 7 12 12 15.5 14" />
       </svg>
@@ -50,10 +50,10 @@ function MessageStatus({ msg }: { msg: ChatMessageData }) {
   return (
     <svg
       viewBox="0 0 18 11"
-      className={clsx('h-3 w-[16px]', msg.read ? 'text-[#bfdbfe]' : 'text-white/70')}
+      className={clsx('h-[15px] w-[17px] shrink-0', msg.read ? 'text-[#93c5fd]' : 'text-white/60')}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.7}
+      strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-label={msg.read ? 'Lu' : 'Envoyé'}
@@ -86,7 +86,7 @@ function MessageActions({
 
   return (
     <div
-      className="absolute z-20 min-w-[150px] overflow-hidden rounded-xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200"
+      className="absolute z-20 min-w-[150px] overflow-hidden rounded-2xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200/80"
       style={{ animation: 'msgActionIn 0.15s ease-out' }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -118,10 +118,11 @@ function MessageActions({
 }
 
 /**
- * Bulle de message SchoolChat.
- * - messages reçus alignés à gauche avec une photo de profil discrète (alignée en bas du groupe),
- * - messages envoyés alignés à droite, accent bleu de l'école, heure + statut,
- * - texte, image, message vocal et pièce jointe dans une même enveloppe compacte.
+ * Bulle de message SchoolChat — design moderne et élégant.
+ * - messages reçus alignés à gauche avec photo de profil discrète,
+ * - messages envoyés alignés à droite, accent bleu, heure + accusé de lecture,
+ * - coins arrondis élégants, largeur maximale raisonnable, texte parfaitement lisible,
+ * - espacement naturel entre les messages.
  */
 export const ChatBubble = memo(function ChatBubble({
   msg,
@@ -175,13 +176,14 @@ export const ChatBubble = memo(function ChatBubble({
   const hasFile = Boolean(msg.fileUrl) && !hasImage && !hasAudio;
   const hasText = Boolean(msg.content && msg.content.trim());
   const isWide = hasAudio || hasFile;
+  const isOnlyMedia = (hasImage || hasAudio || hasFile) && !hasText;
 
   return (
     <div
       className={clsx(
         'flex w-full items-end gap-2',
         isMe ? 'justify-end' : 'justify-start',
-        isConsecutive ? 'mt-[3px]' : 'mt-2'
+        isConsecutive ? 'mt-[2px]' : 'mt-2.5'
       )}
       style={{ animation: 'chatBubbleIn 0.22s ease-out' }}
     >
@@ -200,9 +202,9 @@ export const ChatBubble = memo(function ChatBubble({
         </span>
       )}
 
-      <div className="relative max-w-[80%] md:max-w-[62%]">
+      <div className="relative max-w-[78%] md:max-w-[58%]">
         {showActions && (
-          <div className={clsx('absolute bottom-full z-20 mb-1', isMe ? 'right-0' : 'left-0')}>
+          <div className={clsx('absolute bottom-full z-20 mb-1.5', isMe ? 'right-0' : 'left-0')}>
             <MessageActions
               onReply={() => {
                 onReply(msg);
@@ -228,48 +230,51 @@ export const ChatBubble = memo(function ChatBubble({
           onTouchEnd={cancelPress}
           onTouchMove={cancelPress}
           className={clsx(
-            'relative px-3 py-1.5 text-[13.5px] shadow-sm transition',
+            'relative text-[14px] leading-relaxed transition',
             isMe
-              ? 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-blue-900/10'
-              : 'bg-white text-slate-800 ring-1 ring-slate-200/80',
+              ? 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-[0_1px_3px_rgba(29,78,216,0.25)]'
+              : 'bg-white text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60',
+            // Coins arrondis élégants — le dernier message d'un groupe a un coin "pointe"
             isMe
               ? isConsecutive && !isLastInGroup
                 ? 'rounded-2xl rounded-br-md'
-                : 'rounded-2xl rounded-br-sm'
+                : 'rounded-2xl rounded-br-[4px]'
               : isConsecutive && !isLastInGroup
                 ? 'rounded-2xl rounded-bl-md'
-                : 'rounded-2xl rounded-bl-sm',
-            isWide && 'w-[228px] md:w-[264px]'
+                : 'rounded-2xl rounded-bl-[4px]',
+            // Padding adapté : moins de padding si uniquement un média
+            isOnlyMedia ? 'p-1' : 'px-3.5 py-2',
+            isWide && 'w-[230px] md:w-[270px]'
           )}
         >
           {isGroup && !isMe && showSenderName && msg.senderName && (
-            <p className="mb-0.5 text-[11.5px] font-bold tracking-wide text-[#2563eb]">{msg.senderName}</p>
+            <p className="mb-1 text-[12px] font-bold tracking-wide text-[#2563eb]">{msg.senderName}</p>
           )}
 
           {replyToMessage && (
             <div
               className={clsx(
-                'mb-1.5 rounded-lg border-l-[3px] px-2 py-1',
-                isMe ? 'bg-white/15 border-white/50' : 'bg-slate-50 border-[#2563eb]/60'
+                'mb-2 rounded-lg border-l-[3px] px-2.5 py-1.5',
+                isMe ? 'bg-white/15 border-white/50' : 'bg-slate-50 border-[#2563eb]/50'
               )}
             >
               <p className={clsx('truncate text-[11px] font-semibold', isMe ? 'text-white' : 'text-[#1d4ed8]')}>
                 {replyToMessage.senderName || (replyToMessage.senderId === msg.senderId ? 'Vous' : 'Utilisateur')}
               </p>
-              <p className={clsx('truncate text-[11px]', isMe ? 'text-white/75' : 'text-slate-500')}>
+              <p className={clsx('truncate text-[11px]', isMe ? 'text-white/70' : 'text-slate-500')}>
                 {getMessagePreview(replyToMessage)}
               </p>
             </div>
           )}
 
           {hasImage && msg.fileUrl && (
-            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="mb-1 block overflow-hidden rounded-xl">
+            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl">
               <img
                 src={msg.fileUrl}
                 alt={msg.fileName || 'Image'}
                 loading="lazy"
                 decoding="async"
-                className="max-h-56 w-full rounded-xl object-cover transition hover:opacity-95 md:max-h-64"
+                className="max-h-60 w-full rounded-xl object-cover transition hover:opacity-95 md:max-h-72"
               />
             </a>
           )}
@@ -288,10 +293,11 @@ export const ChatBubble = memo(function ChatBubble({
             />
           )}
 
-          {hasText && <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>}
+          {hasText && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
 
-          <div className={clsx('mt-0.5 flex items-center justify-end gap-1', (hasAudio || hasFile) && 'pt-0.5')}>
-            <span className={clsx('text-[10px] tabular-nums', isMe ? 'text-white/70' : 'text-slate-400')}>
+          {/* Heure discrète + accusé de lecture */}
+          <div className={clsx('flex items-center justify-end gap-1', isOnlyMedia ? 'mt-1 px-1' : 'mt-0.5')}>
+            <span className={clsx('text-[10px] tabular-nums leading-none', isMe ? 'text-white/60' : 'text-slate-400')}>
               {formatMessageTime(msg.createdAt)}
             </span>
             {isMe && <MessageStatus msg={msg} />}

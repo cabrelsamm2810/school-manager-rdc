@@ -4,8 +4,8 @@ import { clsx } from 'clsx';
 import { Avatar } from '@/components/ui/Avatar';
 
 /**
- * En-tête compact d'une conversation (56 px) : photo, nom, sous-titre
- * (rôle ou classe du groupe) et actions à droite — recherche, appel vocal, appel vidéo.
+ * En-tête moderne d'une conversation : photo de profil circulaire, nom,
+ * sous-titre (rôle ou classe du groupe) et actions — recherche, appel vocal, appel vidéo.
  * Le statut de présence n'est pas fourni par le système : aucun indicateur n'est inventé.
  */
 export function ChatHeader({
@@ -34,10 +34,10 @@ export function ChatHeader({
   onCall: (type: 'audio' | 'video') => void;
 }) {
   const actionClass =
-    'flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-white/15 hover:text-white active:scale-90';
+    'flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white active:scale-90';
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2.5 bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-2.5 sm:px-3.5">
+    <header className="relative flex h-14 shrink-0 items-center gap-2.5 bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-2 sm:px-3.5 shadow-sm">
       <button onClick={onBack} className={clsx(actionClass, 'md:hidden')} aria-label="Retour aux conversations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
           <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -53,12 +53,12 @@ export function ChatHeader({
           </svg>
         </span>
       ) : (
-        <Avatar photoUrl={photoUrl} prenom={prenom} nom={nom} size="sm" className="ring-1 ring-white/25" />
+        <Avatar photoUrl={photoUrl} prenom={prenom} nom={nom} size="sm" className="ring-2 ring-white/25" />
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-semibold leading-tight text-white">{name}</p>
-        <p className="truncate text-[11.5px] leading-tight text-white/70">{subtitle}</p>
+        <p className="truncate text-[14.5px] font-semibold leading-tight text-white">{name}</p>
+        <p className="truncate text-[11.5px] font-medium leading-tight text-white/65">{subtitle}</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
@@ -77,12 +77,12 @@ export function ChatHeader({
         {canCall && (
           <>
             <button onClick={() => onCall('audio')} className={actionClass} aria-label="Appel vocal">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
               </svg>
             </button>
             <button onClick={() => onCall('video')} className={actionClass} aria-label="Appel vidéo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
                 <polygon points="23 7 16 12 23 17 23 7" />
                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
               </svg>

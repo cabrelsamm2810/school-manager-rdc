@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { clsx } from 'clsx';
 import { AttachmentMenu } from './AttachmentMenu';
 
@@ -11,7 +11,7 @@ function formatDuration(seconds: number) {
 }
 
 /**
- * Barre de rédaction compacte de SchoolChat.
+ * Barre de rédaction moderne de SchoolChat.
  * Champ de saisie, pièces jointes (appareil photo, galerie, document, audio),
  * message vocal, envoi — toutes les actions existantes sont conservées.
  * Les boutons font au moins 44 px pour rester confortables au doigt sur Android.
@@ -64,38 +64,45 @@ export function ChatComposer({
     setShowAttach(false);
   };
 
-  const iconButton =
+  const iconBtn =
     'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-90 disabled:opacity-40';
 
   if (isRecording) {
     return (
-      <div className="shrink-0 border-t border-slate-200 bg-white px-2.5 py-2 md:px-4">
-        <div className="flex items-center gap-2">
-          <button onClick={onCancelRecording} className={clsx(iconButton, 'bg-red-50 text-red-500 hover:bg-red-100')} aria-label="Annuler l'enregistrement">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
+      <div className="shrink-0 border-t border-slate-200 bg-white px-2.5 py-2.5 md:px-4">
+        <div className="flex items-center gap-2.5">
+          {/* Bouton annuler */}
+          <button onClick={onCancelRecording} className={clsx(iconBtn, 'bg-red-50 text-red-500 hover:bg-red-100')} aria-label="Annuler l'enregistrement">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" className="h-5 w-5">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full bg-slate-100 px-3.5 py-2.5">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500" style={{ animation: 'recPulse 1.5s ease-in-out infinite' }} />
-            <span className="shrink-0 text-[13px] font-semibold tabular-nums text-slate-700">{formatDuration(recordingTime)}</span>
-            <span className="hidden truncate text-xs text-slate-400 sm:block">Enregistrement…</span>
-            <div className="ml-auto hidden h-5 items-center gap-[2px] sm:flex">
-              {Array.from({ length: 10 }, (_, i) => (
+          {/* Indicateur d'enregistrement animé */}
+          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-red-50 px-4 py-2.5 ring-1 ring-red-100">
+            <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
+              <span className="absolute h-3 w-3 rounded-full bg-red-500/40" style={{ animation: 'recPulse 1.5s ease-in-out infinite' }} />
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            </span>
+            <span className="shrink-0 text-[14px] font-bold tabular-nums text-red-600">{formatDuration(recordingTime)}</span>
+            <span className="hidden truncate text-[13px] font-medium text-red-400 sm:block">Enregistrement…</span>
+            {/* Animation de barres vocales */}
+            <div className="ml-auto flex h-5 items-center gap-[2px]">
+              {Array.from({ length: 7 }, (_, i) => (
                 <span
                   key={i}
-                  className="w-[2px] rounded-full bg-red-400"
-                  style={{ height: '100%', transformOrigin: 'center', animation: `voiceBarDance 0.6s ease-in-out ${i * 0.05}s infinite` }}
+                  className="w-[3px] rounded-full bg-red-400"
+                  style={{ height: '100%', transformOrigin: 'center', animation: `voiceBarDance 0.6s ease-in-out ${i * 0.08}s infinite` }}
                 />
               ))}
             </div>
           </div>
 
+          {/* Bouton envoyer */}
           <button
             onClick={onStopRecording}
-            className={clsx(iconButton, 'bg-[#2563eb] text-white shadow-sm hover:bg-[#1d4ed8]')}
+            className={clsx(iconBtn, 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-md hover:brightness-110')}
             aria-label="Envoyer le message vocal"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -109,7 +116,7 @@ export function ChatComposer({
   }
 
   return (
-    <div className="relative shrink-0 border-t border-slate-200 bg-white px-2.5 py-2 md:px-4">
+    <div className="relative shrink-0 border-t border-slate-200 bg-white px-2 py-2 md:px-3 md:py-2.5">
       {/* Inputs cachés */}
       <input
         ref={fileInputRef}
@@ -121,12 +128,13 @@ export function ChatComposer({
       <input ref={cameraInputRef} type="file" onChange={handleFileSelect} className="hidden" accept="image/*" capture="environment" />
       <input ref={audioInputRef} type="file" onChange={handleFileSelect} className="hidden" accept="audio/*" />
 
+      {/* Aperçu de réponse */}
       {replyTo && (
-        <div className="mb-2 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200/70">
-          <span className="h-7 w-[3px] shrink-0 rounded-full bg-[#2563eb]" />
+        <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200/70">
+          <span className="h-8 w-[3px] shrink-0 rounded-full bg-[#2563eb]" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[11.5px] font-semibold text-[#1d4ed8]">Réponse à {replyTo.name}</p>
-            <p className="truncate text-[11.5px] text-slate-500">{replyTo.preview}</p>
+            <p className="truncate text-[12px] font-semibold text-[#1d4ed8]">Réponse à {replyTo.name}</p>
+            <p className="truncate text-[12px] text-slate-500">{replyTo.preview}</p>
           </div>
           <button
             onClick={onCancelReply}
@@ -141,6 +149,7 @@ export function ChatComposer({
         </div>
       )}
 
+      {/* Menu de pièces jointes */}
       {showAttach && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setShowAttach(false)} />
@@ -153,11 +162,13 @@ export function ChatComposer({
         </>
       )}
 
+      {/* Barre de saisie */}
       <div className="flex items-center gap-1.5 md:gap-2">
+        {/* Bouton pièce jointe */}
         <button
           onClick={() => setShowAttach((s) => !s)}
           disabled={uploading || sending}
-          className={clsx(iconButton, 'text-slate-500 hover:bg-slate-100 hover:text-[#2563eb]')}
+          className={clsx(iconBtn, 'text-slate-500 hover:bg-slate-100 hover:text-[#2563eb]')}
           aria-label="Pièces jointes"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
@@ -167,6 +178,7 @@ export function ChatComposer({
           </svg>
         </button>
 
+        {/* Champ de saisie + bouton caméra intégré */}
         <div className="flex min-w-0 flex-1 items-center rounded-full bg-slate-100 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-[#2563eb]/30">
           <input
             type="text"
@@ -180,7 +192,7 @@ export function ChatComposer({
             }}
             placeholder="Tapez un message…"
             aria-label="Votre message"
-            className="min-w-0 flex-1 bg-transparent px-3.5 py-2.5 text-[13.5px] text-slate-800 outline-none placeholder:text-slate-400"
+            className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
           />
           <button
             onClick={() => cameraInputRef.current?.click()}
@@ -195,11 +207,12 @@ export function ChatComposer({
           </button>
         </div>
 
+        {/* Bouton envoyer ou micro */}
         {value.trim() ? (
           <button
             onClick={handleSend}
             disabled={uploading || sending}
-            className={clsx(iconButton, 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-sm hover:brightness-110')}
+            className={clsx(iconBtn, 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-md hover:brightness-110')}
             aria-label="Envoyer"
           >
             {sending ? (
@@ -216,7 +229,7 @@ export function ChatComposer({
           <button
             onClick={onStartRecording}
             disabled={uploading}
-            className={clsx(iconButton, 'text-slate-500 hover:bg-slate-100 hover:text-[#2563eb]')}
+            className={clsx(iconBtn, 'text-slate-500 hover:bg-slate-100 hover:text-[#2563eb]')}
             aria-label="Enregistrer un message vocal"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
