@@ -124,6 +124,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Écoles en attente', href: '/agent-provincial/ecoles-en-attente', icon: 'clock', roles: ['AGENT_PROVINCIAL'] },
       { label: 'Écoles en attente', href: '/agent-sous-provincial/ecoles-en-attente', icon: 'clock', roles: ['AGENT_SOUS_PROVINCIAL'] },
       { label: 'Écoles en attente', href: '/coordination-sous-provinciale/ecoles-en-attente', icon: 'clock', roles: ['COORDINATION_SOUS_PROVINCIALE'] },
+      { label: 'Écoles en attente', href: '/coordination-provinciale/ecoles-en-attente', icon: 'clock', roles: ['COORDINATION_PROVINCIALE'] },
       { label: 'Visites numériques', href: '/visites', icon: 'visit', minRole: 'AGENT_SOUS_PROVINCIAL' },
       { label: 'Services administratifs', href: '/services', icon: 'services', minRole: 'AGENT_SOUS_PROVINCIAL' },
       { label: 'Administration technique', href: '/admin', icon: 'shield', roles: ['SUPER_ADMIN'] },
