@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { INSTITUTIONS, DOCUMENT_TYPES, VALIDATION_STATUTS } from '@/lib/institutions';
 import { allProvinces, educationProvincesByAdmin } from '@/lib/meta-data';
+import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
 
 export type EcoleFormData = {
   nom: string;
@@ -60,6 +61,7 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
 
   const selectedInstitution = INSTITUTIONS.find((i) => i.code === form.institution);
   const educationProvinces = form.province ? (educationProvincesByAdmin[form.province] || []) : [];
+  const communes = form.provinceEducationnelle ? getCommunesForProvinceEduc(form.provinceEducationnelle) : [];
 
   // Charger les structures administratives quand l'institution change
   useEffect(() => {
@@ -94,12 +96,14 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
     update('provinceEducationnelle', '');
     update('coordSousProvincialeId', '');
     update('structureRattachementId', '');
+    update('commune', '');
   }
 
   function handleProvinceEducChange(provEduc: string) {
     update('provinceEducationnelle', provEduc);
     update('coordSousProvincialeId', '');
     update('structureRattachementId', '');
+    update('commune', '');
   }
 
   // Filtrer les structures par province administrative sélectionnée (cascade)
@@ -265,9 +269,22 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
             </div>
             <div>
               <label className={labelClass} htmlFor="etab-commune">Commune{requiredMark}</label>
-              <input id="etab-commune" type="text" value={form.commune}
-                onChange={(e) => update('commune', e.target.value)}
-                className={inputClass} placeholder="Ex. Gombe" required />
+              {communes.length > 0 ? (
+                <select id="etab-commune" value={form.commune}
+                  onChange={(e) => update('commune', e.target.value)}
+                  className={inputClass} required disabled={!form.provinceEducationnelle}>
+                  <option value="">— Sélectionner —</option>
+                  {communes.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              ) : (
+                <input id="etab-commune" type="text" value={form.commune}
+                  onChange={(e) => update('commune', e.target.value)}
+                  className={inputClass} placeholder="Ex. Gombe"
+                  required disabled={!form.provinceEducationnelle} />
+              )}
+              {!form.provinceEducationnelle && (
+                <p className="mt-1 text-xs text-slate-400">Sélectionnez d'abord une province éducationnelle.</p>
+              )}
             </div>
           </div>
 
