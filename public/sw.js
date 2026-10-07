@@ -12,7 +12,7 @@
  * Le SW précédent est supprimé et le nouveau prend le contrôle après skipWaiting.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `sm-rdc-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `sm-rdc-pages-${CACHE_VERSION}`;
 const ASSET_CACHE = `sm-rdc-assets-${CACHE_VERSION}`;
@@ -22,7 +22,13 @@ const PRECACHE_URLS = [
   '/logo.png',
   '/logo.svg',
   '/manifest.json',
-  '/offline.html'
+  '/offline.html',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
+  '/icon-maskable-192x192.png',
+  '/icon-maskable-512x512.png',
+  '/apple-touch-icon.png',
+  '/favicon.ico'
 ];
 
 /* ── Installation : precache des ressources essentielles ── */
