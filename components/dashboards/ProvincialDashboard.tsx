@@ -19,7 +19,7 @@ export function ProvincialDashboard({ stats, breakdown, chartData, activite, pro
   return (
     <>
       <div className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-blue-600">Tableau de bord provincial</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-brand-600">Tableau de bord provincial</p>
         <h1 className="mt-1 text-xl font-bold text-slate-900 md:text-2xl">
           {provinceLabel ? `Province de ${provinceLabel}` : 'Vue provinciale'}
         </h1>

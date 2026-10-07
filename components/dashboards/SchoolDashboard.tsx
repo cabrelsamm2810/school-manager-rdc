@@ -28,7 +28,7 @@ export function SchoolDashboard({ stats, breakdown, chartData, activite, role }:
   return (
     <>
       <div className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-blue-600">Tableau de bord de l'école</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-brand-600">Tableau de bord de l'école</p>
         <h1 className="mt-1 text-xl font-bold text-slate-900 md:text-2xl">Mon école</h1>
         <p className="mt-1 text-[13px] text-slate-500">
           Vue d'ensemble de votre école — élèves, classes et activité scolaire.

@@ -33,7 +33,7 @@ export function ServicesGrid({ role }: { role: string }) {
       <div className="mt-3 space-y-4">
         {groups.map((group) => (
           <div key={group.title}>
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-brand-600">
               {group.title}
             </h3>
             <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
@@ -41,9 +41,9 @@ export function ServicesGrid({ role }: { role: string }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex min-h-[52px] items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3 text-[13px] font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md active:bg-slate-50"
+                  className="flex min-h-[52px] items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3 text-[13px] font-medium text-slate-700 shadow-card transition hover:border-brand-300 hover:shadow-card-hover active:bg-slate-50"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                     <Icon name={item.icon} className="h-[18px] w-[18px]" />
                   </span>
                   <span className="min-w-0 leading-snug">{item.label}</span>

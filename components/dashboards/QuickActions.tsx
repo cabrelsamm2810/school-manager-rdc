@@ -79,7 +79,7 @@ const COLOR_MAP: Record<string, { bg: string; text: string }> = {
   blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
   emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
   amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
-  violet: { bg: 'bg-violet-50', text: 'text-violet-600' },
+  violet: { bg: 'bg-brand-50', text: 'text-brand-600' },
   rose: { bg: 'bg-rose-50', text: 'text-rose-600' },
   cyan: { bg: 'bg-cyan-50', text: 'text-cyan-600' },
 };
@@ -104,7 +104,7 @@ export function QuickActions({ role }: { role: string }) {
             <Link
               key={`${action.href}-${action.label}`}
               href={action.href}
-              className="dash-card group flex min-h-[52px] items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3 text-[13px] font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:shadow-md active:bg-slate-50"
+              className="dash-card group flex min-h-[52px] items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3 text-[13px] font-medium text-slate-700 shadow-card transition hover:border-brand-300 hover:shadow-card-hover active:bg-slate-50"
               style={{ animationDelay: `${Math.min(index * 0.04, 0.3)}s` }}
             >
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${c.bg} ${c.text}`}>

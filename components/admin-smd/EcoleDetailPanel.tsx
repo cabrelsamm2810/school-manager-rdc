@@ -288,9 +288,9 @@ export function EcoleDetailPanel({
             <p className="text-xs text-slate-500">Élèves</p>
             <p className="mt-0.5 text-lg font-bold text-blue-700">{ecole.stats.eleves}</p>
           </div>
-          <div className="rounded-xl bg-purple-50 px-3 py-2.5">
+          <div className="rounded-xl bg-brand-50 px-3 py-2.5">
             <p className="text-xs text-slate-500">Enseignants</p>
-            <p className="mt-0.5 text-lg font-bold text-purple-700">{ecole.stats.enseignants}</p>
+            <p className="mt-0.5 text-lg font-bold text-brand-700">{ecole.stats.enseignants}</p>
           </div>
           <div className="rounded-xl bg-green-50 px-3 py-2.5">
             <p className="text-xs text-slate-500">Classes</p>

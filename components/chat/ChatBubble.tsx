@@ -98,7 +98,7 @@ function MessageActions({
         Répondre
       </button>
       <button onClick={onForward} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-violet-500">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-brand-500">
           <line x1="22" y1="2" x2="11" y2="13" />
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>

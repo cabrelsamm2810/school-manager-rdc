@@ -287,7 +287,7 @@ export function UserManagement({ currentRole }: { currentRole: string }) {
         <StatMini label="Actifs" value={stats.actifs} icon="check-circle" color="text-green-600" />
         <StatMini label="En attente" value={stats.enAttente} icon="clock" color="text-amber-600" />
         <StatMini label="Suspendus" value={stats.suspendus} icon="lock" color="text-red-600" />
-        <StatMini label="Nouveaux (7j)" value={stats.nouveaux} icon="activity" color="text-purple-600" />
+        <StatMini label="Nouveaux (7j)" value={stats.nouveaux} icon="activity" color="text-brand-600" />
       </div>
 
       {/* ── Recherche & Filtres ── */}

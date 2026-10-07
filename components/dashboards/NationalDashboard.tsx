@@ -19,7 +19,7 @@ export function NationalDashboard({ stats, breakdown, chartData, activite, role 
   return (
     <>
       <div className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-blue-600">Tableau de bord national</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-brand-600">Tableau de bord national</p>
         <h1 className="mt-1 text-xl font-bold text-slate-900 md:text-2xl">Vue d'ensemble du pays</h1>
         <p className="mt-1 text-[13px] text-slate-500">
           Pilotage national — synthèse de l'ensemble du système éducatif congolais.
@@ -54,7 +54,7 @@ export function NationalDashboard({ stats, breakdown, chartData, activite, role 
               items={[
                 { label: 'Élèves', value: stats.totalEleves, color: '#3b82f6' },
                 { label: 'Enseignants', value: stats.totalEnseignants, color: '#10b981' },
-                { label: 'Institutions', value: stats.totalEcoles, color: '#8b5cf6' },
+                { label: 'Institutions', value: stats.totalEcoles, color: '#2563eb' },
                 { label: 'Classes', value: stats.totalClasses, color: '#f59e0b' },
               ]}
             />
@@ -77,7 +77,7 @@ export function NationalDashboard({ stats, breakdown, chartData, activite, role 
                     <span className="text-slate-400">{item.value} institutions · {item.sublabel}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-brand-500 transition-all duration-500" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -95,11 +95,11 @@ export function NationalDashboard({ stats, breakdown, chartData, activite, role 
           </div>
           <div className="mt-4 flex flex-wrap gap-2.5">
             {role === 'COORDINATION_NATIONALE' && (
-              <Link href="/coordination-nationale" className="flex min-h-[40px] items-center gap-2 rounded-full bg-blue-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-blue-700">
+              <Link href="/coordination-nationale" className="flex min-h-[40px] items-center gap-2 rounded-full bg-brand-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-brand-700">
                 <Icon name="flag" className="h-4 w-4" /> Coordination nationale
               </Link>
             )}
-            <Link href="/provinces" className="flex min-h-[40px] items-center gap-2 rounded-full border border-blue-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-blue-600 transition hover:bg-blue-50">
+            <Link href="/provinces" className="flex min-h-[40px] items-center gap-2 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-brand-600 transition hover:bg-brand-50">
               <Icon name="globe" className="h-4 w-4" /> Gérer les provinces
             </Link>
           </div>

@@ -7,7 +7,7 @@ const ACCENTS = {
   blue: 'bg-blue-500',
   amber: 'bg-amber-500',
   cyan: 'bg-cyan-500',
-  violet: 'bg-violet-500'
+  violet: 'bg-brand-500'
 } as const;
 
 export type ActivityAccent = keyof typeof ACCENTS;

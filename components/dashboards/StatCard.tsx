@@ -13,7 +13,7 @@ const colorMap: Record<string, { bg: string; text: string }> = {
   blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
   emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
   amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
-  violet: { bg: 'bg-violet-50', text: 'text-violet-600' },
+  violet: { bg: 'bg-brand-50', text: 'text-brand-600' },
   rose: { bg: 'bg-rose-50', text: 'text-rose-600' },
   cyan: { bg: 'bg-cyan-50', text: 'text-cyan-600' }
 };

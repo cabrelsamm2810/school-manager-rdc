@@ -28,8 +28,8 @@ export function ModulePage({
             title={title}
             description={description}
             action={
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <Icon name={icon} className="h-6 w-6" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-100">
+                <Icon name={icon} className="h-5 w-5" />
               </div>
             }
           />

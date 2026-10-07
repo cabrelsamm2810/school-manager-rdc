@@ -86,7 +86,7 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] lg:hidden"
       aria-label="Navigation rapide"
     >
       <ul className="flex items-stretch">
@@ -99,13 +99,13 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
                 aria-current={active ? 'page' : undefined}
                 className={clsx(
                   'flex flex-col items-center gap-1 px-0.5 py-2 text-[10px] font-medium transition',
-                  active ? 'text-violet-700' : 'text-slate-500 active:text-slate-700'
+                  active ? 'text-brand-700' : 'text-slate-500 active:text-slate-700'
                 )}
               >
                 <span
                   className={clsx(
                     'flex h-7 w-11 items-center justify-center rounded-full transition',
-                    active && 'bg-violet-100'
+                    active && 'bg-brand-100'
                   )}
                 >
                   <Icon name={tab.icon} className="h-[18px] w-[18px]" />
@@ -120,7 +120,7 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
           <button
             type="button"
             onClick={onMore}
-            className="flex w-full flex-col items-center gap-1 px-0.5 py-2 text-[10px] font-medium text-slate-500 transition hover:text-violet-700 active:text-violet-700"
+            className="flex w-full flex-col items-center gap-1 px-0.5 py-2 text-[10px] font-medium text-slate-500 transition hover:text-brand-700 active:text-brand-700"
           >
             <span className="flex h-7 w-11 items-center justify-center rounded-full">
               <Icon name="more" className="h-[18px] w-[18px]" />

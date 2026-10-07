@@ -153,23 +153,23 @@ export function MobileNavDrawer({
       {/* Tiroir */}
       <aside
         className={clsx(
-          'fixed left-0 top-0 z-50 flex h-full w-[85vw] max-w-[20rem] flex-col overflow-hidden bg-[#0c1421] shadow-2xl transition-transform duration-300 ease-out lg:hidden',
+          'fixed left-0 top-0 z-50 flex h-full w-[85vw] max-w-[20rem] flex-col overflow-hidden bg-sidebar shadow-sidebar transition-transform duration-300 ease-out lg:hidden',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
         aria-label="Navigation principale"
       >
         {/* Marque + fermeture */}
         <div className="flex shrink-0 items-center gap-2.5 px-3.5 pb-3 pt-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#5346f5]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-600">
             <Icon name="teacher" className="h-[18px] w-[18px] text-white" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-bold leading-tight text-white">School Manager</p>
-            <p className="truncate text-[11px] leading-tight text-[#7d8798]">RDC · Skybox Business</p>
+            <p className="truncate text-[11px] leading-tight text-slate-500">RDC · Skybox Business</p>
           </div>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#a0a0a0] transition hover:bg-white/10 hover:text-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white"
             aria-label="Fermer le menu"
           >
             <Icon name="close" className="h-[18px] w-[18px]" />
@@ -178,21 +178,21 @@ export function MobileNavDrawer({
 
         {/* Recherche : menu, élèves et enseignants */}
         <div className="shrink-0 px-3.5 pb-2.5">
-          <div className="flex items-center gap-2 rounded-xl bg-[#162030] px-3 py-2.5">
-            <Icon name="search" className="h-4 w-4 shrink-0 text-[#6e7a8f]" />
+          <div className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2.5">
+            <Icon name="search" className="h-4 w-4 shrink-0 text-slate-500" />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={canSearchSchool ? 'Rechercher élève, enseignant…' : 'Rechercher dans le menu'}
               aria-label={canSearchSchool ? 'Rechercher un élève, un enseignant ou un module' : 'Rechercher dans le menu'}
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-[#6e7a8f]"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-slate-500"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="shrink-0 text-[#6e7a8f] transition hover:text-white"
+                className="shrink-0 text-slate-500 transition hover:text-white"
                 aria-label="Effacer la recherche"
               >
                 <Icon name="close" className="h-3.5 w-3.5" />
@@ -206,7 +206,7 @@ export function MobileNavDrawer({
           {/* Résultats : élèves */}
           {results.eleves.length > 0 && (
             <section className="mb-4">
-              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e7a8f]">
+              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 Élèves
               </h2>
               <ul className="space-y-1">
@@ -236,7 +236,7 @@ export function MobileNavDrawer({
           {/* Résultats : enseignants */}
           {results.enseignants.length > 0 && (
             <section className="mb-4">
-              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e7a8f]">
+              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 Enseignants
               </h2>
               <ul className="space-y-1">
@@ -263,10 +263,10 @@ export function MobileNavDrawer({
 
           {/* État de la recherche */}
           {canSearchSchool && trimmed.length >= 2 && searching && (
-            <p className="px-2.5 pb-3 text-[12px] text-[#6e7a8f]">Recherche…</p>
+            <p className="px-2.5 pb-3 text-[12px] text-slate-500">Recherche…</p>
           )}
           {canSearchSchool && trimmed.length >= 2 && !searching && resultCount === 0 && (
-            <p className="px-2.5 pb-3 text-[12px] text-[#6e7a8f]">
+            <p className="px-2.5 pb-3 text-[12px] text-slate-500">
               Aucun élève ni enseignant ne correspond à « {trimmed} ».
             </p>
           )}
@@ -274,10 +274,10 @@ export function MobileNavDrawer({
           {/* Menu filtré */}
           {filteredGroups.map((group) => (
             <section key={group.title} className="mb-4 last:mb-0">
-              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6e7a8f]">
+              <h2 className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {group.title}
               </h2>
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {group.items.map((item) => {
                   const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                   return (
@@ -289,8 +289,8 @@ export function MobileNavDrawer({
                         className={clsx(
                           'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition',
                           active
-                            ? 'bg-[#5346f5] text-white shadow-lg shadow-[#5346f5]/25'
-                            : 'text-[#a0a0a0] hover:bg-white/5 hover:text-white'
+                            ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
                         )}
                       >
                         {item.href === '/schoolchat' ? (
@@ -298,7 +298,7 @@ export function MobileNavDrawer({
                         ) : (
                           <Icon
                             name={item.icon}
-                            className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-[#7d8798]')}
+                            className={clsx('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-slate-500')}
                           />
                         )}
                         <span className="min-w-0 truncate">{item.label}</span>
@@ -311,13 +311,13 @@ export function MobileNavDrawer({
           ))}
 
           {filteredGroups.length === 0 && resultCount === 0 && (
-            <p className="px-2.5 py-8 text-center text-[13px] text-[#6e7a8f]">Aucun élément ne correspond.</p>
+            <p className="px-2.5 py-8 text-center text-[13px] text-slate-500">Aucun élément ne correspond.</p>
           )}
         </nav>
 
         {/* Profil + déconnexion */}
         {user && (
-          <div className="shrink-0 border-t border-white/10 px-3.5 py-3">
+          <div className="shrink-0 border-t border-white/5 px-3.5 py-3">
             <div className="flex items-center gap-2">
               <Link
                 href="/profile"
@@ -329,20 +329,20 @@ export function MobileNavDrawer({
                   prenom={user.prenom}
                   nom={user.nom}
                   size="sm"
-                  className="ring-2 ring-white/15"
+                  className="ring-2 ring-white/10"
                 />
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-semibold leading-tight text-white">
                     {user.prenom} {user.nom}
                   </p>
-                  <p className="truncate text-[11px] leading-tight text-[#8b94a6]">
+                  <p className="truncate text-[11px] leading-tight text-slate-500">
                     {ROLE_LABELS[user.role] ?? user.role}
                   </p>
                 </div>
               </Link>
               <button
                 onClick={onLogout}
-                className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-semibold text-[#ff9b9b] transition hover:bg-red-500/10"
+                className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-semibold text-red-400 transition hover:bg-red-500/10"
                 aria-label="Déconnexion"
               >
                 <Icon name="logout" className="h-4 w-4" />

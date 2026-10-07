@@ -49,11 +49,11 @@ export function ClockCard({ institutionLabel }: { institutionLabel?: string | nu
   const hours = now ? now.getHours() % 12 : 0;
 
   return (
-    <section className="dash-card relative mb-3 overflow-hidden rounded-2xl bg-gradient-to-br from-[#5B21B6] via-[#6D28D9] to-[#8B5CF6] p-4 text-white shadow-lg shadow-violet-900/20">
+    <section className="dash-card relative mb-3 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 via-brand-700 to-brand-600 p-4 text-white shadow-lg shadow-brand-900/20">
       <span className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
 
       <div className="relative flex items-center gap-4">
-        <svg viewBox="0 0 48 48" className="h-[72px] w-[72px] shrink-0 drop-shadow-[0_2px_6px_rgba(124,58,237,0.4)] sm:h-[80px] sm:w-[80px]" aria-hidden="true">
+        <svg viewBox="0 0 48 48" className="h-[72px] w-[72px] shrink-0 drop-shadow-[0_2px_6px_rgba(37,99,235,0.4)] sm:h-[80px] sm:w-[80px]" aria-hidden="true">
           {/* Cadran extérieur */}
           <circle cx="24" cy="24" r="22" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.6" />
           {/* Anneau intérieur */}
@@ -112,12 +112,12 @@ export function ClockCard({ institutionLabel }: { institutionLabel?: string | nu
           <circle cx="24" cy="29" r="1.6" fill="#FBBF24" transform={hand(seconds, 60)} />
           {/* Centre */}
           <circle cx="24" cy="24" r="2.2" fill="#ffffff" />
-          <circle cx="24" cy="24" r="1" fill="#7C3AED" />
+          <circle cx="24" cy="24" r="1" fill="#2563eb" />
         </svg>
 
         <div className="min-w-0 flex-1">
           <p className="tabular-nums text-[28px] font-bold leading-none tracking-tight sm:text-[34px]">{time}</p>
-          <p className="mt-1.5 text-[11.5px] font-medium text-violet-100 sm:text-xs">{date || '\u00A0'}</p>
+          <p className="mt-1.5 text-[11.5px] font-medium text-brand-100 sm:text-xs">{date || '\u00A0'}</p>
         </div>
       </div>
 
@@ -129,9 +129,9 @@ export function ClockCard({ institutionLabel }: { institutionLabel?: string | nu
             className="h-14 w-14 shrink-0 rounded-lg bg-white object-contain p-0.5"
           />
           <div className="min-w-0">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-100">Institution</p>
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-brand-100">Institution</p>
             <p className="text-[14px] font-bold leading-tight">EC-ERC</p>
-            <p className="mt-0.5 text-[10.5px] font-medium leading-snug text-violet-100">
+            <p className="mt-0.5 text-[10.5px] font-medium leading-snug text-brand-100">
               Écoles Conventionnées des Églises du Réveil du Congo
             </p>
           </div>
@@ -142,7 +142,7 @@ export function ClockCard({ institutionLabel }: { institutionLabel?: string | nu
             <Icon name="teacher" className="h-[18px] w-[18px]" />
           </span>
           <div className="min-w-0">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-100">Institution</p>
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-brand-100">Institution</p>
             <p className="truncate text-[13px] font-semibold">{institutionLabel || 'School Manager RDC'}</p>
           </div>
         </div>

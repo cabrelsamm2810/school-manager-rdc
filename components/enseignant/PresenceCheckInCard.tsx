@@ -54,9 +54,9 @@ export function PresenceCheckInCard() {
 
   return (
     <>
-      <section className="dash-card mb-3 overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
+      <section className="dash-card mb-3 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
         {/* En-tête dégradé */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-[#5B21B6] to-[#8B5CF6] px-4 py-3 text-white">
+        <div className="flex items-center justify-between bg-gradient-to-r from-brand-700 to-brand-500 px-4 py-3 text-white">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
@@ -66,7 +66,7 @@ export function PresenceCheckInCard() {
             </span>
             <div>
               <h2 className="text-sm font-bold leading-tight">Pointage de présence</h2>
-              <p className="text-[11px] text-violet-100">Scannez le QR code de l'élève</p>
+              <p className="text-[11px] text-brand-100">Scannez le QR code de l'élève</p>
             </div>
           </div>
           <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold">
@@ -78,7 +78,7 @@ export function PresenceCheckInCard() {
         <div className="p-4">
           <button
             onClick={() => setShowScanner(true)}
-            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-violet-500/20 transition hover:shadow-lg hover:shadow-violet-500/30 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-brand-500/20 transition hover:shadow-lg hover:shadow-brand-500/30 active:scale-[0.98]"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />

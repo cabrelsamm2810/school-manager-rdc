@@ -36,7 +36,7 @@ export function AttachmentMenu({
           <polyline points="21 15 16 10 5 21" />
         </svg>
       ),
-      color: 'bg-violet-500',
+      color: 'bg-brand-500',
       onClick: onGallery,
     },
     {

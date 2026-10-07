@@ -19,7 +19,7 @@ export function SousProvincialDashboard({ stats, breakdown, chartData, activite,
   return (
     <>
       <div className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-blue-600">Tableau de bord sous-provincial</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-brand-600">Tableau de bord sous-provincial</p>
         <h1 className="mt-1 text-xl font-bold text-slate-900 md:text-2xl">Vue de la sous-division</h1>
         <p className="mt-1 text-[13px] text-slate-500">
           {provinceLabel ? `Province de ${provinceLabel}` : ''} — indicateurs des institutions de votre sous-division.
@@ -50,7 +50,7 @@ export function SousProvincialDashboard({ stats, breakdown, chartData, activite,
               items={[
                 { label: 'Élèves', value: stats.totalEleves, color: '#3b82f6' },
                 { label: 'Enseignants', value: stats.totalEnseignants, color: '#10b981' },
-                { label: 'Institutions', value: stats.totalEcoles, color: '#8b5cf6' },
+                { label: 'Institutions', value: stats.totalEcoles, color: '#2563eb' },
                 { label: 'Classes', value: stats.totalClasses, color: '#f59e0b' },
               ]}
             />
@@ -69,7 +69,7 @@ export function SousProvincialDashboard({ stats, breakdown, chartData, activite,
                   <p className="truncate text-[13px] font-semibold text-slate-800">{item.label}</p>
                   <p className="text-[11px] text-slate-400">{item.sublabel}</p>
                 </div>
-                <span className="shrink-0 rounded-full bg-violet-50 px-2.5 py-0.5 text-[13px] font-bold text-violet-600">
+                <span className="shrink-0 rounded-full bg-brand-50 px-2.5 py-0.5 text-[13px] font-bold text-brand-600">
                   {item.value} élèves
                 </span>
               </div>
@@ -86,10 +86,10 @@ export function SousProvincialDashboard({ stats, breakdown, chartData, activite,
             <RecentActivity items={activite} accent="violet" />
           </div>
           <div className="mt-4 flex flex-wrap gap-2.5">
-            <Link href="/ecoles" className="flex min-h-[40px] items-center gap-2 rounded-full bg-violet-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-violet-700">
+            <Link href="/ecoles" className="flex min-h-[40px] items-center gap-2 rounded-full bg-brand-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-brand-700">
               <Icon name="school" className="h-4 w-4" /> Institutions
             </Link>
-            <Link href="/eleves" className="flex min-h-[40px] items-center gap-2 rounded-full border border-violet-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-violet-600 transition hover:bg-violet-50">
+            <Link href="/eleves" className="flex min-h-[40px] items-center gap-2 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-brand-600 transition hover:bg-brand-50">
               <Icon name="users" className="h-4 w-4" /> Élèves
             </Link>
           </div>
