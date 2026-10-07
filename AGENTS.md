@@ -80,6 +80,9 @@ credentials. Nothing external is required to boot.
   `-U school_manager …` (noms devinés) ne touche pas l'application mais écrit `FATAL: role "…" does not exist`
   dans les logs `postgres`, que la validation de la plateforme remonte ensuite comme une panne de base. Commande
   exacte : `docker compose -f docker-compose.base44.yml exec -T postgres psql -U school -d school -c '…'`.
+  Ne pas deviner non plus `-d school_manager` (`FATAL: database "…" does not exist`) ni les noms de tables :
+  ils viennent des `@@map(...)` de `prisma/schema.prisma` et sont au singulier (ex. `coord_sous_provinciale`,
+  pas `coord_sous_provinciales`) — lire le `@@map` avant d'écrire la requête.
   Les colonnes Prisma sont en camelCase : en SQL brut il faut les guillemeter (`"ecoleId"`, `e."ecoleId"`),
   sinon PostgreSQL les passe en minuscules et répond `column "ecoleid" does not exist`. Pour une simple lecture,
   préférer le client Prisma (`prisma.eleve.findMany(…)`) à du SQL brut.
