@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { PresenceChart } from '@/components/enseignant/PresenceChart';
 
 type DailyRow = { jour: string; present: number; retard: number; absent: number; taux: number };
 type WeeklyRow = { weekStart: string; present: number; retard: number; absent: number; taux: number };
@@ -111,6 +112,28 @@ export default function RapportsPointagePage() {
                     {todayEntry ? `${todayEntry.present + todayEntry.retard}/${data.totalEnseignants}` : '—'}
                   </p>
                 </div>
+              </div>
+
+              {/* ── Graphique visuel ── */}
+              <div className="mt-5 rounded-3xl bg-white p-5 shadow-soft md:p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 text-blue-500">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6" />
+                  </svg>
+                  Graphique de présence — {view === 'day' ? 'par jour' : 'par semaine'}
+                </h2>
+                <PresenceChart
+                  rows={(view === 'day' ? data.daily : data.weekly).slice().reverse().map((row) => ({
+                    label: view === 'day'
+                      ? formatDateFr((row as DailyRow).jour, { day: '2-digit', month: 'short' })
+                      : formatDateFr((row as WeeklyRow).weekStart, { day: '2-digit', month: 'short' }),
+                    present: row.present,
+                    retard: row.retard,
+                    absent: row.absent,
+                    taux: row.taux,
+                  }))}
+                  maxTotal={data.totalEnseignants}
+                />
               </div>
 
               {/* ── Sélecteur période + vue ── */}
