@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as XLSX from 'xlsx';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const days = Math.min(Math.max(parseInt(searchParams.get('days') ?? '30', 10) || 30, 1), 90);
-  const wantCsv = searchParams.get('export') === 'csv';
+  const exportFmt = searchParams.get('export'); // 'csv' | 'xlsx' | null
+  const wantExport = exportFmt === 'csv' || exportFmt === 'xlsx';
 
   // ── Effectif enseignant de l'école ──
   const enseignants = await prisma.user.findMany({
@@ -113,33 +115,53 @@ export async function GET(request: NextRequest) {
     })
     .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
 
-  // ── CSV ──
-  if (wantCsv) {
+  // ── Préparation des lignes de données (communes CSV + Excel) ──
+  const pointageByEnseignant = new Map<string, typeof pointages>();
+  for (const p of pointages) {
+    const arr = pointageByEnseignant.get(p.enseignantId) ?? [];
+    arr.push(p);
+    pointageByEnseignant.set(p.enseignantId, arr);
+  }
+
+  const exportRows: { Date: string; Enseignant: string; Statut: string; 'Heure arrivee': string }[] = [];
+  for (const ens of enseignants) {
+    const ensPointages = pointageByEnseignant.get(ens.id) ?? [];
+    const pointageMap = new Map(ensPointages.map((p) => [p.jour, p]));
+    for (const jour of workdays) {
+      const p = pointageMap.get(jour);
+      const fullName = [ens.prenom, ens.nom, ens.postNom].filter(Boolean).join(' ');
+      const statut = p ? p.statut : 'ABSENT';
+      const heure = p ? new Date(p.heureArrivee).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+      exportRows.push({ Date: jour, Enseignant: fullName, Statut: statut, 'Heure arrivee': heure });
+    }
+  }
+
+  // ── Export CSV ──
+  if (exportFmt === 'csv') {
     const header = 'Date;Enseignant;Statut;Heure arrivee\n';
-    const rows: string[] = [];
-    const pointageByEnseignant = new Map<string, typeof pointages>();
-    for (const p of pointages) {
-      const arr = pointageByEnseignant.get(p.enseignantId) ?? [];
-      arr.push(p);
-      pointageByEnseignant.set(p.enseignantId, arr);
-    }
-    for (const ens of enseignants) {
-      const ensPointages = pointageByEnseignant.get(ens.id) ?? [];
-      const pointageMap = new Map(ensPointages.map((p) => [p.jour, p]));
-      for (const jour of workdays) {
-        const p = pointageMap.get(jour);
-        const fullName = [ens.prenom, ens.nom, ens.postNom].filter(Boolean).join(' ');
-        const statut = p ? p.statut : 'ABSENT';
-        const heure = p ? new Date(p.heureArrivee).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
-        rows.push(`${jour};${fullName};${statut};${heure}`);
-      }
-    }
-    const csv = header + rows.join('\n');
+    const csv = header + exportRows.map((r) => `${r.Date};${r.Enseignant};${r.Statut};${r['Heure arrivee']}`).join('\n');
     return new NextResponse(csv, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="rapport_pointage_${startStr}_${endStr}.csv"`,
+      },
+    });
+  }
+
+  // ── Export Excel (.xlsx) ──
+  if (exportFmt === 'xlsx') {
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    // Largeurs de colonnes
+    ws['!cols'] = [{ wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 12 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Présences');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    return new NextResponse(buf, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="rapport_pointage_${startStr}_${endStr}.xlsx"`,
       },
     });
   }

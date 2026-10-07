@@ -47,8 +47,11 @@ export default function RapportsPointagePage() {
       .finally(() => setLoading(false));
   }, [days]);
 
-  function handleExport() {
-    window.open(`/api/rapports/pointage?days=${days}&export=csv`, '_blank');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  function handleExport(format: 'csv' | 'xlsx') {
+    window.open(`/api/rapports/pointage?days=${days}&export=${format}`, '_blank');
+    setShowExportMenu(false);
   }
 
   // ── Stats de synthèse ──
@@ -68,16 +71,46 @@ export default function RapportsPointagePage() {
               <h1 className="text-xl font-bold text-slate-900 md:text-2xl">Rapports de présence</h1>
               <p className="text-sm text-slate-500">Taux de présence des enseignants — suivi comptable</p>
             </div>
-            <button
-              onClick={handleExport}
-              disabled={loading || !data}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
-              </svg>
-              Exporter CSV
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu((v) => !v)}
+                disabled={loading || !data}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+                </svg>
+                Exporter
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showExportMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
+                  <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-2xl bg-white py-1 shadow-lg ring-1 ring-slate-200">
+                    <button
+                      onClick={() => handleExport('xlsx')}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-emerald-50"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 text-emerald-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-6h2m0 0V5h2m4 12H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z" />
+                      </svg>
+                      Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={() => handleExport('csv')}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-blue-50"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 text-blue-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-6h2m0 0V5h2m4 12H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z" />
+                      </svg>
+                      CSV
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {loading && (
