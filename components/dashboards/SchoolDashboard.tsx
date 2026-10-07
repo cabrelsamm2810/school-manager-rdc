@@ -21,7 +21,8 @@ export function SchoolDashboard({ stats, breakdown, chartData, activite, role }:
   const shortcuts = [
     { href: '/eleves', icon: 'users', label: 'Gérer les élèves' },
     { href: '/cahier-de-notes', icon: 'notebook', label: 'Cahier de notes' },
-    { href: '/cartes-qr', icon: 'qr', label: 'Cartes QR' }
+    { href: '/cartes-qr', icon: 'qr', label: 'Cartes QR' },
+    { href: '/documents-officiels', icon: 'document', label: 'Documents officiels' }
   ].filter((shortcut) => canAccessPath(role, shortcut.href));
 
   return (

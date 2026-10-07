@@ -35,6 +35,7 @@ export const ROUTE_MIN_ROLE: Record<string, string> = {
   '/matieres-rdc': 'DIRECTION_ECOLE',
   '/options-rdc': 'DIRECTION_ECOLE',
   '/import': 'DIRECTION_ECOLE',
+  '/documents-officiels': 'DIRECTION_ECOLE',
   '/provinces-educationnelles': 'COORDINATION_PROVINCIALE',
   '/sous-divisions': 'COORDINATION_PROVINCIALE',
   '/provinces': 'COORDINATION_PROVINCIALE',
