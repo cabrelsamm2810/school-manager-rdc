@@ -18,6 +18,8 @@ type Profile = {
   typeInstitution?: string;
   institutionName?: string;
   provinceAdministrative?: string;
+  bureauAffectation?: string | null;
+  fonction?: string | null;
 };
 
 const INSTITUTION_LABELS: Record<string, string> = {
@@ -298,6 +300,12 @@ export default function ProfilePage() {
                         )}
                         {profile.provinceAdministrative && (
                           <InfoRow icon="location" label="Province" value={profile.provinceAdministrative} />
+                        )}
+                        {profile.bureauAffectation && (
+                          <InfoRow icon="office" label="Bureau d'affectation" value={profile.bureauAffectation} />
+                        )}
+                        {profile.fonction && (
+                          <InfoRow icon="shield" label="Fonction" value={profile.fonction} />
                         )}
                         <InfoRow icon="shield" label="Statut" value="Compte actif" />
                       </div>
