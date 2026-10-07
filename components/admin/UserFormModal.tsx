@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, SyntheticEvent } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ROLE_LABELS } from '@/lib/roles';
 
@@ -73,7 +73,8 @@ export function UserFormModal({
 
   if (!open) return null;
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  // Appelé par l'envoi du formulaire ET par le bouton du pied de modale (hors <form>).
+  async function handleSubmit(e: SyntheticEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);

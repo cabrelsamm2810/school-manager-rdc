@@ -64,12 +64,12 @@ export default function GeolocalisationPage() {
 
         {/* Liste des écoles */}
         <div>
-          <input type="text" value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Rechercher un école…" className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <input type="text" value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Rechercher une école…" className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
           {loading ? (
             <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
           ) : data.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-              <p className="text-sm text-slate-500">Aucun école trouvé.</p>
+              <p className="text-sm text-slate-500">Aucune école trouvée.</p>
             </div>
           ) : (
             <div className="space-y-3">

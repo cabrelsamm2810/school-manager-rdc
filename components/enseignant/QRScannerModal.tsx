@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Html5Qrcode, Html5QrcodeCameraSwitchState } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 
 export type ScanResult = {
   eleve: {
@@ -94,9 +94,11 @@ export function QRScannerModal({
         getRunningTrackSettings: () => ({}),
         getCapabilities: () => ({}),
       };
-      scanner.getRenderedCameraOrFail = function () {
-        if (scanner.renderedCamera == null) return noopCamera as any;
-        return scanner.renderedCamera;
+      // `getRenderedCameraOrFail` / `renderedCamera` sont privés dans les types de la bibliothèque.
+      const internals = scanner as any;
+      internals.getRenderedCameraOrFail = function () {
+        if (internals.renderedCamera == null) return noopCamera as any;
+        return internals.renderedCamera;
       };
       const origStop = scanner.stop.bind(scanner);
       scanner.stop = function () {
@@ -233,8 +235,8 @@ export function QRScannerModal({
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3">
           <div>
-            <h3 className="text-base font-bold text-white">Scan de présence</h3>
-            <p className="text-xs text-white/60">Scannez le QR code de la carte scolaire</p>
+            <h3 className="text-base font-bold text-white">{title}</h3>
+            <p className="text-xs text-white/60">{subtitle}</p>
           </div>
           <button
             onClick={() => {

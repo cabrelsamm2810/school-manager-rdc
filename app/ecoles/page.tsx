@@ -10,6 +10,7 @@ import { EcoleForm, emptyForm, type EcoleFormData } from '@/components/ecoles/Ec
 import { EcoleFiche } from '@/components/ecoles/EcoleFiche';
 import { NiveauScolaireSelector } from '@/components/ecoles/NiveauScolaireSelector';
 import { INSTITUTIONS, INSTITUTION_MAP, VALIDATION_STATUTS } from '@/lib/institutions';
+import { PROVINCE_NAMES, PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
 
 type Ecole = {
   id: string;
@@ -44,6 +45,7 @@ export default function EcolesPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [provinceFilter, setProvinceFilter] = useState('');
+  const [provinceEducFilter, setProvinceEducFilter] = useState('');
   const [institutionFilter, setInstitutionFilter] = useState('');
   const [statutFilter, setStatutFilter] = useState('');
   const [view, setView] = useState<View>('list');
@@ -63,6 +65,7 @@ export default function EcolesPage() {
       if (search) params.set('search', search);
       if (typeFilter) params.set('type', typeFilter);
       if (provinceFilter) params.set('province', provinceFilter);
+      if (provinceEducFilter) params.set('provinceEducationnelle', provinceEducFilter);
       if (institutionFilter) params.set('institution', institutionFilter);
       if (statutFilter) params.set('statutValidation', statutFilter);
       const res = await fetch(`/api/ecoles?${params.toString()}`);
@@ -79,7 +82,7 @@ export default function EcolesPage() {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, typeFilter, provinceFilter, institutionFilter, statutFilter]);
+  }, [search, typeFilter, provinceFilter, provinceEducFilter, institutionFilter, statutFilter]);
 
   function startCreate() {
     setEditingId(null);
@@ -136,7 +139,7 @@ export default function EcolesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Voulez-vous vraiment supprimer cet école ?')) return;
+    if (!confirm('Voulez-vous vraiment supprimer cette école ?')) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/ecoles/${id}`, { method: 'DELETE' });
@@ -178,7 +181,7 @@ export default function EcolesPage() {
           </div>
 
           {/* Filtres */}
-          <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher (nom, DINACOPE, ID)…"
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
@@ -193,11 +196,18 @@ export default function EcolesPage() {
               <option value="">Tous les statuts</option>
               {VALIDATION_STATUTS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select value={provinceFilter} onChange={(e) => setProvinceFilter(e.target.value)}
+            <select value={provinceFilter}
+              onChange={(e) => { setProvinceFilter(e.target.value); setProvinceEducFilter(''); }}
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
               <option value="">Toutes les provinces</option>
-              {[...new Set(ecoles.map((e) => e.province).filter(Boolean))].sort().map((p) => (
-                <option key={p} value={p}>{p}</option>
+              {PROVINCE_NAMES.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <select value={provinceEducFilter} onChange={(e) => setProvinceEducFilter(e.target.value)}
+              disabled={!provinceFilter}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 disabled:opacity-40">
+              <option value="">Toutes les provinces éduc.</option>
+              {(PROVINCES_EDUC_BY_ADMIN[provinceFilter] ?? []).map((pe) => (
+                <option key={pe.nom} value={pe.nom}>{pe.nom}</option>
               ))}
             </select>
           </div>
@@ -206,7 +216,7 @@ export default function EcolesPage() {
             <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
           ) : ecoles.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-              <p className="text-sm text-slate-500">Aucun école enregistré pour le moment.</p>
+              <p className="text-sm text-slate-500">Aucune école enregistrée pour le moment.</p>
             </div>
           ) : (
             <>

@@ -248,15 +248,18 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
                   update('coordSousProvincialeId', e.target.value);
                   update('structureRattachementId', e.target.value);
                 }}
-                className={inputClass} required disabled={structuresLoading || !form.province}>
+                className={inputClass} required disabled={structuresLoading || !form.provinceEducationnelle}>
                 <option value="">— Sélectionner —</option>
                 {filteredStructures.map((s) => (
                   <option key={s.id} value={s.id}>{s.nom}</option>
                 ))}
               </select>
-              {filteredStructures.length === 0 && !structuresLoading && form.institution && form.province && (
+              {!form.provinceEducationnelle && (
+                <p className="mt-1 text-xs text-slate-400">Sélectionnez d’abord une province éducationnelle.</p>
+              )}
+              {form.provinceEducationnelle && filteredStructures.length === 0 && !structuresLoading && (
                 <p className="mt-1 text-xs text-amber-600">
-                  Aucune structure enregistrée pour cette province. Créez-en une dans le module correspondant.
+                  Aucune coordination sous-provinciale enregistrée pour cette province.
                 </p>
               )}
             </div>

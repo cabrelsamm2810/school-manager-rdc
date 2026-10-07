@@ -6,7 +6,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 
 function fullName(user: any) {
-  return `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email ?? 'Inconnu';
+  return `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email || 'Inconnu';
 }
 
 /**

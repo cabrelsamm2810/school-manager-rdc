@@ -6,6 +6,7 @@ import { StatutBadge } from '@/components/ui/StatutBadge';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { EcoleDetailPanel } from '@/components/admin-smd/EcoleDetailPanel';
 import { INSTITUTION_MAP } from '@/lib/institutions';
+import { PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
 
 type Ecole = {
   id: string;
@@ -211,8 +212,14 @@ export function EcolesManagement() {
           <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}
             options={filterData ? [...new Set([...filterData.institutions.map(i => i.code), ...NIVEAUX])] : NIVEAUX} />
           <FilterSelect label="Statut" value={statutFilter} onChange={setStatutFilter} options={STATUTS} />
-          <FilterSelect label="Province" value={provinceFilter} onChange={setProvinceFilter} options={filterData?.provinces ?? []} />
-          <FilterSelect label="Province éduc." value={provinceEducFilter} onChange={setProvinceEducFilter} options={filterData?.provincesEducationnelles ?? []} />
+          <FilterSelect label="Province" value={provinceFilter}
+            onChange={(v) => { setProvinceFilter(v); setProvinceEducFilter(''); }}
+            options={filterData?.provinces ?? []} />
+          {/* Cascade : la province éducationnelle suit la province choisie */}
+          <FilterSelect label="Province éduc." value={provinceEducFilter} onChange={setProvinceEducFilter}
+            options={provinceFilter
+              ? (PROVINCES_EDUC_BY_ADMIN[provinceFilter] ?? []).map((pe) => pe.nom)
+              : filterData?.provincesEducationnelles ?? []} />
           <FilterSelect label="Niveau" value={niveauFilter} onChange={setNiveauFilter} options={NIVEAUX} />
           <FilterSelect label="Institution" value={institutionFilter} onChange={setInstitutionFilter}
             options={filterData?.institutions.map((i) => i.code) ?? []} labels={filterData?.institutions} />

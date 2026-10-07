@@ -164,7 +164,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
           onChange={(e) => setEcoleFilter(e.target.value)}
           className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-56"
         >
-          <option value="">Tous les écoles</option>
+          <option value="">Toutes les écoles</option>
           {ecoles.map((et) => (
             <option key={et.id} value={et.id}>{et.nom}</option>
           ))}

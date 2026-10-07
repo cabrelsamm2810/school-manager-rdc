@@ -84,6 +84,22 @@ credentials. Nothing external is required to boot.
   sinon PostgreSQL les passe en minuscules et répond `column "ecoleid" does not exist`. Pour une simple lecture,
   préférer le client Prisma (`prisma.eleve.findMany(…)`) à du SQL brut.
 
+## Noms de provinces et cascade Province → Province éduc. → Coordination SP
+
+- **Une seule source de noms : `lib/provinces-rdc.ts`** (`PROVINCE_NAMES`, `PROVINCES_EDUCATIONNELLES`,
+  `PROVINCES_EDUC_BY_ADMIN`). Ce sont exactement les libellés de la base (« Kongo Central », « Kasaï Central »,
+  « Kasaï Oriental » avec espace, pas de trait d'union). `lib/meta-data.ts` (`allProvinces`,
+  `educationProvincesByAdmin`) en est dérivé : ne jamais y recopier une liste à la main — une variante
+  (« Kongo-Central ») casse silencieusement les listes en cascade, l'inscription et les filtres de périmètre
+  (`where.province = user.provinceAdministrative`).
+- `CoordSousProvinciale` n'a **pas** de lien vers la province éducationnelle (seulement `province`). Le dernier
+  niveau de la cascade (formulaire école, filtre enseignants) filtre donc par province administrative et reste
+  désactivé tant que la province éducationnelle n'est pas choisie.
+- Vérification : `GET /api/meta` → `educationProvincesByAdmin['Kongo Central']` = 3 entrées, `Kinshasa` = 5 ;
+  `GET /api/ecoles?provinceEducationnelle=…` filtre la liste.
+- `npx tsc --noEmit --incremental false` (dans `web`) doit rester à zéro erreur : des erreurs de type ignorées
+  cachaient des routes cassées (`valider`, `pointage` PDF).
+
 ## Comptes de démonstration
 
 - **Enseignant** : `enseignant.demo@schoolmanager-rdc.cd` / `Enseignant2026`, rattaché à l'« École de

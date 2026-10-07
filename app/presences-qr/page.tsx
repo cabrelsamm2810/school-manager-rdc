@@ -103,12 +103,14 @@ export default function PresencesQrPage() {
   }
 
   // Ouvrir une séance existante depuis l'historique
-  async function openSeance(seance: Seance) {
+  // L'historique ne fournit pas `anneeScolaire` : on la lit dans le détail de la séance,
+  // sinon les scans d'une séance rouverte partiraient sans année scolaire.
+  async function openSeance(seance: Omit<Seance, 'anneeScolaire'> & { anneeScolaire?: string }) {
     try {
       const res = await fetch(`/api/presences/seances/${seance.id}`);
       const data = await res.json();
       if (res.ok && data.eleves) {
-        setActiveSeance(seance);
+        setActiveSeance({ ...seance, anneeScolaire: seance.anneeScolaire ?? data.seance?.anneeScolaire ?? '' });
         setSeanceEleves(data.eleves);
         setView('appel');
       }

@@ -203,6 +203,18 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // ── Détail par enseignant (tableau détaillé, réutilisé par l'export PDF) ──
+  // Déclaré avant le bloc PDF : `const` n'est pas accessible avant sa déclaration (TDZ).
+  const enseignantDetails = enseignants.map((ens) => {
+    const ensPointages = pointages.filter((p) => p.enseignantId === ens.id);
+    return {
+      id: ens.id,
+      nom: [ens.prenom, ens.nom, ens.postNom].filter(Boolean).join(' '),
+      totalPointages: ensPointages.length,
+      totalRetards: ensPointages.filter((p) => p.statut === 'RETARD').length,
+    };
+  });
+
   // ── Export PDF (résumé imprimable) ──
   if (exportFmt === 'pdf') {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -299,7 +311,7 @@ export async function GET(request: NextRequest) {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
     });
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
@@ -307,17 +319,6 @@ export async function GET(request: NextRequest) {
       },
     });
   }
-
-  // ── Détail par enseignant (pour le tableau détaillé) ──
-  const enseignantDetails = enseignants.map((ens) => {
-    const ensPointages = pointages.filter((p) => p.enseignantId === ens.id);
-    return {
-      id: ens.id,
-      nom: [ens.prenom, ens.nom, ens.postNom].filter(Boolean).join(' '),
-      totalPointages: ensPointages.length,
-      totalRetards: ensPointages.filter((p) => p.statut === 'RETARD').length,
-    };
-  });
 
   return NextResponse.json({
     totalEnseignants,

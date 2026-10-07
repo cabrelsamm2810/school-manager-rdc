@@ -1,4 +1,5 @@
 import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
+import { PROVINCE_NAMES, PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
 
 export type InstitutionType = {
   value: string;
@@ -59,68 +60,24 @@ export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'PARENT', label: 'Parent / Tuteur' },
 ];
 
-/** Les 26 provinces administratives de la RDC. */
-export const allProvinces: Province[] = [
-  'Kinshasa',
-  'Kongo-Central',
-  'Kwango',
-  'Kwilu',
-  'Mai-Ndombe',
-  'Équateur',
-  'Mongala',
-  'Sud-Ubangi',
-  'Nord-Ubangi',
-  'Bas-Uele',
-  'Haut-Uele',
-  'Ituri',
-  'Tshopo',
-  'Tshuapa',
-  'Kasaï',
-  'Kasaï-Central',
-  'Kasaï-Oriental',
-  'Lomami',
-  'Sankuru',
-  'Maniema',
-  'Sud-Kivu',
-  'Nord-Kivu',
-  'Haut-Lomami',
-  'Tanganyika',
-  'Haut-Katanga',
-  'Lualaba',
-];
+/**
+ * Les 26 provinces administratives de la RDC.
+ * Source unique : `lib/provinces-rdc.ts` (mêmes libellés que la base de données —
+ * ex. « Kongo Central », « Kasaï Central » — afin que les filtres en cascade et les
+ * périmètres territoriaux comparent toujours des valeurs identiques).
+ */
+export const allProvinces: Province[] = PROVINCE_NAMES;
 
 /** Ancienne liste pour compatibilité (sera remplacée progressivement). */
 export const defaultProvinces: Province[] = allProvinces;
 
-/** Provinces éducationnelles liées à chaque province administrative. */
-export const educationProvincesByAdmin: Record<string, string[]> = {
-  'Kinshasa': ['Kinshasa 1', 'Kinshasa 2'],
-  'Kongo-Central': ['Kongo-Central'],
-  'Kwango': ['Kwango'],
-  'Kwilu': ['Kwilu'],
-  'Mai-Ndombe': ['Mai-Ndombe'],
-  'Équateur': ['Équateur'],
-  'Mongala': ['Mongala'],
-  'Sud-Ubangi': ['Sud-Ubangi'],
-  'Nord-Ubangi': ['Nord-Ubangi'],
-  'Bas-Uele': ['Bas-Uele'],
-  'Haut-Uele': ['Haut-Uele'],
-  'Ituri': ['Ituri'],
-  'Tshopo': ['Tshopo'],
-  'Tshuapa': ['Tshuapa'],
-  'Kasaï': ['Kasaï'],
-  'Kasaï-Central': ['Kasaï-Central'],
-  'Kasaï-Oriental': ['Kasaï-Oriental 1', 'Kasaï-Oriental 2'],
-  'Lomami': ['Lomami'],
-  'Sankuru': ['Sankuru'],
-  'Maniema': ['Maniema'],
-  'Sud-Kivu': ['Sud-Kivu'],
-  'Nord-Kivu': ['Nord-Kivu'],
-  'Haut-Lomami': ['Haut-Lomami'],
-  'Tanganyika': ['Tanganyika'],
-  'Haut-Katanga': ['Haut-Katanga 1', 'Haut-Katanga 2'],
-  'Lualaba': ['Lualaba'],
-};
+/**
+ * Provinces éducationnelles liées à chaque province administrative
+ * (dérivées de `PROVINCES_EDUCATIONNELLES`, comme la table `provinces_educationnelles`).
+ */
+export const educationProvincesByAdmin: Record<string, string[]> = Object.fromEntries(
+  Object.entries(PROVINCES_EDUC_BY_ADMIN).map(([admin, list]) => [admin, list.map((pe) => pe.nom)]),
+);
 
 /** Bureaux d'affectation pour la structure provinciale EC-ERC. */
 export const provincialBureaux = [

@@ -39,12 +39,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') || undefined;
   const province = searchParams.get('province') || undefined;
+  const provinceEducationnelle = searchParams.get('provinceEducationnelle') || undefined;
   const type = searchParams.get('type') || undefined;
   const institution = searchParams.get('institution') || undefined;
   const statutValidation = searchParams.get('statutValidation') || undefined;
 
   const where: Record<string, unknown> = {};
   if (province) where.province = province;
+  if (provinceEducationnelle) where.provinceEducationnelle = provinceEducationnelle;
   if (type) where.type = type;
   if (institution) where.institution = institution;
   if (statutValidation) where.statutValidation = statutValidation;
@@ -119,7 +121,7 @@ export async function POST(request: NextRequest) {
   const userInst = (auth.user as any).typeInstitution;
   if (auth.user.role !== 'SUPER_ADMIN' && userInst && userInst !== data.institution) {
     return NextResponse.json(
-      { error: 'Vous ne pouvez créer un école que pour votre propre institution.' },
+      { error: 'Vous ne pouvez créer une école que pour votre propre institution.' },
       { status: 403 },
     );
   }
@@ -130,14 +132,14 @@ export async function POST(request: NextRequest) {
   const scope = getScopeLevel(auth.user.role);
   if (scope === 'provincial' && (auth.user as any).provinceAdministrative && data.province !== (auth.user as any).provinceAdministrative) {
     return NextResponse.json(
-      { error: 'Vous ne pouvez créer un école que dans votre province.' },
+      { error: 'Vous ne pouvez créer une école que dans votre province.' },
       { status: 403 },
     );
   }
   if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
     if (data.coordSousProvincialeId && data.coordSousProvincialeId !== (auth.user as any).coordSousProvincialeId) {
       return NextResponse.json(
-        { error: 'Vous ne pouvez créer un école que dans votre sous-division.' },
+        { error: 'Vous ne pouvez créer une école que dans votre sous-division.' },
         { status: 403 },
       );
     }

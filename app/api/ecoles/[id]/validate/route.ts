@@ -48,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   // SUPER_ADMIN peut tout faire ; les autres doivent être de la même institution.
   if (user.role !== 'SUPER_ADMIN' && user.typeInstitution && user.typeInstitution !== existing.institution) {
     return NextResponse.json(
-      { error: 'Vous ne pouvez valider qu\u2019un école de votre propre institution.' },
+      { error: 'Vous ne pouvez valider qu\u2019une école de votre propre institution.' },
       { status: 403 },
     );
   }

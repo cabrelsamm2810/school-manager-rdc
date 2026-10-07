@@ -457,7 +457,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { key: 'statut', label: 'Statut', render: (e: any) => <StatutBadge statut={e.statut} /> },
     ],
     filters: [
-      { name: 'ecole', label: 'Tous les écoles' },
+      { name: 'ecole', label: 'Toutes les écoles' },
       { name: 'statut', label: 'Tous les statuts', options: [
         { value: 'Planifiée', label: 'Planifiée' },
         { value: 'Terminée', label: 'Terminée' },

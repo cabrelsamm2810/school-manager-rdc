@@ -605,12 +605,17 @@ export function CrudManager({ config }: { config: CrudConfig }) {
                   disabled={!!f.dependsOn && !filters[f.dependsOn]}
                   onChange={(e) => {
                     const newFilters = { ...filters, [f.name]: e.target.value };
-                    // Reset child filters that depend on this one
-                    for (const child of config.filters ?? []) {
-                      if (child.dependsOn === f.name) {
-                        newFilters[child.name] = '';
+                    // Reset every descendant filter (enfant, petit-enfant…) : sinon une valeur
+                    // devenue invalide resterait appliquée à la requête alors que la liste est masquée.
+                    const resetDescendants = (parent: string) => {
+                      for (const child of config.filters ?? []) {
+                        if (child.dependsOn === parent) {
+                          newFilters[child.name] = '';
+                          resetDescendants(child.name);
+                        }
                       }
-                    }
+                    };
+                    resetDescendants(f.name);
                     setFilters(newFilters);
                   }}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-40 sm:w-52"

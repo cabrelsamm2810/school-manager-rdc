@@ -120,7 +120,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const userName = `${user.prenom} ${user.nom}`.trim();
   const ipAddress = getClientIP(request);
-  const auditAction = action === 'valider' ? 'ECOLE_VALIDER' : 'ECOLE_REJETER';
+  const centralAuditAction = action === 'valider' ? 'ECOLE_VALIDER' : 'ECOLE_REJETER';
   const auditDetails = `${action === 'valider' ? 'École validée' : 'École rejetée'} : ${existing.nom}${commentaire ? ` — ${commentaire}` : ''}`;
 
   // ── Journal de validation interne ──
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     userId: user.id,
     userRole: user.role,
     userName,
-    action: auditAction,
+    action: centralAuditAction,
     module: 'ecoles',
     resourceId: params.id,
     details: auditDetails,
