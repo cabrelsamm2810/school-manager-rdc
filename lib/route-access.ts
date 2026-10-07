@@ -20,6 +20,7 @@ export const ROUTE_MIN_ROLE: Record<string, string> = {
   '/journal-de-classe': 'ENSEIGNANT',
   '/cahier-de-communication': 'ENSEIGNANT',
   '/presences-qr': 'ENSEIGNANT',
+  '/pointage-qr': 'DIRECTION_ECOLE',
   '/mes-eleves': 'ENSEIGNANT',
   '/scanner-eleve': 'ENSEIGNANT',
   '/rappels-cotes': 'DIRECTION_ECOLE',

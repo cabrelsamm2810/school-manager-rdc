@@ -830,6 +830,25 @@ model Bulletin {
   @@map("bulletins")
 }
 
+model PointageEnseignant {
+  id           String   @id @default(cuid())
+  enseignantId String   // User.id du professeur
+  ecoleId      String?
+  jour         String   // YYYY-MM-DD (un pointage par jour)
+  heureArrivee DateTime @default(now())
+  statut       String   @default("PRESENT") // PRESENT | RETARD
+  latitude     Float?
+  longitude    Float?
+  scannedValue String?
+  createdAt    DateTime @default(now())
+
+  @@unique([enseignantId, jour])
+  @@index([enseignantId])
+  @@index([jour])
+  @@index([ecoleId])
+  @@map("pointages_enseignant")
+}
+
 model AuditLog {
   id          String   @id @default(cuid())
   userId      String   @default("")
