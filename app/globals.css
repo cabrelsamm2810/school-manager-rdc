@@ -548,14 +548,14 @@ select.sm-input {
   position: relative;
 }
 .select-card:hover {
-  border-color: rgba(0, 102, 255, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 40, 104, 0.1);
+  border-color: rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 16px rgba(11, 37, 69, 0.08);
   transform: translateY(-1px);
 }
 .select-card.selected {
-  border-color: #0066FF;
-  background: linear-gradient(135deg, rgba(0, 102, 255, 0.06) 0%, rgba(0, 40, 104, 0.03) 100%);
-  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2), 0 4px 16px rgba(0, 40, 104, 0.12);
+  border-color: #2563eb;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.04) 0%, rgba(29, 78, 216, 0.02) 100%);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15), 0 4px 16px rgba(29, 78, 216, 0.10);
 }
 
 /* ── Registration page ── */
@@ -723,8 +723,8 @@ select.sm-input {
   -webkit-tap-highlight-color: transparent;
 }
 .reg-field:focus {
-  border-color: #0066FF;
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
   background: #ffffff;
 }
 .reg-field::placeholder {
