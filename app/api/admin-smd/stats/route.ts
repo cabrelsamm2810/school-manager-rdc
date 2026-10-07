@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { can, PERM } from '@/lib/permissions';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin-smd/stats
  *
