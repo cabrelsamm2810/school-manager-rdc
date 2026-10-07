@@ -22,7 +22,7 @@ const STATUTS_EN_ATTENTE = ['En attente de vérification', 'En cours de vérific
  * Body : { action: 'valider' | 'rejeter', commentaire?: string }
  *
  * Règles :
- *  1. Authentification + rôle minimum COORDINATION_SOUS_PROVINCIALE.
+ *  1. Authentification + rôle minimum AGENT_SOUS_PROVINCIAL.
  *  2. L'école doit avoir un statut « en attente ».
  *  3. Périmètre territorial — le validateur doit couvrir le territoire de l'école.
  *  4. La transition doit être autorisée par le flux hiérarchique.
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'Connexion requise.' }, { status: 401 });
   }
 
-  if (!hasAtLeastRole(user.role, 'COORDINATION_SOUS_PROVINCIALE')) {
+  if (!hasAtLeastRole(user.role, 'AGENT_SOUS_PROVINCIAL')) {
     return NextResponse.json(
       { error: 'Rôle insuffisant. Permission de coordination sous-provinciale requise.' },
       { status: 403 },

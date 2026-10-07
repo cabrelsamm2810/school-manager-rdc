@@ -14,6 +14,7 @@ const ALLOWED_ROLES = [
   'COORDINATION_PROVINCIALE',
   'AGENT_PROVINCIAL',
   'COORDINATION_SOUS_PROVINCIALE',
+  'AGENT_SOUS_PROVINCIAL',
 ];
 
 /**
@@ -23,7 +24,7 @@ const ALLOWED_ROLES = [
  * ou « En cours de vérification », filtrées par le périmètre territorial de l'utilisateur :
  *  - national : SUPER_ADMIN, ADMIN_SCHOOL_MANAGER_RDC, COORDINATION_NATIONALE → toutes
  *  - provincial : COORDINATION_PROVINCIALE, AGENT_PROVINCIAL → leur province
- *  - sous-provincial : COORDINATION_SOUS_PROVINCIALE → leur sous-division
+ *  - sous-provincial : COORDINATION_SOUS_PROVINCIALE, AGENT_SOUS_PROVINCIAL → leur sous-division
  */
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);

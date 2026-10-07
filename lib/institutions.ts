@@ -181,7 +181,7 @@ export function generateIdentifiantSM(institution: string): string {
  *
  * Chaque transition précise le rôle minimum requis pour l'effectuer.
  * Le flux respecte la hiérarchie administrative :
- *   DIRECTION_ECOLE soumet → COORDINATION_SOUS_PROVINCIALE vérifie et valide.
+ *   DIRECTION_ECOLE soumet → AGENT_SOUS_PROVINCIAL (et au-dessus) vérifie et valide.
  */
 
 export type ValidationTransition = {
@@ -193,10 +193,10 @@ export type ValidationTransition = {
 export const VALIDATION_TRANSITIONS: ValidationTransition[] = [
   { from: 'Brouillon', to: 'En attente de vérification', minRole: 'DIRECTION_ECOLE' },
   { from: 'En attente de vérification', to: 'En cours de vérification', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
-  { from: 'En attente de vérification', to: 'Validée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
-  { from: 'En attente de vérification', to: 'Rejetée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
-  { from: 'En cours de vérification', to: 'Validée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
-  { from: 'En cours de vérification', to: 'Rejetée', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
+  { from: 'En attente de vérification', to: 'Validée', minRole: 'AGENT_SOUS_PROVINCIAL' },
+  { from: 'En attente de vérification', to: 'Rejetée', minRole: 'AGENT_SOUS_PROVINCIAL' },
+  { from: 'En cours de vérification', to: 'Validée', minRole: 'AGENT_SOUS_PROVINCIAL' },
+  { from: 'En cours de vérification', to: 'Rejetée', minRole: 'AGENT_SOUS_PROVINCIAL' },
   { from: 'Validée', to: 'Suspendue', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
   { from: 'Rejetée', to: 'Brouillon', minRole: 'DIRECTION_ECOLE' },
   { from: 'Suspendue', to: 'Brouillon', minRole: 'COORDINATION_SOUS_PROVINCIALE' },
