@@ -5,6 +5,7 @@ import { AppShell } from '@/components/AppShell';
 import { useSessionUser } from '@/lib/use-session-user';
 import { PresenceAppel } from '@/components/enseignant/PresenceAppel';
 import { PresenceHistory } from '@/components/enseignant/PresenceHistory';
+import { isSessionFlowClass } from '@/lib/presence-flow';
 
 type Eleve = {
   id: string;
@@ -41,6 +42,8 @@ export default function PresencesQrPage() {
   const [error, setError] = useState('');
   const [activeSeance, setActiveSeance] = useState<Seance | null>(null);
   const [seanceEleves, setSeanceEleves] = useState<Eleve[]>([]);
+  const [matieres, setMatieres] = useState<string[]>([]);
+  const [loadingMatieres, setLoadingMatieres] = useState(false);
 
   // Charger les classes disponibles
   useEffect(() => {
@@ -48,7 +51,9 @@ export default function PresencesQrPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.eleves) {
-          const uniqueClasses = [...new Set<string>(data.eleves.map((e: { classe: string }) => e.classe))].sort();
+          const uniqueClasses = [...new Set<string>(data.eleves.map((e: { classe: string }) => e.classe))]
+            .filter(isSessionFlowClass)
+            .sort();
           setClasses(uniqueClasses);
         }
       })
@@ -61,6 +66,23 @@ export default function PresencesQrPage() {
     const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
     setAnneeScolaire(`${year}-${year + 1}`);
   }, []);
+
+  // Charger les matières attribuées à l'enseignant pour la classe sélectionnée
+  useEffect(() => {
+    if (!selectedClass) {
+      setMatieres([]);
+      setMatiere('');
+      return;
+    }
+    setLoadingMatieres(true);
+    fetch(`/api/enseignant/matieres?classe=${encodeURIComponent(selectedClass)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setMatieres(data.matieres || []);
+      })
+      .catch(() => setMatieres([]))
+      .finally(() => setLoadingMatieres(false));
+  }, [selectedClass]);
 
   // Démarrer une séance (appel)
   async function startAppel() {
@@ -177,18 +199,31 @@ export default function PresencesQrPage() {
               </select>
             </div>
 
-            {/* Matière */}
+            {/* Matière — menu déroulant des matières attribuées à l'enseignant */}
             <div className="mb-4">
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Matière / Cours <span className="text-slate-400">(optionnel)</span>
+                Matière / Cours <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={matiere}
-                onChange={(e) => setMatiere(e.target.value)}
-                placeholder="ex: Mathématiques"
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              />
+              {loadingMatieres ? (
+                <div className="flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-400">
+                  <div className="btn-spinner h-4 w-4" /> Chargement des matières…
+                </div>
+              ) : matieres.length === 0 ? (
+                <p className="rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-600">
+                  Aucune matière attribuée pour cette classe.
+                </p>
+              ) : (
+                <select
+                  value={matiere}
+                  onChange={(e) => setMatiere(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="">— Sélectionner une matière —</option>
+                  {matieres.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Année scolaire */}
@@ -209,7 +244,7 @@ export default function PresencesQrPage() {
 
             <button
               onClick={startAppel}
-              disabled={!selectedClass || loading}
+              disabled={!selectedClass || !matiere || loading || matieres.length === 0}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-700 to-blue-500 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-500/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
