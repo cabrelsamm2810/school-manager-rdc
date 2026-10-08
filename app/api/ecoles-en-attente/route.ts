@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
       createdAt: true,
       coordSousProvincialeId: true,
       coordSousProvinciale: { select: { id: true, nom: true } },
+      _count: { select: { documents: true } },
     },
     orderBy: [{ createdAt: 'desc' }],
   });

@@ -31,6 +31,8 @@ const icons: Record<string, string> = {
   user: 'M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-8 3-8 8h16c0-5-3-8-8-8z',
   'chevron-down': 'M6 9l6 6 6-6',
   'chevron-right': 'M9 6l6 6-6 6',
+  'chevron-left': 'M15 6l-6 6 6 6',
+  'paperclip': 'M21 12l-9 9c-3 3-7 3-10 0s-3-7 0-10l9-9c2-2 5-2 7 0s2 5 0 7l-9 9c-1 1-3 1-4 0s-1-3 0-4l8-8',
   upload: 'M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2',
   document: 'M6 2h9l5 5v15H6zM15 2v5h5M9 12h6M9 16h6',
   send: 'M2 12l20-9-9 20-2-9-9-2z',
