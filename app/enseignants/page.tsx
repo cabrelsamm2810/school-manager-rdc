@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
-import { CrudManager } from '@/components/CrudManager';
-import { crudConfigs } from '@/lib/crud-configs';
+import { EnseignantsManager } from '@/components/enseignant/EnseignantsManager';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrImportDialog } from '@/components/import/OcrImportDialog';
 
@@ -23,7 +22,7 @@ export default function EnseignantsPage() {
         </button>
       </div>
 
-      <CrudManager key={refreshKey} config={crudConfigs.enseignants} />
+      <EnseignantsManager key={refreshKey} />
 
       {showImport && (
         <ImportDialog
