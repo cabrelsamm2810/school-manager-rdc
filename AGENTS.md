@@ -50,9 +50,10 @@ credentials. Nothing external is required to boot.
 - **`tsconfig.tsbuildinfo` is not tracked** (`.gitignore` has `*.tsbuildinfo`). It is a TypeScript
   incremental cache, and committing it made stale `TS2802` diagnostics replay for files that were already
   fixed. To type-check from scratch: `npx tsc --noEmit --incremental false`.
-- `.env.example` lists Supabase and S3 settings, but those integrations are **not implemented** — only
-  `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
-  is declared there but referenced nowhere in the code.
+- `.env.example` lists Supabase, S3 and R2 settings. R2 storage **is implemented** via `lib/storage.ts`
+  (see section « Stockage des fichiers » below). Supabase client and raw S3 settings remain **not implemented** —
+  only `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE`, `NODE_ENV` and the R2 variables
+  are read. `SESSION_SECRET` is declared but referenced nowhere in the code.
 - **Le modèle `Enseignant` n'a aucun champ territorial.** `ecole` y est un simple libellé (pas de FK),
   et il n'existe ni province ni `ecoleId`. `crud-models.ts` marque donc `provinceField: false` pour ce
   module : sans cela `buildScopeWhere()` ajoutait un `where.province` inexistant et `/api/enseignants` répondait
@@ -277,6 +278,31 @@ Vérification de l'interface (aucune conversation n'existe après un `db push` p
 `-F file=@x.wav;type=audio/wav`). Supprimer ensuite la conversation (`DELETE` en base, la cascade
 emporte les messages) **et** les fichiers écrits dans `public/uploads/chat-files/` — ce dossier contient
 des fichiers suivis par git, ne jamais le vider en bloc.
+
+## Stockage des fichiers — Cloudflare R2
+
+`lib/storage.ts` est la couche d'abstraction. Quand les variables R2 sont configurées
+(`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`), les nouveaux
+téléversements vont vers R2. Sinon, repli sur le système de fichiers local (`public/uploads/`),
+comportement d'origine — l'app fonctionne sans R2.
+
+Formats d'URL stockés en base :
+- Local : `/uploads/<category>/<filename>` (inchangé, rétro-compatible)
+- R2 privé : `r2://<category>/<filename>` — résolu en URL signée (1 h) par `resolveFileUrl()` dans les routes GET
+- R2 public : `https://<R2_PUBLIC_URL>/<key>` — pour les photos de profil (déjà publiques localement)
+- Data URL : `data:image/...` — photos d'inscription (non modifiées)
+
+Routes modifiées pour utiliser `lib/storage.ts` :
+- `app/api/users/me/photo/route.ts` — upload + delete photo de profil (public)
+- `app/api/chat/conversations/[id]/messages/route.ts` — upload + resolve + file size
+- `app/api/chat/groups/[id]/messages/route.ts` — upload + resolve + file size
+- `app/api/eleves/[id]/documents/route.ts` — upload + resolve + delete
+- `app/api/ecoles/[id]/documents/route.ts` — upload + resolve + delete
+
+`lib/chat-files.ts` délègue `getStoredFileSize()` à `storage.getFileSize()` (R2 ou local).
+
+Les variables R2 sont optionnelles (`requiredAtBoot: false`). Sans elles, le stockage local fonctionne.
+Ajouter les clés depuis la page Secrets ou le tableau de bord Vercel.
 
 ## Tests
 

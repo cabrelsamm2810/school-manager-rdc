@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { uploadFile, resolveFileUrl, deleteFile } from '@/lib/storage';
+import path from 'path';
 
 function fullName(user: any) {
   return `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email || 'Inconnu';
