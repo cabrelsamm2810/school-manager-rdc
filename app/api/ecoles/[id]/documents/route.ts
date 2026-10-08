@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { uploadFile, resolveFileUrl, deleteFile } from '@/lib/storage';
 
 function fullName(user: any) {
   return `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email || 'Inconnu';
@@ -24,7 +22,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json({ documents });
+  // Résout les URLs R2 en URLs signées
+  const resolved = await Promise.all(
+    documents.map(async (d) => ({
+      ...d,
+      fileUrl: await resolveFileUrl(d.fileUrl, { signed: true }),
+    }))
+  );
+
+  return NextResponse.json({ documents: resolved });
 }
 
 /**
@@ -59,24 +65,17 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'Le titre du document est obligatoire.' }, { status: 400 });
   }
 
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'ecoles', params.id);
-  if (!existsSync(uploadDir)) {
-    await mkdir(uploadDir, { recursive: true });
-  }
-
   const ext = path.extname(file.name) || '';
   const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
   const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadDir, uniqueName), bytes);
-
-  const fileUrl = `/uploads/ecoles/${params.id}/${uniqueName}`;
+  const { storedUrl } = await uploadFile(`ecoles/${params.id}`, uniqueName, bytes, file.type || ext);
 
   const document = await prisma.ecoleDocument.create({
     data: {
       ecoleId: params.id,
       type,
       titre,
-      fileUrl,
+      fileUrl: storedUrl,
       fileName: file.name,
       fileType: file.type || ext,
     },
@@ -122,6 +121,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ error: 'Document introuvable.' }, { status: 404 });
   }
 
+  await deleteFile(doc.fileUrl);
   await prisma.ecoleDocument.delete({
     where: { id: body.documentId, ecoleId: params.id },
   });

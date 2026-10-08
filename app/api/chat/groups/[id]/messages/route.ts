@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { uploadFile, resolveFileUrl } from '@/lib/storage';
 import { getStoredFileSize, validateChatFile } from '@/lib/chat-files';
 
 export async function GET(
@@ -45,7 +43,7 @@ export async function GET(
         senderNom: m.sender.nom,
         senderPhotoUrl: m.sender.profilePhotoUrl,
         createdAt: m.createdAt,
-        fileUrl: m.fileUrl,
+        fileUrl: await resolveFileUrl(m.fileUrl, { signed: true }),
         fileName: m.fileName,
         fileType: m.fileType,
         fileSize: await getStoredFileSize(m.fileUrl),
@@ -104,16 +102,10 @@ export async function POST(
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const uniqueName = `${Date.now()}-${safeName}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'chat-files');
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const { storedUrl } = await uploadFile('chat-files', uniqueName, bytes, file.type || 'application/octet-stream');
 
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    const bytes = await file.arrayBuffer();
-    await writeFile(path.join(uploadDir, uniqueName), Buffer.from(bytes));
-
-    fileUrl = `/uploads/chat-files/${uniqueName}`;
+    fileUrl = storedUrl;
     fileName = file.name;
     fileType = file.type;
     fileSize = file.size;
@@ -154,7 +146,7 @@ export async function POST(
     senderNom: currentUser.nom,
     senderPhotoUrl: currentUser.profilePhotoUrl,
     createdAt: message.createdAt,
-    fileUrl: message.fileUrl,
+    fileUrl: await resolveFileUrl(message.fileUrl, { signed: true }),
     fileName: message.fileName,
     fileType: message.fileType,
     fileSize,
