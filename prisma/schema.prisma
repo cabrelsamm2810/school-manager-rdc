@@ -262,6 +262,7 @@ model Ecole {
   eleves               Eleve[]
   users                User[]
   enseignants          Enseignant[] @relation("EnseignantEcole")
+  enseignantAffectations EnseignantAffectation[]
   chatGroups           ChatGroup[]
   documents            EcoleDocument[]
   documentAudits       EcoleDocumentAudit[]
@@ -343,6 +344,7 @@ model Enseignant {
   telephone     String   @default("")
   email         String   @default("")
   statut        String   @default("Actif")
+  affectations  EnseignantAffectation[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -350,6 +352,26 @@ model Enseignant {
   @@index([ecole])
   @@index([ecoleId])
   @@map("enseignants")
+}
+
+model EnseignantAffectation {
+  id           String   @id @default(cuid())
+  enseignantId String
+  enseignant   Enseignant @relation(fields: [enseignantId], references: [id], onDelete: Cascade)
+  ecoleId      String?
+  ecole        Ecole?   @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
+  classe       String
+  matiere      String   @default("")
+  niveau       String   @default("")
+  statut       String   @default("Actif")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([enseignantId, classe, matiere])
+  @@index([enseignantId])
+  @@index([classe])
+  @@index([ecoleId])
+  @@map("enseignant_affectations")
 }
 
 model Province {

@@ -89,6 +89,66 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ── Empêcher les doublons : une seule séance active par enseignant+classe+matière+jour ──
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const existingSeance = await prisma.seancePresence.findFirst({
+    where: {
+      enseignantId: user.id,
+      classe,
+      matiere,
+      statut: 'EN_COURS',
+      date: { gte: todayStart, lte: todayEnd },
+    },
+  });
+
+  if (existingSeance) {
+    return NextResponse.json(
+      { error: 'Une séance active existe déjà pour cette classe et matière aujourd\'hui.', seance: existingSeance },
+      { status: 409 },
+    );
+  }
+
+  // ── Valider l'affectation si des affectations explicites existent ──
+  const enseignantRecord = await prisma.enseignant.findFirst({
+    where: {
+      OR: [{ email: user.email }, { nom: { contains: user.nom } }],
+    },
+  });
+
+  if (enseignantRecord) {
+    const affectation = await prisma.enseignantAffectation.findFirst({
+      where: {
+        enseignantId: enseignantRecord.id,
+        classe,
+        statut: 'Actif',
+      },
+    });
+
+    if (affectation) {
+      // Des affectations existent pour cette classe : vérifier la matière
+      if (matiere) {
+        const matiereAffectee = await prisma.enseignantAffectation.findFirst({
+          where: {
+            enseignantId: enseignantRecord.id,
+            classe,
+            matiere,
+            statut: 'Actif',
+          },
+        });
+        if (!matiereAffectee) {
+          return NextResponse.json(
+            { error: 'Vous n\'êtes pas affecté à cette matière pour cette classe.' },
+            { status: 403 },
+          );
+        }
+      }
+    }
+  }
+
   const enseignantNom = `${user.nom} ${user.postNom} ${user.prenom}`.trim().replace(/\s+/g, ' ');
 
   const seance = await prisma.seancePresence.create({

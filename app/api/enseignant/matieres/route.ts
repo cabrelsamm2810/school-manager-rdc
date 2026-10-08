@@ -8,11 +8,11 @@ import { getCycleForClass, getMatieresForCycle } from '@/lib/presence-flow';
  *
  * Retourne les matières attribuées à l'enseignant pour une classe donnée.
  *
- * Flux de recherche :
- * 1. Cours où le champ `enseignant` correspond au nom de l'enseignant connecté
- *    → titres uniques.
- * 2. Enseignant (par email ou nom) → spécialité → filtrer MATIERES_RDC.
- * 3. Repli : toutes les matières du cycle de la classe.
+ * Ordre de recherche :
+ * 1. Affectations explicites (table enseignant_affectations) — prioritaire.
+ * 2. Cours où le champ `enseignant` correspond au nom de l'enseignant connecté.
+ * 3. Spécialité de l'enseignant → filtrer MATIERES_RDC du cycle.
+ * 4. Repli : toutes les matières du cycle de la classe.
  */
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -29,7 +29,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'La classe est obligatoire.' }, { status: 400 });
   }
 
-  // 1. Chercher les cours attribués à l'enseignant pour cette classe
+  // 1. Chercher l'enseignant en base (par email ou nom)
+  const enseignant = await prisma.enseignant.findFirst({
+    where: {
+      OR: [{ email: user.email }, { nom: { contains: user.nom } }],
+    },
+  });
+
+  // 1b. Chercher les affectations explicites
+  if (enseignant) {
+    const affectations = await prisma.enseignantAffectation.findMany({
+      where: {
+        enseignantId: enseignant.id,
+        classe,
+        statut: 'Actif',
+        matiere: { not: '' },
+      },
+      select: { matiere: true },
+      distinct: ['matiere'],
+    });
+
+    if (affectations.length > 0) {
+      return NextResponse.json({ matieres: affectations.map((a) => a.matiere) });
+    }
+  }
+
+  // 2. Chercher les cours attribués à l'enseignant pour cette classe
   const cours = await prisma.cours.findMany({
     where: {
       classe,
@@ -43,13 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ matieres: cours.map((c) => c.titre) });
   }
 
-  // 2. Chercher l'enseignant par email → utiliser sa spécialité
-  const enseignant = await prisma.enseignant.findFirst({
-    where: {
-      OR: [{ email: user.email }, { nom: { contains: user.nom } }],
-    },
-  });
-
+  // 3. Spécialité de l'enseignant
   const cycle = getCycleForClass(classe);
   if (!cycle) {
     return NextResponse.json({ matieres: [] });
@@ -67,7 +86,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 3. Repli : toutes les matières du cycle
+  // 4. Repli : toutes les matières du cycle
   const matieres = getMatieresForCycle(cycle);
   return NextResponse.json({ matieres });
 }

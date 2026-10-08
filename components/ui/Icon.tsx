@@ -56,6 +56,9 @@ const icons: Record<string, string> = {
   filter: 'M3 4h18l-7 8v8l-4-2v-6L3 4z',
   'file-text': 'M6 2h9l5 5v15H6zM15 2v5h5M9 12h6M9 16h6M9 8h2',
   database: 'M12 2C7 2 3 3.5 3 5v14c0 1.5 4 3 9 3s9-1.5 9-3V5c0-1.5-4-3-9-3zM3 5c0 1.5 4 3 9 3s9-1.5 9-3M3 12c0 1.5 4 3 9 3s9-1.5 9-3',
+  edit: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
+  trash: 'M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z',
+  plus: 'M12 5v14M5 12h14',
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

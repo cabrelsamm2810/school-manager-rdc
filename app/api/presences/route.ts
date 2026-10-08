@@ -9,6 +9,9 @@ const createSchema = z.object({
   date: z.string().trim().min(1, 'La date est obligatoire.'),
   present: z.boolean(),
   classe: z.string().trim().min(1, 'La classe est obligatoire.'),
+  matiere: z.string().optional().default(''),
+  anneeScolaire: z.string().optional().default(''),
+  seanceId: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
 });
@@ -62,6 +65,7 @@ export async function POST(request: NextRequest) {
   }
 
   const data = parsed.data;
+  const user = auth.user;
   const eleve = await prisma.eleve.findUnique({
     where: { id: data.eleveId },
     include: { ecole: { select: { nom: true } } },
@@ -75,7 +79,13 @@ export async function POST(request: NextRequest) {
       eleveId: data.eleveId,
       date: new Date(data.date),
       present: data.present,
+      statut: data.present ? 'PRESENT' : 'ABSENT',
       classe: data.classe,
+      matiere: data.matiere || '',
+      anneeScolaire: data.anneeScolaire || '',
+      enseignantId: user.id,
+      ecoleId: eleve.ecoleId || user.ecoleId || null,
+      seanceId: data.seanceId || null,
       latitude: data.latitude ?? null,
       longitude: data.longitude ?? null,
     },

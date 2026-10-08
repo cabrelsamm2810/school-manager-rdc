@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback, FormEvent } from 'react';
+import { useEffect, useState, useCallback, useMemo, FormEvent } from 'react';
 import { clsx } from 'clsx';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { Icon } from '@/components/ui/Icon';
+import { AffectationPanel } from './AffectationPanel';
 import { PROVINCE_NAMES, PROVINCES_EDUCATIONNELLES } from '@/lib/provinces-rdc';
+import { CLASSES_RDC, CYCLES_RDC } from '@/lib/curriculum-rdc';
+import { isSimpleFlowClass, getCycleForClass } from '@/lib/presence-flow';
 
 /* ── Types ── */
 
@@ -24,9 +27,19 @@ type Enseignant = {
   statut: string;
 };
 
+type AffectationInfo = {
+  classe: string;
+  matiere: string;
+  niveau: string;
+};
+
 type FilterState = Record<string, string>;
 
-/* ── Constants ── */
+/* ── Niveaux (cycles) pour les filtres ── */
+const NIVEAU_OPTIONS = CYCLES_RDC.map((c) => ({ value: c, label: c }));
+
+/* ── Classes groupées par flux pour les filtres ── */
+const CLASSE_OPTIONS = CLASSES_RDC.map((c) => ({ value: c.nom, label: c.nom }));
 
 const STATUT_OPTIONS = [
   { value: 'Actif', label: 'Actif' },
@@ -97,6 +110,8 @@ export function EnseignantsManager() {
   const [showFilters, setShowFilters] = useState(false);
   const [ecoleOptions, setEcoleOptions] = useState<{ value: string; label: string }[]>([]);
   const [coordOptions, setCoordOptions] = useState<{ value: string; label: string; province?: string }[]>([]);
+  const [affectationMap, setAffectationMap] = useState<Record<string, AffectationInfo[]>>({});
+  const [affectationTarget, setAffectationTarget] = useState<{ id: string; nom: string; ecoleId?: string | null } | null>(null);
 
   // ── Batch ──
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -144,6 +159,28 @@ export function EnseignantsManager() {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);
   }, [loadData, search]);
+
+  // ── Charger les affectations pour tous les enseignants affichés ──
+  useEffect(() => {
+    if (items.length === 0) {
+      setAffectationMap({});
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch('/api/enseignant-affectations');
+        const data = await res.json();
+        const map: Record<string, AffectationInfo[]> = {};
+        for (const a of data.affectations ?? []) {
+          if (!map[a.enseignantId]) map[a.enseignantId] = [];
+          map[a.enseignantId].push({ classe: a.classe, matiere: a.matiere, niveau: a.niveau });
+        }
+        setAffectationMap(map);
+      } catch {
+        setAffectationMap({});
+      }
+    })();
+  }, [items]);
 
   // ── CRUD ──
 
@@ -208,7 +245,7 @@ export function EnseignantsManager() {
   }
 
   function toggleSelectAll() {
-    setSelectedIds(selectedIds.size === items.length ? new Set() : new Set(items.map((i) => i.id)));
+    setSelectedIds(selectedIds.size === displayItems.length ? new Set() : new Set(displayItems.map((i) => i.id)));
   }
 
   function clearSelection() {
@@ -266,6 +303,42 @@ export function EnseignantsManager() {
   const totalConge = items.filter((e) => e.statut === 'Congé').length;
   const totalGrades = new Set(items.map((e) => e.grade).filter(Boolean)).size;
   const activeFilters = Object.values(filters).filter(Boolean).length;
+
+  // ── Filtrage client par niveau/classe/matière (basé sur les affectations) ──
+  const displayItems = useMemo(() => {
+    let list = items;
+    if (filters.niveau) {
+      list = list.filter((e) => {
+        const affs = affectationMap[e.id] ?? [];
+        return affs.some((a) => a.niveau === filters.niveau);
+      });
+    }
+    if (filters.classe) {
+      list = list.filter((e) => {
+        const affs = affectationMap[e.id] ?? [];
+        return affs.some((a) => a.classe === filters.classe);
+      });
+    }
+    if (filters.matiere) {
+      list = list.filter((e) => {
+        const affs = affectationMap[e.id] ?? [];
+        return affs.some((a) => a.matiere === filters.matiere);
+      });
+    }
+    return list;
+  }, [items, filters, affectationMap]);
+
+  // ── Matières disponibles pour le filtre (selon le niveau sélectionné) ──
+  const matiereFilterOptions = useMemo(() => {
+    if (!filters.niveau) return [];
+    const matieres = new Set<string>();
+    for (const affs of Object.values(affectationMap)) {
+      for (const a of affs) {
+        if (a.niveau === filters.niveau && a.matiere) matieres.add(a.matiere);
+      }
+    }
+    return [...matieres].sort();
+  }, [filters.niveau, affectationMap]);
 
   // Cascading filter options
   const provEducOptions = PROVINCES_EDUCATIONNELLES
@@ -519,6 +592,28 @@ export function EnseignantsManager() {
                 placeholder="Toutes les écoles"
               />
               <FilterSelect
+                label="Niveau (cycle)"
+                value={filters.niveau ?? ''}
+                onChange={(v) => setFilters({ ...filters, niveau: v, classe: '', matiere: '' })}
+                options={NIVEAU_OPTIONS}
+                placeholder="Tous les niveaux"
+              />
+              <FilterSelect
+                label="Classe"
+                value={filters.classe ?? ''}
+                onChange={(v) => setFilters({ ...filters, classe: v, matiere: '' })}
+                options={CLASSE_OPTIONS.filter((c) => !filters.niveau || getCycleForClass(c.value) === filters.niveau)}
+                placeholder="Toutes les classes"
+              />
+              <FilterSelect
+                label="Matière"
+                value={filters.matiere ?? ''}
+                onChange={(v) => setFilters({ ...filters, matiere: v })}
+                options={matiereFilterOptions.map((m) => ({ value: m, label: m }))}
+                placeholder="Toutes les matières"
+                disabled={!filters.niveau}
+              />
+              <FilterSelect
                 label="Statut"
                 value={filters.statut ?? ''}
                 onChange={(v) => setFilters({ ...filters, statut: v })}
@@ -545,7 +640,7 @@ export function EnseignantsManager() {
           <span className="text-sm font-semibold text-brand-700">{selectedIds.size} sélectionné(s)</span>
           <div className="flex-1" />
           <button onClick={toggleSelectAll} className="rounded-lg px-3 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-100">
-            {selectedIds.size === items.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+            {selectedIds.size === displayItems.length ? 'Tout désélectionner' : 'Tout sélectionner'}
           </button>
           <button onClick={startBatchEdit} className="rounded-lg bg-brand-600 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700">
             Modifier en lot
@@ -592,6 +687,20 @@ export function EnseignantsManager() {
             </button>
           )}
         </div>
+      ) : displayItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white py-12 text-center">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <Icon name="filter" className="h-7 w-7" />
+          </div>
+          <p className="text-sm font-semibold text-slate-700">Aucun enseignant ne correspond aux filtres</p>
+          <p className="mt-1 text-xs text-slate-400">Modifiez les filtres niveau/classe/matière.</p>
+          <button
+            onClick={() => setFilters({ ...filters, niveau: '', classe: '', matiere: '' })}
+            className="mt-3 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            Réinitialiser les filtres
+          </button>
+        </div>
       ) : (
         <>
           {/* Desktop table */}
@@ -600,20 +709,25 @@ export function EnseignantsManager() {
               <thead className="border-b border-slate-100 bg-slate-50/80 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">
-                    <input type="checkbox" checked={items.length > 0 && selectedIds.size === items.length} onChange={toggleSelectAll} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                    <input type="checkbox" checked={displayItems.length > 0 && selectedIds.size === displayItems.length} onChange={toggleSelectAll} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
                   </th>
                   <th className="px-4 py-3">Enseignant</th>
-                  <th className="px-4 py-3">Matricule</th>
-                  <th className="px-4 py-3">Grade</th>
+                  <th className="px-4 py-3">Rôle / Niveau</th>
+                  <th className="px-4 py-3">Classes & Matières</th>
                   <th className="px-4 py-3">École</th>
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {items.map((item) => {
+                {displayItems.map((item) => {
                   const ecoleNom = item.ecoleRattachee?.nom || item.ecole || '—';
                   const nameParts = item.nom.trim().split(/\s+/);
+                  const affs = affectationMap[item.id] ?? [];
+                  const isTitulaire = affs.some((a) => !a.matiere);
+                  const isProfesseur = affs.some((a) => a.matiere);
+                  const classesSet = new Set(affs.map((a) => a.classe));
+                  const matieresSet = new Set(affs.filter((a) => a.matiere).map((a) => a.matiere));
                   return (
                     <tr key={item.id} className="group transition hover:bg-slate-50/60">
                       <td className="px-4 py-3">
@@ -624,21 +738,41 @@ export function EnseignantsManager() {
                           <Avatar prenom={nameParts[0]} nom={nameParts[1]} size="sm" loading="lazy" />
                           <div className="min-w-0">
                             <p className="truncate font-semibold text-slate-900">{item.nom}</p>
-                            {item.specialite && <p className="truncate text-xs text-slate-400">{item.specialite}</p>}
+                            <p className="truncate font-mono text-xs text-slate-400">{item.matricule}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{item.matricule}</td>
-                      <td className="px-4 py-3 text-slate-600">{item.grade || '—'}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {isTitulaire && <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">Titulaire</span>}
+                          {isProfesseur && <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700">Professeur</span>}
+                          {!isTitulaire && !isProfesseur && <span className="text-xs text-slate-400">Non affecté</span>}
+                          {item.grade && <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{item.grade}</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {[...classesSet].slice(0, 3).map((c) => (
+                            <span key={c} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{c}</span>
+                          ))}
+                          {matieresSet.size > 0 && (
+                            <span className="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] text-brand-600">{matieresSet.size} matière(s)</span>
+                          )}
+                          {classesSet.size > 3 && <span className="text-[11px] text-slate-400">+{classesSet.size - 3}</span>}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-slate-600">{ecoleNom}</td>
                       <td className="px-4 py-3"><StatutBadge statut={item.statut} /></td>
                       <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => startEdit(item)} className="rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-100">
-                            Modifier
+                        <div className="flex justify-end gap-1.5">
+                          <button onClick={() => setAffectationTarget({ id: item.id, nom: item.nom, ecoleId: item.ecoleId })} className="rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-100" title="Gérer les affectations">
+                            <Icon name="teacher" className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 disabled:opacity-50">
-                            {deletingId === item.id ? '…' : 'Supprimer'}
+                          <button onClick={() => startEdit(item)} className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100">
+                            <Icon name="edit" className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 disabled:opacity-50">
+                            {deletingId === item.id ? '…' : <Icon name="trash" className="h-3.5 w-3.5" />}
                           </button>
                         </div>
                       </td>
@@ -651,9 +785,14 @@ export function EnseignantsManager() {
 
           {/* Mobile cards */}
           <div className="space-y-3 md:hidden">
-            {items.map((item) => {
+            {displayItems.map((item) => {
               const ecoleNom = item.ecoleRattachee?.nom || item.ecole || '—';
               const nameParts = item.nom.trim().split(/\s+/);
+              const affs = affectationMap[item.id] ?? [];
+              const isTitulaire = affs.some((a) => !a.matiere);
+              const isProfesseur = affs.some((a) => a.matiere);
+              const classesSet = new Set(affs.map((a) => a.classe));
+              const matieresList = [...new Set(affs.filter((a) => a.matiere).map((a) => a.matiere))];
               return (
                 <div key={item.id} className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-card">
                   <div className="flex items-start gap-3">
@@ -663,19 +802,27 @@ export function EnseignantsManager() {
                         <p className="truncate text-[15px] font-bold text-slate-900">{item.nom}</p>
                         <StatutBadge statut={item.statut} />
                       </div>
-                      {item.specialite && (
-                        <p className="mt-0.5 truncate text-[13px] font-medium text-brand-600">{item.specialite}</p>
-                      )}
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {item.grade && (
-                          <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                            {item.grade}
-                          </span>
-                        )}
-                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-mono text-slate-500">
-                          {item.matricule}
-                        </span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {isTitulaire && <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">Titulaire</span>}
+                        {isProfesseur && <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700">Professeur</span>}
+                        {!isTitulaire && !isProfesseur && <span className="text-[11px] text-slate-400">Non affecté</span>}
+                        {item.grade && <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{item.grade}</span>}
                       </div>
+                      {classesSet.size > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {[...classesSet].map((c) => (
+                            <span key={c} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{c}</span>
+                          ))}
+                        </div>
+                      )}
+                      {matieresList.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {matieresList.slice(0, 3).map((m) => (
+                            <span key={m} className="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] text-brand-600">{m}</span>
+                          ))}
+                          {matieresList.length > 3 && <span className="text-[11px] text-slate-400">+{matieresList.length - 3}</span>}
+                        </div>
+                      )}
                       <p className="mt-1.5 truncate text-xs text-slate-400">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline h-3 w-3 text-slate-300">
                           <path d="M3 9l9-6 9 6-9 6-9-6M7 13v6h10v-6" />
@@ -687,14 +834,17 @@ export function EnseignantsManager() {
                   <div className="mt-3 flex items-center gap-2 border-t border-slate-50 pt-3">
                     <label className="flex items-center gap-1.5">
                       <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-                      <span className="text-[11px] text-slate-400">Sélectionner</span>
+                      <span className="text-[11px] text-slate-400">Sél.</span>
                     </label>
                     <div className="flex-1" />
-                    <button onClick={() => startEdit(item)} className="rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-100 active:scale-95">
-                      Modifier
+                    <button onClick={() => setAffectationTarget({ id: item.id, nom: item.nom, ecoleId: item.ecoleId })} className="rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-100 active:scale-95" title="Affectations">
+                      <Icon name="teacher" className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 active:scale-95 disabled:opacity-50">
-                      {deletingId === item.id ? '…' : 'Suppr.'}
+                    <button onClick={() => startEdit(item)} className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 active:scale-95">
+                      <Icon name="edit" className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 active:scale-95 disabled:opacity-50">
+                      {deletingId === item.id ? '…' : <Icon name="trash" className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </div>
@@ -702,6 +852,31 @@ export function EnseignantsManager() {
             })}
           </div>
         </>
+      )}
+
+      {/* ── Modal de gestion des affectations ── */}
+      {affectationTarget && (
+        <AffectationPanel
+          enseignantId={affectationTarget.id}
+          enseignantNom={affectationTarget.nom}
+          ecoleId={affectationTarget.ecoleId}
+          onClose={() => setAffectationTarget(null)}
+          onChanged={() => {
+            // Recharger les affectations
+            (async () => {
+              try {
+                const res = await fetch('/api/enseignant-affectations');
+                const data = await res.json();
+                const map: Record<string, AffectationInfo[]> = {};
+                for (const a of data.affectations ?? []) {
+                  if (!map[a.enseignantId]) map[a.enseignantId] = [];
+                  map[a.enseignantId].push({ classe: a.classe, matiere: a.matiere, niveau: a.niveau });
+                }
+                setAffectationMap(map);
+              } catch {}
+            })();
+          }}
+        />
       )}
     </div>
   );
