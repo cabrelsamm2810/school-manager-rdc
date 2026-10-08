@@ -5,7 +5,7 @@ import { clsx } from 'clsx';
 import { Avatar } from '@/components/ui/Avatar';
 import { VoiceMessagePlayer } from './VoiceMessagePlayer';
 import { FileBubble, type FileStatus } from './FileBubble';
-import { formatMessageTime, getMessagePreview, isAudioFile, isImageFile } from '@/lib/chat-format';
+import { formatMessageTime, getMessagePreview, isAudioFile, isImageFile, isVideoFile } from '@/lib/chat-format';
 
 export type ChatMessageData = {
   id: string;
@@ -172,11 +172,12 @@ export const ChatBubble = memo(function ChatBubble({
   };
 
   const hasImage = isImageFile(msg.fileType, msg.fileUrl);
+  const hasVideo = isVideoFile(msg.fileType, msg.fileUrl) && Boolean(msg.fileUrl);
   const hasAudio = isAudioFile(msg.fileType, msg.fileUrl) && Boolean(msg.fileUrl);
-  const hasFile = Boolean(msg.fileUrl) && !hasImage && !hasAudio;
+  const hasFile = Boolean(msg.fileUrl) && !hasImage && !hasVideo && !hasAudio;
   const hasText = Boolean(msg.content && msg.content.trim());
   const isWide = hasAudio || hasFile;
-  const isOnlyMedia = (hasImage || hasAudio || hasFile) && !hasText;
+  const isOnlyMedia = (hasImage || hasVideo || hasAudio || hasFile) && !hasText;
 
   return (
     <div
@@ -277,6 +278,18 @@ export const ChatBubble = memo(function ChatBubble({
                 className="max-h-60 w-full rounded-xl object-cover transition hover:opacity-95 md:max-h-72"
               />
             </a>
+          )}
+
+          {hasVideo && msg.fileUrl && (
+            <div className="relative overflow-hidden rounded-xl">
+              <video
+                src={msg.fileUrl}
+                controls
+                playsInline
+                preload="metadata"
+                className="max-h-72 w-full rounded-xl object-contain"
+              />
+            </div>
           )}
 
           {hasAudio && <VoiceMessagePlayer src={msg.fileUrl!} isMe={isMe} />}

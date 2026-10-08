@@ -15,8 +15,14 @@ export function isAudioFile(fileType?: string | null, fileUrl?: string | null) {
   return false;
 }
 
+export function isVideoFile(fileType?: string | null, fileUrl?: string | null) {
+  if (fileType?.startsWith('video/')) return true;
+  if (fileUrl && /\.(mp4|webm|ogg|mov|avi|mkv|m4v|3gp)$/i.test(fileUrl)) return true;
+  return false;
+}
+
 /** Nature d'un message, utilisée pour l'aperçu et les icônes de la liste. */
-export type ChatMessageKind = 'text' | 'audio' | 'image' | 'file';
+export type ChatMessageKind = 'text' | 'audio' | 'image' | 'video' | 'file';
 
 export function getMessageKind(msg: {
   content?: string | null;
@@ -25,6 +31,7 @@ export function getMessageKind(msg: {
 }): ChatMessageKind {
   if (msg.content && msg.content.trim()) return 'text';
   if (isAudioFile(msg.fileType, msg.fileUrl)) return 'audio';
+  if (isVideoFile(msg.fileType, msg.fileUrl)) return 'video';
   if (isImageFile(msg.fileType, msg.fileUrl)) return 'image';
   return 'file';
 }
@@ -37,6 +44,7 @@ export function getMessagePreview(msg: {
 }): string {
   if (msg.content && msg.content.trim()) return msg.content;
   if (isAudioFile(msg.fileType, msg.fileUrl)) return 'Message vocal';
+  if (isVideoFile(msg.fileType, msg.fileUrl)) return 'Vidéo';
   if (isImageFile(msg.fileType, msg.fileUrl)) return 'Photo';
   if (msg.fileUrl) return msg.fileName || 'Fichier';
   return '';
