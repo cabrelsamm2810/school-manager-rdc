@@ -149,7 +149,7 @@ function VerifyForm() {
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><p className="text-slate-500">Chargement…</p></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><p className="text-slate-400">Chargement…</p></div>}>
       <VerifyForm />
     </Suspense>
   );

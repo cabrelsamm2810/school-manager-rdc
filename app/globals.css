@@ -561,7 +561,7 @@ select.sm-input {
 /* ── Registration page ── */
 .register-bg {
   position: relative;
-  background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 60%, #f4f8ff 100%);
+  background: #0f172a;
   overflow: hidden;
 }
 .register-bg::before {
@@ -571,7 +571,7 @@ select.sm-input {
   right: -8%;
   width: 45%;
   height: 45%;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.10) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 65%);
   pointer-events: none;
 }
 .register-bg::after {
@@ -581,7 +581,7 @@ select.sm-input {
   left: -8%;
   width: 40%;
   height: 40%;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -762,16 +762,11 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 /* ── Login / verification background ── */
 .login-background {
   position: relative;
-  background-image:
-    linear-gradient(rgba(10, 23, 49, 0.68), rgba(10, 23, 49, 0.68)),
-    url('/school-background.svg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: #0f172a;
 }
 
 .login-page {
-  background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 60%, #f4f8ff 100%);
+  background: #0f172a;
 }
 
 .login-bg-shape {
@@ -842,14 +837,14 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #1d4ed8;
+  color: #60a5fa;
 }
 
 .login-title {
   margin-top: 0.5rem;
   font-size: 1.6rem;
   font-weight: 800;
-  color: #0b2545;
+  color: #f1f5f9;
   letter-spacing: -0.01em;
 }
 @media (min-width: 768px) {
@@ -861,7 +856,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 .login-subtitle {
   margin-top: 0.4rem;
   font-size: 0.85rem;
-  color: #5a6b85;
+  color: #94a3b8;
 }
 
 .login-card {
@@ -1033,7 +1028,7 @@ html { -webkit-tap-highlight-color: rgba(29, 78, 216, 0.12); }
 
 .login-secondary-text {
   font-size: 0.82rem;
-  color: #5a6b85;
+  color: #94a3b8;
 }
 
 .login-btn-secondary {
