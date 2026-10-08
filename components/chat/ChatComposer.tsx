@@ -200,6 +200,17 @@ export function ChatComposer({
             className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
           />
           <button
+            onClick={() => videoInputRef.current?.click()}
+            disabled={uploading}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:text-[#2563eb] disabled:opacity-40"
+            aria-label="Enregistrer une vidéo"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+              <polygon points="23 7 16 12 23 17 23 7" />
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+            </svg>
+          </button>
+          <button
             onClick={() => cameraInputRef.current?.click()}
             disabled={uploading}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:text-[#2563eb] disabled:opacity-40"
