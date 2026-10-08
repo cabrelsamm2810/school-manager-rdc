@@ -52,6 +52,7 @@ export function ChatComposer({
   const [showAttach, setShowAttach] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = useCallback(() => {
@@ -128,6 +129,7 @@ export function ChatComposer({
         accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,video/mp4,audio/mpeg,audio/mp4,audio/webm,audio/ogg,.heic,.heif"
       />
       <input ref={cameraInputRef} type="file" onChange={handleFileSelect} className="hidden" accept="image/*" capture="environment" />
+      <input ref={videoInputRef} type="file" onChange={handleFileSelect} className="hidden" accept="video/*" capture="environment" />
       <input ref={audioInputRef} type="file" onChange={handleFileSelect} className="hidden" accept="audio/*" />
 
       {/* Aperçu de réponse */}
@@ -158,6 +160,7 @@ export function ChatComposer({
           <AttachmentMenu
             onCamera={() => cameraInputRef.current?.click()}
             onGallery={() => fileInputRef.current?.click()}
+            onVideo={() => videoInputRef.current?.click()}
             onDocument={() => fileInputRef.current?.click()}
             onAudio={() => audioInputRef.current?.click()}
           />

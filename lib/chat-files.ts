@@ -20,6 +20,12 @@ const ALLOWED_FILE_TYPES = [
   'text/csv',
   'application/zip',
   'video/mp4',
+  'video/webm',
+  'video/ogg',
+  'video/quicktime',
+  'video/3gpp',
+  'video/3gpp2',
+  'video/x-msvideo',
   'audio/mpeg',
   'audio/mp4',
   'audio/webm',
@@ -34,7 +40,7 @@ const ALLOWED_FILE_TYPES = [
 const ALLOWED_EXTENSIONS = new Set([
   'jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif',
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-  'txt', 'csv', 'zip', 'mp4', 'mp3', 'm4a', 'wav', 'webm', 'ogg',
+  'txt', 'csv', 'zip', 'mp4', 'mov', 'avi', 'mkv', 'm4v', '3gp', 'webm', 'mp3', 'm4a', 'wav', 'ogg',
 ]);
 
 /**

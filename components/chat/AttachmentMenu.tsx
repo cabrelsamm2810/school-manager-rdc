@@ -7,11 +7,13 @@
 export function AttachmentMenu({
   onCamera,
   onGallery,
+  onVideo,
   onDocument,
   onAudio,
 }: {
   onCamera: () => void;
   onGallery: () => void;
+  onVideo: () => void;
   onDocument: () => void;
   onAudio: () => void;
 }) {
@@ -38,6 +40,17 @@ export function AttachmentMenu({
       ),
       color: 'bg-brand-500',
       onClick: onGallery,
+    },
+    {
+      label: 'Vidéo',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+          <polygon points="23 7 16 12 23 17 23 7" />
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+        </svg>
+      ),
+      color: 'bg-purple-500',
+      onClick: onVideo,
     },
     {
       label: 'Document',
