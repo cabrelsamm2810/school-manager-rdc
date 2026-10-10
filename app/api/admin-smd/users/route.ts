@@ -6,6 +6,7 @@ import { can, PERM } from '@/lib/permissions';
 import { RESTRICTED_ROLES } from '@/lib/roles';
 import { hashPassword } from '@/lib/auth';
 import { logAudit, getClientIP } from '@/lib/audit';
+import { resolveFileUrls } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
   for (const s of stats) statusMap[s.userStatus] = s._count;
 
   return NextResponse.json({
-    users,
+    users: await resolveFileUrls(users, 'profilePhotoUrl'),
     total,
     page,
     pageSize,

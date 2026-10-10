@@ -6,6 +6,7 @@ import { can, PERM } from '@/lib/permissions';
 import { RESTRICTED_ROLES } from '@/lib/roles';
 import { hashPassword } from '@/lib/auth';
 import { logAudit, getClientIP } from '@/lib/audit';
+import { resolveFileUrl } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     },
   });
 
-  return NextResponse.json({ user, auditHistory });
+  return NextResponse.json({ user: { ...user, profilePhotoUrl: await resolveFileUrl(user.profilePhotoUrl) }, auditHistory });
 }
 
 /**

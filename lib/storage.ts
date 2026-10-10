@@ -96,14 +96,20 @@ export async function uploadFile(
 ): Promise<UploadResult> {
   if (isR2Configured()) {
     const key = `${category}/${filename}`;
-    await getS3().send(
-      new PutObjectCommand({
-        Bucket: R2_BUCKET_NAME,
-        Key: key,
-        Body: buffer,
-        ContentType: contentType,
-      }),
-    );
+    try {
+      await getS3().send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET_NAME,
+          Key: key,
+          Body: buffer,
+          ContentType: contentType,
+        }),
+      );
+    } catch (err) {
+      throw new Error(
+        `Erreur lors du téléversement vers R2 (${category}/${filename}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
 
     if (public_ && R2_PUBLIC_URL) {
       return { storedUrl: `${R2_PUBLIC_URL}/${key}`, usedR2: true };
@@ -145,11 +151,17 @@ export async function resolveFileUrl(
 
   // Signed URL
   if (isR2Configured()) {
-    return getSignedUrl(
-      getS3(),
-      new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }),
-      { expiresIn: opts?.expiresIn ?? 3600 },
-    );
+    try {
+      return await getSignedUrl(
+        getS3(),
+        new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }),
+        { expiresIn: opts?.expiresIn ?? 3600 },
+      );
+    } catch (err) {
+      throw new Error(
+        `Erreur lors de la génération de l'URL signée R2 (${key}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   return null;
@@ -178,9 +190,15 @@ export async function deleteFile(storedUrl: string | null | undefined): Promise<
   if (!storedUrl) return;
 
   if (isR2Url(storedUrl) && isR2Configured()) {
-    await getS3().send(
-      new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: r2Key(storedUrl) }),
-    );
+    try {
+      await getS3().send(
+        new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: r2Key(storedUrl) }),
+      );
+    } catch (err) {
+      throw new Error(
+        `Erreur lors de la suppression du fichier R2 (${r2Key(storedUrl)}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
     return;
   }
 

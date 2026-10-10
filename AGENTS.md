@@ -301,8 +301,31 @@ Routes modifiées pour utiliser `lib/storage.ts` :
 
 `lib/chat-files.ts` délègue `getStoredFileSize()` à `storage.getFileSize()` (R2 ou local).
 
+`lib/file-validation.ts` fournit `validatePhotoFile()` et `validateDocumentFile()` (type MIME,
+extension, taille) partagées entre les routes d'upload. La validation des fichiers de chat reste
+dans `lib/chat-files.ts` (types plus larges, repli mobile). La route documents école
+`app/api/ecoles/[id]/documents` utilise `validateDocumentFile()` ; les photos de profil
+`app/api/users/me/photo` ont leur validation inline.
+
+**Résolution des photos de profil** — `profilePhotoUrl` peut être `r2://...` (bucket privé sans
+`R2_PUBLIC_URL`). Toutes les routes qui retournent `profilePhotoUrl` appellent
+`resolveFileUrl()` avant la réponse : `auth/session`, `profile`, `profile/update`,
+`profile/photo`, `users/me`, `users/me/photo`, `chat/conversations`, `chat/users`,
+`chat/groups/[id]/messages` (senderPhotoUrl), `admin-smd/users`, `admin-smd/users/[id]`.
+
+**Nettoyage des fichiers** — la suppression d'un message chat (conversation ou groupe) appelle
+`deleteFile()` sur `message.fileUrl` avant de supprimer l'enregistrement, pour éviter les
+fichiers orphelins dans R2 ou en local.
+
+**Gestion d'erreurs** — `uploadFile`, `resolveFileUrl` et `deleteFile` encapsulent les
+opérations R2 dans des `try-catch` qui lancent un `Error` avec un message clair
+(catégorie, clé, erreur originale).
+
 Les variables R2 sont optionnelles (`requiredAtBoot: false`). Sans elles, le stockage local fonctionne.
 Ajouter les clés depuis la page Secrets ou le tableau de bord Vercel.
+
+Tests : `tests/storage.test.ts` — 22 tests (utilitaires, upload/resolve/delete local, edge cases
+d'autorisation, validation des fichiers). `npm test` les exécute sans base de données.
 
 ## Tests
 

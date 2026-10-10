@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { uploadFile, resolveFileUrl, deleteFile } from '@/lib/storage';
+import { validateDocumentFile } from '@/lib/file-validation';
 import path from 'path';
 
 function fullName(user: any) {
@@ -64,6 +65,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
   if (!titre) {
     return NextResponse.json({ error: 'Le titre du document est obligatoire.' }, { status: 400 });
+  }
+
+  // Validation du type MIME, de l'extension et de la taille
+  const validationError = validateDocumentFile(file);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   const ext = path.extname(file.name) || '';

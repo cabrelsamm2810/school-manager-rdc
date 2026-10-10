@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { uploadFile, deleteFile } from '@/lib/storage';
+import { uploadFile, deleteFile, resolveFileUrl } from '@/lib/storage';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     select: { id: true, profilePhotoUrl: true },
   });
 
-  return NextResponse.json({ ok: true, profilePhotoUrl: user.profilePhotoUrl });
+  return NextResponse.json({ ok: true, profilePhotoUrl: await resolveFileUrl(user.profilePhotoUrl) });
 }
 
 export async function DELETE(request: NextRequest) {

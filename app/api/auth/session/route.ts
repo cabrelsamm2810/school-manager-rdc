@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { resolveFileUrl } from '@/lib/storage';
 
 export async function GET(request: NextRequest) {
   const session = request.cookies.get(process.env.SESSION_COOKIE_NAME || 'school_manager_session')?.value;
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ authenticated: false }, { status: 401 });
   return NextResponse.json({ authenticated: true, user: {
     id: user.id, nom: user.nom, postNom: user.postNom, prenom: user.prenom,
-    email: user.email, telephone: user.telephone, role: user.role, profilePhotoUrl: user.profilePhotoUrl,
+    email: user.email, telephone: user.telephone, role: user.role, profilePhotoUrl: await resolveFileUrl(user.profilePhotoUrl),
     provinceAdministrative: user.provinceAdministrative,
     ecoleId: user.ecoleId,
     ecoleNom: user.ecole?.nom ?? null,
