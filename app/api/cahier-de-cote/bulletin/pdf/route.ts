@@ -2,8 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { generateBulletinPdf } from '@/lib/bulletin-pdf';
+import { isStorageEnabled, readObject, uploadObject } from '@/lib/storage';
+import { buildFileUrl, buildObjectKey, parseFileUrl } from '@/lib/file-validation';
 
-/** GET — télécharge le bulletin d'un élève au format PDF avec QR code intégré. */
+function pdfResponse(bytes: Uint8Array, filename: string) {
+  // Le typage générique de Uint8Array (TS >= 5.7) n'est pas reconnu comme
+  // BodyInit : le contenu est bien un flux d'octets binaire.
+  return new NextResponse(bytes as unknown as BodyInit, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': bytes.length.toString(),
+    },
+  });
+}
+
+/**
+ * GET — télécharge le bulletin d'un élève au format PDF avec QR code intégré.
+ * Le PDF est archivé dans R2 (bucket privé) au premier téléchargement puis
+ * servi depuis ce stockage ; le format et les en-têtes de réponse sont inchangés.
+ */
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, 'ENSEIGNANT');
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 403 });
@@ -23,6 +42,15 @@ export async function GET(request: NextRequest) {
 
   if (!bulletin) {
     return NextResponse.json({ error: 'Bulletin introuvable. Générez d\'abord le bulletin.' }, { status: 404 });
+  }
+
+  const filename = `bulletin_${bulletin.eleveNom.replace(/\s+/g, '_')}_${bulletin.periode.replace(/\s+/g, '_')}.pdf`;
+
+  // Bulletin déjà archivé dans R2 : servi depuis le bucket privé.
+  const archived = parseFileUrl(bulletin.pdfUrl);
+  if (archived?.storage === 'r2' && isStorageEnabled()) {
+    const object = await readObject(archived.key);
+    if (object) return pdfResponse(object.body, filename);
   }
 
   // Construire l'URL de vérification
@@ -47,14 +75,19 @@ export async function GET(request: NextRequest) {
     verifyUrl,
   });
 
-  const filename = `bulletin_${bulletin.eleveNom.replace(/\s+/g, '_')}_${bulletin.periode.replace(/\s+/g, '_')}.pdf`;
+  // Archivage best-effort : un échec de stockage ne doit pas bloquer le téléchargement.
+  if (isStorageEnabled()) {
+    try {
+      const key = buildObjectKey('bulletins', filename);
+      await uploadObject(key, new Uint8Array(pdfBuffer), 'application/pdf');
+      await prisma.bulletin.update({
+        where: { id: bulletin.id },
+        data: { pdfUrl: buildFileUrl(key) },
+      });
+    } catch (error) {
+      console.error('[bulletin] archivage R2 impossible', error);
+    }
+  }
 
-  return new NextResponse(new Uint8Array(pdfBuffer), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Content-Length': pdfBuffer.length.toString(),
-    },
-  });
+  return pdfResponse(new Uint8Array(pdfBuffer), filename);
 }

@@ -4,6 +4,8 @@ node_modules/
 .env.*
 !.env.example
 !.env.*.example
+# Valeurs locales de développement Base44 (aucun secret réel)
+!.env.base44-defaults
 *.pem
 *.key
 *.crt

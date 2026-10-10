@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
+import { deleteStoredFile } from '@/lib/storage';
 
 export async function DELETE(
   request: NextRequest,
@@ -36,6 +37,7 @@ export async function DELETE(
   }
 
   await prisma.chatMessage.delete({ where: { id: params.messageId } });
+  await deleteStoredFile(message.fileUrl);
 
   return NextResponse.json({ success: true });
 }

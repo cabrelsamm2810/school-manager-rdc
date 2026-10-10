@@ -3,6 +3,8 @@
 ## Stack
 
 Next.js 14 (App Router) + Prisma + PostgreSQL + Tailwind. Session-cookie auth (same-origin, `sameSite: lax`).
+Fichiers stockés dans un bucket privé Cloudflare R2 via le SDK S3 (`lib/storage.ts`) ; Supabase/PostgreSQL
+reste la base de données et la source d'authentification.
 
 ## How it runs here
 
@@ -11,6 +13,8 @@ docker compose -f docker-compose.base44.yml up -d
 ```
 
 - `postgres` — local PostgreSQL (user/pass `school`/`schoolpass`, db `school`), healthchecked with `pg_isready`.
+- `s3mock` — bucket S3 local (développement) sur le port interne 9090, données persistées dans le volume
+  `s3mock_data`. R2 est compatible S3 : le même code sert le bucket local et le bucket R2 de production.
 - `migrate` — one-shot, must exit 0 before `web` starts (`depends_on: service_completed_successfully`):
   `npm install` → `prisma generate` → `prisma db push --accept-data-loss` → `tsx prisma/seed.ts`.
   It uses `db push`, not `migrate deploy`, because the database was created with `db push` and is not baselined
@@ -50,9 +54,30 @@ credentials. Nothing external is required to boot.
 - **`tsconfig.tsbuildinfo` is not tracked** (`.gitignore` has `*.tsbuildinfo`). It is a TypeScript
   incremental cache, and committing it made stale `TS2802` diagnostics replay for files that were already
   fixed. To type-check from scratch: `npx tsc --noEmit --incremental false`.
-- `.env.example` lists Supabase and S3 settings, but those integrations are **not implemented** — only
-  `DATABASE_URL`, `DIRECT_URL`, `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE` and `NODE_ENV` are read. `SESSION_SECRET`
-  is declared there but referenced nowhere in the code.
+- `.env.example` lists Supabase settings, but that integration is **not implemented** — the database is reached
+  through Prisma (`DATABASE_URL`, `DIRECT_URL`). `SESSION_SECRET` is declared there but referenced nowhere in the
+  code. Read at runtime: `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE`, `NODE_ENV`, `BASE44_PUBLIC_HOST_SUFFIX`,
+  `SMTP_*` and the `S3_*` storage settings.
+- **Stockage de fichiers : Cloudflare R2 via le SDK S3** (`lib/storage.ts`, `lib/file-validation.ts`,
+  `lib/file-access.ts`). Le bucket est privé ; ce qui est stocké en base est une référence `/api/files/<clé>`.
+  La lecture passe par `app/api/files/[...key]/route.ts`, qui authentifie l'appelant puis applique la règle du
+  dossier propriétaire de la clé : `profile-photos/` et `dossiers-eleves/` → tout utilisateur connecté,
+  `etablissements/<id>/` → `DIRECTION_ECOLE`, `bulletins/` → `ENSEIGNANT`, `chat-files/` → participant de la
+  conversation ou membre du groupe (vérifié en base), tout le reste → 404.
+- **`.env.base44-defaults`** contient les valeurs de développement (endpoint `http://s3mock:9090`). Il est listé
+  en PREMIER `env_file`, avant `/run/base44/app.env` : les vrais secrets R2 fournis par l'utilisateur écrasent
+  toujours ces valeurs. Ne jamais mettre un `S3_*` sous `environment:` (cela écraserait définitivement R2).
+- **Repli sans R2** : si `S3_ENDPOINT`/`S3_BUCKET`/`S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` sont absents,
+  `saveUploadedFile()` réécrit dans `public/uploads` (comportement historique) et les fichiers déjà servis en
+  `/uploads/...` restent accessibles — `parseFileUrl()` gère les deux formes, la migration est progressive.
+- **Validation d'upload** : `validateUploadedFile()` (type MIME autorisé + extension cohérente avec ce type +
+  taille) remplace les listes de types dispersées dans les routes. Limites : 5 Mo (photos), 10 Mo
+  (documents/pièces jointes), plafonnées par `FILE_MAX_SIZE` si la variable est définie.
+- **`S3_PUBLIC_ENDPOINT`** (facultatif) : quand il est défini, `/api/files/<clé>` répond 302 vers une URL signée
+  temporaire au lieu de servir les octets. À définir sur Vercel, dont les fonctions serverless limitent la taille
+  des réponses ; laisser vide en local (le navigateur ne peut pas résoudre `s3mock`).
+- **`Bulletin.pdfUrl`** (colonne nullable ajoutée au schéma) référence le PDF archivé dans R2 au premier
+  téléchargement ; le téléchargement suivant est servi depuis R2, en-têtes et format inchangés.
 
 ## Building (`npm run build`)
 
@@ -123,11 +148,31 @@ Full flow: register at `/register` (the account starts inactive and a 6-digit co
 activate with `POST /api/auth/verify` → log in at `/login` (sets the session cookie) →
 `GET /api/auth/session` → `GET /api/users/me`.
 
+Stockage de fichiers (le cookie de session contient simplement l'identifiant de l'utilisateur actif) :
+
+```bash
+# 1. upload → renvoie {"profilePhotoUrl":"/api/files/profile-photos/<clé>"}
+curl -s -H "Cookie: school_manager_session=<id>" -F "photo=@public/logo.png;type=image/png" \
+  http://localhost:3000/api/users/me/photo
+# 2. lecture authentifiée → 200 ; anonyme → 401 ; clé inconnue/dossier inconnu → 404
+curl -s -o /dev/null -w "%{http_code}\n" -H "Cookie: school_manager_session=<id>" http://localhost:3000/api/files/<clé>
+# 3. objet réellement écrit dans le bucket (aucun fichier dans public/uploads)
+docker compose -f docker-compose.base44.yml exec -T web sh -c \
+  "curl -s 'http://s3mock:9090/school-manager-rdc?list-type=2' | tr '<' '\n' | grep '^Key>'"
+```
+
 ## Tests
 
 - `npm test` — vitest unit tests (`tests/auth.test.ts`), no database needed. `vitest.config.ts` maps the `@/`
   alias, which Vitest does not read from `tsconfig.json`.
 - `npm run test:db` — Postgres integration test; only runs when `RUN_DB_TESTS=true` and `DATABASE_URL` are set.
+- `tests/storage.test.ts` — validation des fichiers (MIME, extension, taille), construction/interprétation des
+  clés et règles de lecture ; aucun accès réseau, exécuté par `npm test`.
+- `RUN_STORAGE_TESTS=true npm test -- tests/storage-s3.integration.test.ts` — aller-retour réel
+  téléversement → lecture → suppression → URL signée contre le stockage configuré (`s3mock` en local, R2 avec
+  les vrais `S3_*`). Ignoré sans `RUN_STORAGE_TESTS=true`.
+- `npx tsx scripts/migrate-uploads-to-r2.ts [--apply]` — migration progressive des fichiers
+  `/uploads/...` vers R2 (dry-run par défaut, idempotent, ne supprime jamais rien).
 - `npx prisma validate` / `npm run build` for schema and production-build checks.
 
 Never run `prisma migrate reset`, `db push --force-reset`, or anything that deletes tables or the

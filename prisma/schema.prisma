@@ -772,6 +772,7 @@ model Bulletin {
   mentionGenerale   String   @default("")
   qrToken           String   @unique
   qrDataUrl         String   @default("")
+  pdfUrl            String?
   generePar         String   @default("")
   genereParId       String   @default("")
   createdAt         DateTime @default(now())

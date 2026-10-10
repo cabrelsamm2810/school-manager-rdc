@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { deleteStoredFile, isUploadError, saveUploadedFile } from '@/lib/storage';
 
 /**
  * GET /api/etablissements/[id]/documents
@@ -55,26 +53,25 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'Le titre du document est obligatoire.' }, { status: 400 });
   }
 
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'etablissements', params.id);
-  if (!existsSync(uploadDir)) {
-    await mkdir(uploadDir, { recursive: true });
+  let saved;
+  try {
+    saved = await saveUploadedFile(file, {
+      category: 'establishment-document',
+      folder: `etablissements/${params.id}`,
+    });
+  } catch (error) {
+    if (isUploadError(error)) return NextResponse.json({ error: error.message }, { status: error.status });
+    throw error;
   }
-
-  const ext = path.extname(file.name) || '';
-  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadDir, uniqueName), bytes);
-
-  const fileUrl = `/uploads/etablissements/${params.id}/${uniqueName}`;
 
   const document = await prisma.etablissementDocument.create({
     data: {
       etablissementId: params.id,
       type,
       titre,
-      fileUrl,
-      fileName: file.name,
-      fileType: file.type || ext,
+      fileUrl: saved.fileUrl,
+      fileName: saved.fileName,
+      fileType: saved.fileType,
     },
   });
 
@@ -96,9 +93,15 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ error: 'ID du document requis.' }, { status: 400 });
   }
 
+  const existing = await prisma.etablissementDocument.findFirst({
+    where: { id: body.documentId, etablissementId: params.id },
+    select: { fileUrl: true },
+  });
+
   await prisma.etablissementDocument.delete({
     where: { id: body.documentId, etablissementId: params.id },
   });
+  await deleteStoredFile(existing?.fileUrl);
 
   return NextResponse.json({ ok: true });
 }
