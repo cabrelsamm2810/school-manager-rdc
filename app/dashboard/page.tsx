@@ -1,89 +1,64 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
-import { DashboardHeader } from '@/components/dashboards/DashboardHeader';
+import { ClockCard } from '@/components/dashboards/ClockCard';
+import { WelcomeCard } from '@/components/dashboards/WelcomeCard';
 import { QuickActions } from '@/components/dashboards/QuickActions';
+import { ServicesGrid } from '@/components/dashboards/ServicesGrid';
+import { DashboardError, DashboardSkeleton } from '@/components/dashboards/DashboardStates';
 import { NationalDashboard } from '@/components/dashboards/NationalDashboard';
 import { ProvincialDashboard } from '@/components/dashboards/ProvincialDashboard';
 import { SousProvincialDashboard } from '@/components/dashboards/SousProvincialDashboard';
 import { SchoolDashboard } from '@/components/dashboards/SchoolDashboard';
-
-type SessionUser = {
-  id: string;
-  nom: string;
-  postNom?: string | null;
-  prenom: string;
-  email: string;
-  role: string;
-  profilePhotoUrl?: string | null;
-  provinceAdministrative?: string | null;
-  typeInstitution?: string | null;
-  institutionName?: string | null;
-};
-
-type DashboardStats = {
-  totalEleves: number;
-  totalEtablissements: number;
-  totalEnseignants: number;
-  totalClasses: number;
-  totalProvinces: number;
-  totalDossiers: number;
-  totalVisites: number;
-  totalSousProvinciales: number;
-};
-
-type BreakdownItem = { label: string; value: number; sublabel: string };
-type ChartItem = { label: string; value: number };
-
-type StatsResponse = {
-  stats: DashboardStats;
-  breakdown: BreakdownItem[];
-  chartData: ChartItem[];
-  activite: string[];
-  scope: 'national' | 'provincial' | 'sousProvincial' | 'school';
-  provinceLabel: string | null;
-};
+import type { DashboardStatsResponse } from '@/components/dashboards/types';
+import { useSessionUser } from '@/lib/use-session-user';
+import { getInstitutionLabel } from '@/lib/institution';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [data, setData] = useState<StatsResponse | null>(null);
+  const user = useSessionUser();
+  const [data, setData] = useState<DashboardStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.authenticated) setUser(d.user);
-      })
-      .catch(() => {});
+  const loadStats = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const response = await fetch('/api/dashboard/stats');
+      if (!response.ok) throw new Error('stats');
+      const payload = (await response.json()) as DashboardStatsResponse | null;
+      if (!payload?.stats) throw new Error('stats');
+      setData(payload);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: StatsResponse | null) => {
-        if (d?.stats) setData(d);
-      })
-      .catch(() => {});
-  }, []);
+    loadStats();
+  }, [loadStats]);
 
-  // Affichage de chargement
-  if (!data || !user) {
+  if (error) {
     return (
       <AppShell>
-        <div className="p-4 md:p-6 lg:p-8">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-6 h-24 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
-            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
-              ))}
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-slate-50" />
-              ))}
-            </div>
+        <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
+          <div className="mx-auto max-w-5xl">
+            <DashboardError onRetry={loadStats} />
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (loading || !data || !user) {
+    return (
+      <AppShell>
+        <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
+          <div className="mx-auto max-w-5xl">
+            <DashboardSkeleton />
           </div>
         </div>
       </AppShell>
@@ -94,23 +69,25 @@ export default function DashboardPage() {
     stats: data.stats,
     breakdown: data.breakdown,
     chartData: data.chartData,
-    activite: data.activite,
+    activite: data.activite
   };
 
   return (
     <AppShell>
-      <div className="p-4 md:p-6 lg:p-8">
-        <div className="mx-auto max-w-6xl">
-          <DashboardHeader user={user} scope={data.scope} />
+      <div className="px-3 py-4 sm:px-4 md:px-6 md:py-5 lg:py-6">
+        <div className="mx-auto max-w-5xl">
+          <ClockCard institutionLabel={getInstitutionLabel(user)} />
+          <WelcomeCard user={user} scope={data.scope} />
           <QuickActions role={user.role} />
-          {data.scope === 'national' && <NationalDashboard {...dashProps} />}
+          {data.scope === 'national' && <NationalDashboard {...dashProps} role={user.role} />}
           {data.scope === 'provincial' && (
             <ProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />
           )}
           {data.scope === 'sousProvincial' && (
             <SousProvincialDashboard {...dashProps} provinceLabel={data.provinceLabel} />
           )}
-          {data.scope === 'school' && <SchoolDashboard {...dashProps} />}
+          {data.scope === 'school' && <SchoolDashboard {...dashProps} role={user.role} />}
+          <ServicesGrid role={user.role} />
         </div>
       </div>
     </AppShell>

@@ -21,7 +21,7 @@ export interface EnseignantRetardataire {
   nom: string;
   matricule: string;
   email: string;
-  etablissement: string;
+  ecole: string;
   telephone: string;
 }
 
@@ -66,7 +66,7 @@ export async function getEnseignantsEnRetard(
       nom: e.nom,
       matricule: e.matricule,
       email: e.email,
-      etablissement: e.etablissement,
+      ecole: e.ecole,
       telephone: e.telephone,
     }));
 }

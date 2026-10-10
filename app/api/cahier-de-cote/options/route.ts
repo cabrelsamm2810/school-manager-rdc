@@ -1,40 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { buildScopeWhere } from '@/lib/territory-filter';
+import { buildEleveScopeWhere, buildScopeWhere } from '@/lib/territory-filter';
 
 /** GET — options disponibles (classes, cours) pour le périmètre de l'utilisateur. */
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, 'ENSEIGNANT');
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 403 });
 
-  const scopeWhere = buildScopeWhere(auth.user, {
-    etablissementField: 'etablissementId',
-    provinceField: 'etablissementNom',
-  });
-
-  // Classes distinctes depuis les élèves
-  const elevesWhere = { ...scopeWhere };
+  // Classes distinctes depuis les élèves. `Eleve` n'a ni `province` ni `institution` :
+  // le périmètre passe par la relation `ecole`.
   const eleves = await prisma.eleve.findMany({
-    where: elevesWhere,
+    where: buildEleveScopeWhere(auth.user),
     select: { classe: true },
     distinct: ['classe'],
     orderBy: { classe: 'asc' },
   });
   const classes = eleves.map((e) => e.classe).filter(Boolean);
 
-  // Établissements (pour les rôles supérieurs)
-  let etablissements: { id: string; nom: string }[] = [];
+  // Écoles (pour les rôles supérieurs) — champs propres au modèle Ecole.
+  let ecoles: { id: string; nom: string }[] = [];
   if (auth.user.role === 'SUPER_ADMIN' || auth.user.role === 'COORDINATION_NATIONALE' ||
       auth.user.role === 'COORDINATION_PROVINCIALE' || auth.user.role === 'AGENT_PROVINCIAL' ||
       auth.user.role === 'COORDINATION_SOUS_PROVINCIALE' || auth.user.role === 'AGENT_SOUS_PROVINCIAL') {
-    const etabs = await prisma.etablissement.findMany({
-      where: scopeWhere,
+    const etabs = await prisma.ecole.findMany({
+      where: buildScopeWhere(auth.user, {
+        provinceField: 'province',
+        institutionField: 'institution',
+        ecoleField: 'id',
+      }),
       select: { id: true, nom: true },
       orderBy: { nom: 'asc' },
     });
-    etablissements = etabs;
+    ecoles = etabs;
   }
 
-  return NextResponse.json({ classes, etablissements });
+  return NextResponse.json({ classes, ecoles });
 }

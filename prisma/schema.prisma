@@ -10,15 +10,20 @@ datasource db {
 
 enum Role {
   SUPER_ADMIN
+  ADMIN_SCHOOL_MANAGER_RDC
   COORDINATION_NATIONALE
   COORDINATION_PROVINCIALE
   AGENT_PROVINCIAL
   COORDINATION_SOUS_PROVINCIALE
   AGENT_SOUS_PROVINCIAL
+  PROMOTEUR
   DIRECTION_ECOLE
+  SECRETAIRE
+  COMPTABLE
   ENSEIGNANT
   PARENT
   ELEVE
+  VISITEUR
 }
 
 model User {
@@ -42,13 +47,14 @@ model User {
   profilePhotoUrl       String?
   validationCode        String?
   isActive              Boolean  @default(false)
+  userStatus            String   @default("EN_ATTENTE")
   coordSousProvincialeId String?
   coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
-  etablissementId       String?
-  etablissement         Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  ecoleId       String?
+  ecole         Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
   classe                String?
   createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  updatedAt             DateTime @default(now()) @updatedAt
 
   chatGroupsCreated     ChatGroup[]
   chatGroupMemberships  ChatGroupMember[]
@@ -56,8 +62,9 @@ model User {
 
   @@index([role])
   @@index([isActive])
+  @@index([userStatus])
   @@index([coordSousProvincialeId])
-  @@index([etablissementId])
+  @@index([ecoleId])
   @@index([classe])
   @@map("users")
 }
@@ -78,8 +85,8 @@ model Eleve {
   nomTuteur       String    @default("")
   telephoneTuteur String    @default("")
   emailTuteur     String    @default("")
-  etablissementId String?
-  etablissement   Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  ecoleId String?
+  ecole   Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -93,7 +100,7 @@ model Eleve {
 
   @@index([classe])
   @@index([nom])
-  @@index([etablissementId])
+  @@index([ecoleId])
   @@map("eleves")
 }
 
@@ -175,23 +182,58 @@ model DossierEleveInteraction {
   @@map("dossier_eleve_interactions")
 }
 
+model SeancePresence {
+  id            String     @id @default(cuid())
+  classe        String
+  matiere       String     @default("")
+  enseignantId  String     @default("")
+  enseignantNom String     @default("")
+  ecoleId       String?
+  anneeScolaire String     @default("")
+  date          DateTime   @default(now())
+  heureDebut    DateTime   @default(now())
+  heureFin      DateTime?
+  statut        String     @default("EN_COURS") // EN_COURS | TERMINEE
+  presences     Presence[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([classe])
+  @@index([enseignantId])
+  @@index([date])
+  @@index([statut])
+  @@index([ecoleId])
+  @@map("seances_presence")
+}
+
 model Presence {
-  id        String   @id @default(cuid())
-  eleveId   String
-  eleve     Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
-  date      DateTime @default(now())
-  present   Boolean  @default(true)
-  classe    String
-  latitude  Float?
-  longitude Float?
+  id            String          @id @default(cuid())
+  eleveId       String
+  eleve         Eleve           @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  date          DateTime        @default(now())
+  present       Boolean         @default(true)
+  statut        String          @default("PRESENT") // PRESENT | RETARD | ABSENT | JUSTIFIE
+  classe        String
+  matiere       String          @default("")
+  anneeScolaire String          @default("")
+  enseignantId  String          @default("")
+  ecoleId       String?
+  seanceId      String?
+  seance        SeancePresence? @relation(fields: [seanceId], references: [id], onDelete: SetNull)
+  heureArrivee  DateTime?
+  latitude      Float?
+  longitude     Float?
 
   @@index([eleveId])
   @@index([date])
   @@index([classe])
+  @@index([statut])
+  @@index([seanceId])
+  @@index([enseignantId])
   @@map("presences")
 }
 
-model Etablissement {
+model Ecole {
   id                   String   @id @default(cuid())
   nom                  String
   type                 String   @default("")
@@ -205,7 +247,7 @@ model Etablissement {
   localisationGeo      String   @default("")
   telephone            String   @default("")
   email                String   @default("")
-  chefEtablissement    String   @default("")
+  chefEcole    String   @default("")
   logoUrl              String?
   identifiantSM        String?  @unique
   effectif             Int      @default(0)
@@ -219,9 +261,12 @@ model Etablissement {
   ecErc                EcErc?   @relation(fields: [ecErcId], references: [id], onDelete: SetNull)
   eleves               Eleve[]
   users                User[]
+  enseignants          Enseignant[] @relation("EnseignantEcole")
+  enseignantAffectations EnseignantAffectation[]
   chatGroups           ChatGroup[]
-  documents            EtablissementDocument[]
-  validationLogs       EtablissementValidationLog[]
+  documents            EcoleDocument[]
+  documentAudits       EcoleDocumentAudit[]
+  validationLogs       EcoleValidationLog[]
   cahierDeCotes        CahierDeCote[]
   bulletins            Bulletin[]
   createdAt            DateTime @default(now())
@@ -233,13 +278,13 @@ model Etablissement {
   @@index([statutValidation])
   @@index([coordSousProvincialeId])
   @@index([ecErcId])
-  @@map("etablissements")
+  @@map("ecoles")
 }
 
-model EtablissementDocument {
+model EcoleDocument {
   id              String   @id @default(cuid())
-  etablissementId String
-  etablissement   Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  ecoleId String
+  ecole   Ecole @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
   type            String   @default("")
   titre           String
   fileUrl         String
@@ -247,24 +292,44 @@ model EtablissementDocument {
   fileType        String   @default("")
   createdAt       DateTime @default(now())
 
-  @@index([etablissementId])
+  @@index([ecoleId])
   @@index([type])
-  @@map("etablissement_documents")
+  @@map("ecole_documents")
 }
 
-model EtablissementValidationLog {
+model EcoleDocumentAudit {
+  id            String   @id @default(cuid())
+  ecoleId       String
+  ecole         Ecole   @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  documentId    String?  // null si l'action porte sur le dossier entier
+  documentTitre String   @default("")
+  action        String   // UPLOAD, SUBMIT, VALIDATE, REJECT, DELETE
+  userId        String   @default("")
+  userName      String   @default("")
+  userRole      String   @default("")
+  commentaire   String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([ecoleId])
+  @@index([documentId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("ecole_document_audits")
+}
+
+model EcoleValidationLog {
   id              String   @id @default(cuid())
-  etablissementId String
-  etablissement   Etablissement @relation(fields: [etablissementId], references: [id], onDelete: Cascade)
+  ecoleId String
+  ecole   Ecole @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
   statut          String
   commentaire     String   @default("")
   validateurId    String?
   validateurNom   String   @default("")
   createdAt       DateTime @default(now())
 
-  @@index([etablissementId])
+  @@index([ecoleId])
   @@index([statut])
-  @@map("etablissement_validation_logs")
+  @@map("ecole_validation_logs")
 }
 
 model Enseignant {
@@ -272,24 +337,48 @@ model Enseignant {
   nom           String
   matricule     String   @unique
   grade         String   @default("")
-  etablissement String   @default("")
+  ecole String   @default("")
+  ecoleId       String?
+  ecoleRattachee Ecole?  @relation("EnseignantEcole", fields: [ecoleId], references: [id], onDelete: SetNull)
   specialite    String   @default("")
   telephone     String   @default("")
   email         String   @default("")
   statut        String   @default("Actif")
+  affectations  EnseignantAffectation[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([nom])
-  @@index([etablissement])
+  @@index([ecole])
+  @@index([ecoleId])
   @@map("enseignants")
+}
+
+model EnseignantAffectation {
+  id           String   @id @default(cuid())
+  enseignantId String
+  enseignant   Enseignant @relation(fields: [enseignantId], references: [id], onDelete: Cascade)
+  ecoleId      String?
+  ecole        Ecole?   @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
+  classe       String
+  matiere      String   @default("")
+  niveau       String   @default("")
+  statut       String   @default("Actif")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([enseignantId, classe, matiere])
+  @@index([enseignantId])
+  @@index([classe])
+  @@index([ecoleId])
+  @@map("enseignant_affectations")
 }
 
 model Province {
   id            String   @id @default(cuid())
   nom           String   @unique
   chefLieu      String   @default("")
-  etablissements Int     @default(0)
+  ecoles Int     @default(0)
   eleves        Int      @default(0)
   statut        String   @default("Actif")
   createdAt     DateTime @default(now())
@@ -305,7 +394,7 @@ model ProvinceEducationnelle {
   provinceAdministrative String  @default("")
   chefLieu              String   @default("")
   sousDivisions         Int      @default(0)
-  etablissements        Int      @default(0)
+  ecoles        Int      @default(0)
   eleves                Int      @default(0)
   statut                String   @default("Actif")
   createdAt             DateTime @default(now())
@@ -322,7 +411,7 @@ model SousDivisionEducationnelle {
   provinceEducationnelle String  @default("")
   provinceAdministrative String  @default("")
   lieuImplantation      String   @default("")
-  etablissements        Int      @default(0)
+  ecoles        Int      @default(0)
   eleves                Int      @default(0)
   statut                String   @default("Actif")
   createdAt             DateTime @default(now())
@@ -387,9 +476,9 @@ model EcErc {
   type      String   @default("")
   institution String @default("EC_ERC")
   province  String   @default("")
-  ecoles    Int      @default(0)
+  nbEcoles Int      @default(0)
   statut    String   @default("Actif")
-  etablissements Etablissement[]
+  ecoles Ecole[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -441,7 +530,7 @@ model CoordSousProvinciale {
   statut              String   @default("Actif")
   coordProvincialeId  String?
   coordProvinciale    CoordProvinciale? @relation(fields: [coordProvincialeId], references: [id], onDelete: SetNull)
-  etablissements      Etablissement[]
+  ecoles      Ecole[]
   users               User[]
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -496,14 +585,14 @@ model Dossier {
 model Visite {
   id           String   @id @default(cuid())
   date         DateTime @default(now())
-  etablissement String
+  ecole String
   visiteur     String   @default("")
   objet        String   @default("")
   statut       String   @default("Planifiée")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  @@index([etablissement])
+  @@index([ecole])
   @@index([date])
   @@map("visites")
 }
@@ -623,8 +712,8 @@ model ChatGroup {
   id              String   @id @default(cuid())
   name            String
   classe          String
-  etablissementId String?
-  etablissement   Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
+  ecoleId String?
+  ecole   Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
   createdById     String
   createdBy       User     @relation(fields: [createdById], references: [id])
   createdAt       DateTime @default(now())
@@ -634,7 +723,7 @@ model ChatGroup {
   messages        ChatGroupMessage[]
 
   @@index([classe])
-  @@index([etablissementId])
+  @@index([ecoleId])
   @@index([createdById])
   @@map("chat_groups")
 }
@@ -674,9 +763,9 @@ model ChatGroupMessage {
 
 model CahierDeCote {
   id                String   @id @default(cuid())
-  etablissementId   String?
-  etablissement     Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
-  etablissementNom  String   @default("")
+  ecoleId   String?
+  ecole     Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
+  ecoleNom  String   @default("")
   classe            String
   cours             String
   enseignantNom     String   @default("")
@@ -704,7 +793,7 @@ model CahierDeCote {
   historique        CahierDeCoteHistory[]
 
   @@unique([eleveId, cours, periode, anneeScolaire])
-  @@index([etablissementId])
+  @@index([ecoleId])
   @@index([classe])
   @@index([cours])
   @@index([periode])
@@ -735,7 +824,7 @@ model RappelCote {
   id              String   @id @default(cuid())
   enseignantNom   String
   enseignantEmail String   @default("")
-  etablissement   String   @default("")
+  ecole   String   @default("")
   classe          String   @default("")
   cours           String   @default("")
   periode         String
@@ -761,9 +850,9 @@ model Bulletin {
   eleveMatricule    String   @default("")
   eleveNom          String
   classe            String
-  etablissementId   String?
-  etablissement     Etablissement? @relation(fields: [etablissementId], references: [id], onDelete: SetNull)
-  etablissementNom  String   @default("")
+  ecoleId   String?
+  ecole     Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
+  ecoleNom  String   @default("")
   periode           String
   anneeScolaire     String   @default("")
   donnees           String   @default("[]")
@@ -779,7 +868,47 @@ model Bulletin {
   @@index([eleveId])
   @@index([periode])
   @@index([anneeScolaire])
-  @@index([etablissementId])
+  @@index([ecoleId])
   @@index([qrToken])
   @@map("bulletins")
+}
+
+model PointageEnseignant {
+  id           String   @id @default(cuid())
+  enseignantId String   // User.id du professeur
+  ecoleId      String?
+  jour         String   // YYYY-MM-DD (un pointage par jour)
+  heureArrivee DateTime @default(now())
+  statut       String   @default("PRESENT") // PRESENT | RETARD
+  latitude     Float?
+  longitude    Float?
+  scannedValue String?
+  createdAt    DateTime @default(now())
+
+  @@unique([enseignantId, jour])
+  @@index([enseignantId])
+  @@index([jour])
+  @@index([ecoleId])
+  @@map("pointages_enseignant")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String   @default("")
+  userRole    String   @default("")
+  userName    String   @default("")
+  action      String
+  module      String   @default("")
+  resource    String   @default("")
+  resourceId  String   @default("")
+  result      String   @default("success")
+  details     String   @default("")
+  ipAddress   String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

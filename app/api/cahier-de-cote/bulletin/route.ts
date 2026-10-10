@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
 
   // Récupérer toutes les cotes de l'élève pour cette période
   const scopeWhere = buildScopeWhere(auth.user, {
-    etablissementField: 'etablissementId',
-    provinceField: 'etablissementNom',
+    ecoleField: 'ecoleId',
+    // CahierDeCote et Bulletin n'ont pas de champ `institution`.
+    provinceField: 'ecoleNom',
+    institutionField: false,
   });
 
   const cotes = await prisma.cahierDeCote.findMany({
@@ -61,11 +63,11 @@ export async function POST(request: NextRequest) {
     : 0;
   const mentionGenerale = cotes.length > 0 ? getMention(pourcentageGeneral) : 'Non évalué';
 
-  // Récupérer l'établissement
-  const etablissement = cotes[0]?.etablissementId
-    ? await prisma.etablissement.findUnique({ where: { id: cotes[0].etablissementId } })
-    : (eleve.etablissementId
-      ? await prisma.etablissement.findUnique({ where: { id: eleve.etablissementId } })
+  // Récupérer l'école
+  const ecole = cotes[0]?.ecoleId
+    ? await prisma.ecole.findUnique({ where: { id: cotes[0].ecoleId } })
+    : (eleve.ecoleId
+      ? await prisma.ecole.findUnique({ where: { id: eleve.ecoleId } })
       : null);
 
   // Générer le token QR unique
@@ -114,8 +116,8 @@ export async function POST(request: NextRequest) {
       eleveMatricule: eleve.matricule,
       eleveNom: `${eleve.prenom} ${eleve.nom} ${eleve.postNom}`.trim(),
       classe: eleve.classe,
-      etablissementId: etablissement?.id || null,
-      etablissementNom: etablissement?.nom || cotes[0]?.etablissementNom || '',
+      ecoleId: ecole?.id || null,
+      ecoleNom: ecole?.nom || cotes[0]?.ecoleNom || '',
       periode,
       anneeScolaire,
       donnees: JSON.stringify(donnees),
@@ -148,8 +150,10 @@ export async function GET(request: NextRequest) {
   if (anneeScolaire) where.anneeScolaire = anneeScolaire;
 
   const scopeWhere = buildScopeWhere(auth.user, {
-    etablissementField: 'etablissementId',
-    provinceField: 'etablissementNom',
+    ecoleField: 'ecoleId',
+    // CahierDeCote et Bulletin n'ont pas de champ `institution`.
+    provinceField: 'ecoleNom',
+    institutionField: false,
   });
   if (Object.keys(scopeWhere).length > 0) {
     where.AND = [scopeWhere];

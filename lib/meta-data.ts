@@ -1,4 +1,5 @@
 import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
+import { PROVINCE_NAMES, PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
 
 export type InstitutionType = {
   value: string;
@@ -23,15 +24,17 @@ export const defaultInstitutionTypes: InstitutionType[] = [
 
 export const defaultRoleOptions: RoleOption[] = [
   { value: 'ELEVE', label: 'Élève' },
-  { value: 'PARENT', label: 'Parent' },
+  { value: 'PARENT', label: 'Parent / Tuteur' },
   { value: 'ENSEIGNANT', label: 'Enseignant' },
+  { value: 'COMPTABLE', label: 'Comptable' },
+  { value: 'SECRETAIRE', label: 'Secrétaire' },
   { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
-  { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent sous provincial' },
-  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
+  { value: 'PROMOTEUR', label: 'Promoteur' },
+  { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent de coordination sous-provinciale' },
+  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
   { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
-  { value: 'SUPER_ADMIN', label: 'Super administrateur' }
 ];
 
 /* ── Données d'inscription ── */
@@ -47,75 +50,34 @@ export const registrationInstitutionTypes = [
 export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
-  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous provinciale' },
+  { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
   { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
+  { value: 'PROMOTEUR', label: 'Promoteur' },
+  { value: 'SECRETAIRE', label: 'Secrétaire' },
+  { value: 'COMPTABLE', label: 'Comptable' },
   { value: 'ENSEIGNANT', label: 'Enseignant' },
   { value: 'ELEVE', label: 'Élève' },
-  { value: 'PARENT', label: 'Parent' },
+  { value: 'PARENT', label: 'Parent / Tuteur' },
 ];
 
-/** Les 26 provinces administratives de la RDC. */
-export const allProvinces: Province[] = [
-  'Kinshasa',
-  'Kongo-Central',
-  'Kwango',
-  'Kwilu',
-  'Mai-Ndombe',
-  'Équateur',
-  'Mongala',
-  'Sud-Ubangi',
-  'Nord-Ubangi',
-  'Bas-Uele',
-  'Haut-Uele',
-  'Ituri',
-  'Tshopo',
-  'Tshuapa',
-  'Kasaï',
-  'Kasaï-Central',
-  'Kasaï-Oriental',
-  'Lomami',
-  'Sankuru',
-  'Maniema',
-  'Sud-Kivu',
-  'Nord-Kivu',
-  'Haut-Lomami',
-  'Tanganyika',
-  'Haut-Katanga',
-  'Lualaba',
-];
+/**
+ * Les 26 provinces administratives de la RDC.
+ * Source unique : `lib/provinces-rdc.ts` (mêmes libellés que la base de données —
+ * ex. « Kongo Central », « Kasaï Central » — afin que les filtres en cascade et les
+ * périmètres territoriaux comparent toujours des valeurs identiques).
+ */
+export const allProvinces: Province[] = PROVINCE_NAMES;
 
 /** Ancienne liste pour compatibilité (sera remplacée progressivement). */
 export const defaultProvinces: Province[] = allProvinces;
 
-/** Provinces éducationnelles liées à chaque province administrative. */
-export const educationProvincesByAdmin: Record<string, string[]> = {
-  'Kinshasa': ['Kinshasa 1', 'Kinshasa 2'],
-  'Kongo-Central': ['Kongo-Central'],
-  'Kwango': ['Kwango'],
-  'Kwilu': ['Kwilu'],
-  'Mai-Ndombe': ['Mai-Ndombe'],
-  'Équateur': ['Équateur'],
-  'Mongala': ['Mongala'],
-  'Sud-Ubangi': ['Sud-Ubangi'],
-  'Nord-Ubangi': ['Nord-Ubangi'],
-  'Bas-Uele': ['Bas-Uele'],
-  'Haut-Uele': ['Haut-Uele'],
-  'Ituri': ['Ituri'],
-  'Tshopo': ['Tshopo'],
-  'Tshuapa': ['Tshuapa'],
-  'Kasaï': ['Kasaï'],
-  'Kasaï-Central': ['Kasaï-Central'],
-  'Kasaï-Oriental': ['Kasaï-Oriental 1', 'Kasaï-Oriental 2'],
-  'Lomami': ['Lomami'],
-  'Sankuru': ['Sankuru'],
-  'Maniema': ['Maniema'],
-  'Sud-Kivu': ['Sud-Kivu'],
-  'Nord-Kivu': ['Nord-Kivu'],
-  'Haut-Lomami': ['Haut-Lomami'],
-  'Tanganyika': ['Tanganyika'],
-  'Haut-Katanga': ['Haut-Katanga 1', 'Haut-Katanga 2'],
-  'Lualaba': ['Lualaba'],
-};
+/**
+ * Provinces éducationnelles liées à chaque province administrative
+ * (dérivées de `PROVINCES_EDUCATIONNELLES`, comme la table `provinces_educationnelles`).
+ */
+export const educationProvincesByAdmin: Record<string, string[]> = Object.fromEntries(
+  Object.entries(PROVINCES_EDUC_BY_ADMIN).map(([admin, list]) => [admin, list.map((pe) => pe.nom)]),
+);
 
 /** Bureaux d'affectation pour la structure provinciale EC-ERC. */
 export const provincialBureaux = [
@@ -123,7 +85,7 @@ export const provincialBureaux = [
   'Bureau de la formation',
   'Bureau de gestion',
   'Bureau de planification',
-  'Bureau des établissements scolaires',
+  'Bureau des écoles scolaires',
   'Bureau pédagogique',
   'Bureau des ressources humaines',
   'Bureau financier',
@@ -138,6 +100,9 @@ export const fonctionsByRole: Record<string, string[]> = {
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur sous-provincial', 'Coordonnateur sous-provincial adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   DIRECTION_ECOLE: ['Directeur', 'Directeur adjoint', 'Directeur des études'],
+  PROMOTEUR: ['Promoteur', 'Promoteur adjoint'],
+  SECRETAIRE: ['Secrétaire', 'Secrétaire adjoint'],
+  COMPTABLE: ['Comptable', 'Comptable adjoint'],
   ENSEIGNANT: ['Professeur', 'Instituteur', 'Chef de travaux'],
   ELEVE: ['Élève'],
   PARENT: ['Parent', 'Tuteur'],
@@ -151,6 +116,9 @@ export const gradesByRole: Record<string, string[]> = {
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur principal', 'Coordonnateur', 'Coordonnateur adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   DIRECTION_ECOLE: ['Directeur', 'Directeur adjoint'],
+  PROMOTEUR: ['Promoteur principal', 'Promoteur'],
+  SECRETAIRE: ['Secrétaire principal', 'Secrétaire'],
+  COMPTABLE: ['Comptable principal', 'Comptable'],
   ENSEIGNANT: ['Chef de travaux', 'Professeur', 'Instituteur principal', 'Instituteur'],
   ELEVE: [],
   PARENT: [],
@@ -162,7 +130,7 @@ export const fonctionsByBureau: Record<string, string[]> = {
   'Bureau de la formation': ['Coordinateur de formation', 'Formateur principal', 'Formateur', 'Animateur'],
   'Bureau de gestion': ['Gestionnaire principal', 'Gestionnaire', 'Comptable', 'Agent de gestion'],
   'Bureau de planification': ['Planificateur principal', 'Planificateur', 'Analyste', 'Agent de planification'],
-  'Bureau des établissements scolaires': ['Superviseur des établissements', 'Agent de suivi', 'Inspecteur scolaire', 'Animateur scolaire'],
+  'Bureau des écoles scolaires': ['Superviseur des écoles', 'Agent de suivi', 'Inspecteur scolaire', 'Animateur scolaire'],
   'Bureau pédagogique': ['Conseiller pédagogique', 'Animateur pédagogique', 'Inspecteur pédagogique'],
   'Bureau des ressources humaines': ['Directeur RH', 'Agent RH', 'Chargé du personnel'],
   'Bureau financier': ['Directeur financier', 'Comptable principal', 'Agent financier'],
@@ -175,7 +143,7 @@ export const gradesByBureau: Record<string, string[]> = {
   'Bureau de la formation': ['Principal', 'Adjoint', 'Formateur principal', 'Formateur'],
   'Bureau de gestion': ['Principal', 'Adjoint', 'Gestionnaire principal', 'Gestionnaire'],
   'Bureau de planification': ['Principal', 'Adjoint', 'Planificateur principal', 'Planificateur'],
-  'Bureau des établissements scolaires': ['Superviseur principal', 'Superviseur', 'Agent principal', 'Agent'],
+  'Bureau des écoles scolaires': ['Superviseur principal', 'Superviseur', 'Agent principal', 'Agent'],
   'Bureau pédagogique': ['Conseiller principal', 'Conseiller', 'Animateur'],
   'Bureau des ressources humaines': ['Directeur', 'Agent principal', 'Agent'],
   'Bureau financier': ['Directeur', 'Comptable principal', 'Agent'],
@@ -189,6 +157,9 @@ export const rolesNeedingAffectation = new Set([
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
   'DIRECTION_ECOLE',
+  'PROMOTEUR',
+  'SECRETAIRE',
+  'COMPTABLE',
   'ENSEIGNANT',
   'ELEVE',
   'PARENT',
@@ -201,6 +172,9 @@ export const rolesNeedingFonctionGrade = new Set([
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
   'DIRECTION_ECOLE',
+  'PROMOTEUR',
+  'SECRETAIRE',
+  'COMPTABLE',
   'ENSEIGNANT',
 ]);
 
@@ -218,6 +192,9 @@ export const rolesNeedingEducationProvince = new Set([
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
   'DIRECTION_ECOLE',
+  'PROMOTEUR',
+  'SECRETAIRE',
+  'COMPTABLE',
   'ENSEIGNANT',
   'ELEVE',
   'PARENT',
@@ -245,7 +222,7 @@ export const sousDivisionsByEducationProvince: Record<string, string[]> = (() =>
   return map;
 })();
 
-/** Types d'établissement pour le formulaire École. */
+/** Types d'école pour le formulaire École. */
 export const ecoleTypes = [
   'Maternelle',
   'Primaire',

@@ -15,15 +15,15 @@ type Eleve = {
   nomTuteur: string;
   telephoneTuteur: string;
   emailTuteur: string;
-  etablissement: { id: string; nom: string } | null;
-  etablissementId: string | null;
+  ecole: { id: string; nom: string } | null;
+  ecoleId: string | null;
   sexe: string;
   dateNaissance: string | null;
   lieuNaissance: string;
   adresse: string;
 };
 
-type Etablissement = {
+type Ecole = {
   id: string;
   nom: string;
 };
@@ -32,18 +32,18 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
   const [eleves, setEleves] = useState<Eleve[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
-  const [etablissementFilter, setEtablissementFilter] = useState('');
+  const [ecoles, setEcoles] = useState<Ecole[]>([]);
+  const [ecoleFilter, setEcoleFilter] = useState('');
   const [classeFilter, setClasseFilter] = useState('');
   const [classes, setClasses] = useState<string[]>([]);
   const [editingEleve, setEditingEleve] = useState<Eleve | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/etablissements')
+    fetch('/api/ecoles')
       .then((res) => res.json())
       .then((data) => {
-        if (data.etablissements) setEtablissements(data.etablissements);
+        if (data.ecoles) setEcoles(data.ecoles);
       })
       .catch(() => {});
   }, []);
@@ -51,7 +51,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
   async function loadData() {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
-    if (etablissementFilter) params.set('etablissementId', etablissementFilter);
+    if (ecoleFilter) params.set('ecoleId', ecoleFilter);
     if (classeFilter) params.set('classe', classeFilter);
     try {
       const res = await fetch(`/api/eleves?${params.toString()}`);
@@ -76,7 +76,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
     async function load() {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (etablissementFilter) params.set('etablissementId', etablissementFilter);
+      if (ecoleFilter) params.set('ecoleId', ecoleFilter);
       if (classeFilter) params.set('classe', classeFilter);
       try {
         const res = await fetch(`/api/eleves?${params.toString()}`);
@@ -97,7 +97,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
     return () => {
       active = false;
     };
-  }, [refreshKey, search, etablissementFilter, classeFilter]);
+  }, [refreshKey, search, ecoleFilter, classeFilter]);
 
   async function handleDelete(id: string) {
     if (!confirm('Voulez-vous vraiment supprimer cet élève ? Cette action est irréversible.')) return;
@@ -160,12 +160,12 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
           className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
         />
         <select
-          value={etablissementFilter}
-          onChange={(e) => setEtablissementFilter(e.target.value)}
+          value={ecoleFilter}
+          onChange={(e) => setEcoleFilter(e.target.value)}
           className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-56"
         >
-          <option value="">Tous les établissements</option>
-          {etablissements.map((et) => (
+          <option value="">Toutes les écoles</option>
+          {ecoles.map((et) => (
             <option key={et.id} value={et.id}>{et.nom}</option>
           ))}
         </select>
@@ -189,7 +189,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
               <th className="px-4 py-3">Matricule</th>
               <th className="px-4 py-3">Nom</th>
               <th className="px-4 py-3">Classe</th>
-              <th className="px-4 py-3">Établissement</th>
+              <th className="px-4 py-3">École</th>
               <th className="px-4 py-3">Téléphone</th>
               <th className="px-4 py-3">Tuteur</th>
               <th className="px-4 py-3 text-right">Actions</th>
@@ -203,7 +203,7 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
                   {eleve.nom} {eleve.postNom} {eleve.prenom}
                 </td>
                 <td className="px-4 py-3 text-slate-600">{eleve.classe}</td>
-                <td className="px-4 py-3 text-slate-600">{eleve.etablissement?.nom ?? '—'}</td>
+                <td className="px-4 py-3 text-slate-600">{eleve.ecole?.nom ?? '—'}</td>
                 <td className="px-4 py-3 text-slate-600">{eleve.telephone || '—'}</td>
                 <td className="px-4 py-3 text-slate-600">
                   {eleve.nomTuteur ? `${eleve.nomTuteur} (${eleve.telephoneTuteur || '—'})` : '—'}
@@ -260,8 +260,8 @@ export function EleveList({ refreshKey }: { refreshKey: number }) {
                 </span>
               </div>
             </div>
-            {eleve.etablissement && (
-              <p className="mt-1 text-xs text-slate-500">Établissement : {eleve.etablissement.nom}</p>
+            {eleve.ecole && (
+              <p className="mt-1 text-xs text-slate-500">École : {eleve.ecole.nom}</p>
             )}
             <div className="mt-2 space-y-0.5 text-sm text-slate-600">
               {eleve.telephone && <p>Tél : {eleve.telephone}</p>}

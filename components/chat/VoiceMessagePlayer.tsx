@@ -1,26 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-
-function formatDuration(seconds: number) {
-  if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+import { memo, useEffect, useRef, useState } from 'react';
+import { clsx } from 'clsx';
+import { formatDuration } from '@/lib/chat-format';
 
 const SPEEDS = [1, 1.5, 2] as const;
 
 /**
- * Lecteur de message vocal premium avec :
- * - bouton play/pause circulaire avec pulsation
- * - waveform animée pendant la lecture
- * - durée restante pendant la lecture
- * - vitesse de lecture 1× / 1,5× / 2×
- * - reprise à la position d'arrêt
- * - barre de progression interactive (seek)
+ * Lecteur de message vocal moderne et compact :
+ * lecture/pause, progression sur la forme d'onde, durée restante, vitesse 1× / 1,5× / 2×.
+ * Design distinct entre audio envoyé (bulle bleue) et reçu (bulle blanche).
  */
-export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }) {
+export const VoiceMessagePlayer = memo(function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -33,7 +24,10 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
 
     const onLoaded = () => setDuration(audio.duration || 0);
     const onTime = () => setCurrent(audio.currentTime);
-    const onEnd = () => { setPlaying(false); setCurrent(0); };
+    const onEnd = () => {
+      setPlaying(false);
+      setCurrent(0);
+    };
 
     audio.addEventListener('loadedmetadata', onLoaded);
     audio.addEventListener('timeupdate', onTime);
@@ -76,27 +70,22 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
   const progress = duration > 0 ? (current / duration) * 100 : 0;
   const remaining = Math.max(0, duration - current);
 
-  // Pseudo-waveform : 28 barres aux hauteurs variées
-  const bars = Array.from({ length: 28 }, (_, i) => {
-    const seed = Math.sin(i * 2.4) * 0.5 + 0.5;
-    return 30 + seed * 70;
-  });
+  // Pseudo-forme d'onde : 28 barres stables, purement décoratives.
+  const bars = Array.from({ length: 28 }, (_, i) => 24 + (Math.sin(i * 2.1) * 0.5 + 0.5) * 70);
 
-  const accent = isMe ? '#1e3a8a' : '#0369a1';
-  const trackColor = isMe ? 'bg-blue-200/60 dark:bg-blue-900/40' : 'bg-slate-200 dark:bg-slate-600';
+  const playedColor = isMe ? '#ffffff' : '#2563eb';
+  const trackColor = isMe ? 'bg-white/30' : 'bg-slate-200';
 
   return (
     <div className="flex items-center gap-2.5 py-1">
       <audio ref={audioRef} src={src} preload="metadata" className="hidden" />
 
-      {/* Bouton play/pause circulaire avec pulsation */}
       <button
         onClick={togglePlay}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition active:scale-90"
-        style={{
-          backgroundColor: accent,
-          animation: playing ? 'voicePulse 1.4s ease-in-out infinite' : undefined,
-        }}
+        className={clsx(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm transition active:scale-90',
+          isMe ? 'bg-white text-[#1d4ed8]' : 'bg-[#2563eb] text-white'
+        )}
         aria-label={playing ? 'Pause' : 'Lecture'}
       >
         {playing ? (
@@ -111,33 +100,29 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
         )}
       </button>
 
-      {/* Waveform + durées */}
       <div className="min-w-0 flex-1">
-        <div onClick={seek} className="flex h-9 cursor-pointer items-center gap-[2px]">
+        <div onClick={seek} className="flex h-8 cursor-pointer items-center gap-[2px]">
           {bars.map((h, i) => {
-            const barProgress = (i / bars.length) * 100;
-            const played = barProgress <= progress;
+            const played = (i / bars.length) * 100 <= progress;
             return (
-              <div
+              <span
                 key={i}
-                className={`flex-1 rounded-full transition-colors ${played ? '' : trackColor}`}
-                style={{
-                  height: `${h}%`,
-                  backgroundColor: played ? accent : undefined,
-                  transformOrigin: 'center',
-                  animation: playing ? `voiceBarDance 0.8s ease-in-out ${i * 0.04}s infinite` : undefined,
-                }}
+                className={clsx('flex-1 rounded-full transition-colors duration-150', played ? '' : trackColor)}
+                style={{ height: `${h}%`, backgroundColor: played ? playedColor : undefined }}
               />
             );
           })}
         </div>
         <div className="mt-1 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            {playing || current > 0 ? `-${formatDuration(remaining)}` : formatDuration(duration)}
+          <span className={clsx('text-[11px] font-medium tabular-nums', isMe ? 'text-white/75' : 'text-slate-500')}>
+            {playing || current > 0 ? formatDuration(remaining) : formatDuration(duration)}
           </span>
           <button
             onClick={cycleSpeed}
-            className="rounded-md bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 transition hover:bg-slate-200 dark:hover:bg-slate-600"
+            className={clsx(
+              'rounded-md px-1.5 py-0.5 text-[10px] font-bold transition',
+              isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            )}
           >
             {SPEEDS[speedIdx]}×
           </button>
@@ -145,4 +130,4 @@ export function VoiceMessagePlayer({ src, isMe }: { src: string; isMe: boolean }
       </div>
     </div>
   );
-}
+});

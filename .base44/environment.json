@@ -7,6 +7,11 @@
     { "name": "SMTP_PORT", "description": "Port SMTP (587 pour TLS, 465 pour SSL)", "requiredAtBoot": false },
     { "name": "SMTP_USER", "description": "Adresse email utilisée pour l'envoi des codes de validation", "requiredAtBoot": false },
     { "name": "SMTP_PASS", "description": "Mot de passe d'application SMTP (pour Gmail: mot de passe d'application avec 2FA)", "requiredAtBoot": false },
-    { "name": "SMTP_FROM", "description": "Adresse email expéditeur affichée dans les emails (optionnel)", "requiredAtBoot": false }
+    { "name": "SMTP_FROM", "description": "Adresse email expéditeur affichée dans les emails (optionnel)", "requiredAtBoot": false },
+    { "name": "R2_ACCOUNT_ID", "description": "Cloudflare account ID — Cloudflare dashboard → R2 → Overview", "requiredAtBoot": false },
+    { "name": "R2_ACCESS_KEY_ID", "description": "R2 API access key ID — R2 → Manage R2 API Tokens → Create API token (Object Read & Write)", "requiredAtBoot": false },
+    { "name": "R2_SECRET_ACCESS_KEY", "description": "R2 API secret access key — generated with the access key ID", "requiredAtBoot": false },
+    { "name": "R2_BUCKET_NAME", "description": "Name of the R2 bucket created in Cloudflare R2", "requiredAtBoot": false },
+    { "name": "R2_PUBLIC_URL", "description": "Optional: public URL of the R2 bucket (R2 → Settings → Public access). Leave empty to use signed URLs.", "requiredAtBoot": false }
   ]
 }

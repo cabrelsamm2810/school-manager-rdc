@@ -11,7 +11,7 @@ type Bulletin = {
   eleveNom: string;
   eleveMatricule: string;
   classe: string;
-  etablissementNom: string;
+  ecoleNom: string;
   periode: string;
   anneeScolaire: string;
   donnees: string;

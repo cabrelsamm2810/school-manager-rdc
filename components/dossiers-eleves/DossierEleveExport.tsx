@@ -10,7 +10,7 @@ type Eleve = {
   prenom: string;
   classe: string;
   sexe: string;
-  etablissement: { id: string; nom: string } | null;
+  ecole: { id: string; nom: string } | null;
 };
 
 function formatDate(d: string) {
@@ -93,7 +93,7 @@ function buildPdfHtml(
 ) {
   const fullName = `${eleve.prenom} ${eleve.nom}${eleve.postNom ? ' ' + eleve.postNom : ''}`;
   const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const etabName = eleve.etablissement?.nom || '—';
+  const etabName = eleve.ecole?.nom || '—';
 
   const docsRows = docs.length
     ? docs.map((d: any) => `
@@ -225,7 +225,7 @@ function buildPdfHtml(
       <div><span class="label">Matricule :</span> ${escapeHtml(eleve.matricule)}</div>
       <div><span class="label">Classe :</span> ${escapeHtml(eleve.classe)}</div>
       <div><span class="label">Sexe :</span> ${eleve.sexe === 'M' ? 'Masculin' : eleve.sexe === 'F' ? 'Féminin' : '—'}</div>
-      <div><span class="label">Établissement :</span> ${escapeHtml(etabName)}</div>
+      <div><span class="label">École :</span> ${escapeHtml(etabName)}</div>
     </div>
   </div>
 

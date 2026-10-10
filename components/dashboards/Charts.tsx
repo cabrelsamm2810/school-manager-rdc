@@ -8,7 +8,7 @@ const PALETTE = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#10b981', '#f43f5e
 
 type DonutSegment = { label: string; value: number };
 
-export function DonutChart({ data, size = 160, thickness = 28, centerLabel, centerValue }: {
+export function DonutChart({ data, size = 132, thickness = 24, centerLabel, centerValue }: {
   data: DonutSegment[];
   size?: number;
   thickness?: number;
@@ -76,42 +76,41 @@ export function DonutChart({ data, size = 160, thickness = 28, centerLabel, cent
 
 type BarItem = { label: string; value: number; color?: string };
 
-export function BarCompare({ items, unit = '', height = 180 }: {
+export function BarCompare({ items, unit = '', height = 150 }: {
   items: BarItem[];
   unit?: string;
   height?: number;
 }) {
   const maxVal = Math.max(...items.map((i) => i.value), 1);
-  const barWidth = 100 / Math.max(items.length, 1);
+  // Échelle : la plus grande valeur occupe toute la hauteur, les autres restent
+  // proportionnelles mais conservent une hauteur minimale lisible (5 enseignants
+  // face à 281 élèves ne doivent pas s'écraser sur quelques pixels).
+  const MIN_BAR = 8;
+  const maxBar = height - 34;
+  const usable = maxBar - MIN_BAR;
 
   return (
     <div>
-      <svg width="100%" height={height} viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" className="overflow-visible">
-        {/* Lignes de repère */}
-        {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-          <line key={p} x1="0" x2="100" y1={height - p * (height - 30) - 20} y2={height - p * (height - 30) - 20} stroke="#f1f5f9" strokeWidth="0.3" />
-        ))}
+      <div className="flex items-end gap-2" style={{ height: maxBar }}>
         {items.map((item, i) => {
-          const barH = (item.value / maxVal) * (height - 30);
-          const x = i * barWidth + barWidth * 0.15;
-          const w = barWidth * 0.7;
-          const y = height - barH - 20;
+          const barH = item.value === 0 ? 2 : MIN_BAR + Math.round((item.value / maxVal) * usable);
           return (
-            <g key={item.label}>
-              <rect x={x} y={y} width={w} height={barH} rx="1.5" fill={item.color ?? PALETTE[i % PALETTE.length]} opacity="0.85">
-                <animate attributeName="height" from="0" to={barH} dur="0.6s" fill="freeze" />
-                <animate attributeName="y" from={height - 20} to={y} dur="0.6s" fill="freeze" />
-              </rect>
-              <text x={x + w / 2} y={y - 1.5} textAnchor="middle" className="fill-slate-700 text-[3px] font-semibold">
-                {item.value.toLocaleString('fr-FR')}
-              </text>
-            </g>
+            <div key={item.label} className="flex h-full flex-1 flex-col items-center justify-end">
+              <span className="mb-1 text-sm font-semibold text-slate-700">
+                {item.value.toLocaleString('fr-FR')}{unit}
+              </span>
+              <div
+                className="rounded-t-md transition-all duration-500"
+                style={{ height: barH, width: '70%', background: item.color ?? PALETTE[i % PALETTE.length], opacity: 0.85 }}
+                title={`${item.label} : ${item.value.toLocaleString('fr-FR')}${unit}`}
+              />
+            </div>
           );
         })}
-      </svg>
-      <div className="mt-1 flex">
-        {items.map((item, i) => (
-          <div key={item.label} className="flex-1 text-center" style={{ width: `${barWidth}%` }}>
+      </div>
+      <div className="mt-1 flex gap-2">
+        {items.map((item) => (
+          <div key={item.label} className="flex-1 text-center">
             <span className="block truncate text-[11px] text-slate-500">{item.label}</span>
           </div>
         ))}

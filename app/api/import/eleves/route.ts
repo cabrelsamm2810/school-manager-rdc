@@ -17,7 +17,7 @@ interface ParsedRow {
   adresse?: string;
   nomTuteur?: string;
   telephoneTuteur?: string;
-  etablissementId?: string;
+  ecoleId?: string;
 }
 
 /** POST /api/import/eleves — import en masse depuis un fichier Excel/CSV */
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
 
-  const userEtablissementId = auth.user.etablissementId;
+  const userEcoleId = auth.user.ecoleId;
 
   const formData = await request.formData().catch(() => null);
   if (!formData) {
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
           adresse: String(row.adresse ?? '').trim(),
           nomTuteur: String(row.nomTuteur ?? '').trim(),
           telephoneTuteur: String(row.telephoneTuteur ?? '').trim(),
-          etablissementId: String(row.etablissementId ?? '').trim() || userEtablissementId || null,
+          ecoleId: String(row.ecoleId ?? '').trim() || userEcoleId || null,
         },
       });
       existingMatricules.add(matricule);

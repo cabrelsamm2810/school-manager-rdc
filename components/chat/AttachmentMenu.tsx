@@ -7,11 +7,13 @@
 export function AttachmentMenu({
   onCamera,
   onGallery,
+  onVideo,
   onDocument,
   onAudio,
 }: {
   onCamera: () => void;
   onGallery: () => void;
+  onVideo: () => void;
   onDocument: () => void;
   onAudio: () => void;
 }) {
@@ -36,8 +38,19 @@ export function AttachmentMenu({
           <polyline points="21 15 16 10 5 21" />
         </svg>
       ),
-      color: 'bg-violet-500',
+      color: 'bg-brand-500',
       onClick: onGallery,
+    },
+    {
+      label: 'Vidéo',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+          <polygon points="23 7 16 12 23 17 23 7" />
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+        </svg>
+      ),
+      color: 'bg-purple-500',
+      onClick: onVideo,
     },
     {
       label: 'Document',
@@ -66,7 +79,7 @@ export function AttachmentMenu({
 
   return (
     <div
-      className="absolute bottom-full left-0 mb-2 flex gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700"
+      className="absolute bottom-full left-0 z-20 mb-2 flex gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700"
       style={{ animation: 'attachmentMenuIn 0.2s ease-out' }}
     >
       {items.map((item, i) => (

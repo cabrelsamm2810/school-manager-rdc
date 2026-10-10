@@ -15,6 +15,8 @@ export type CrudField = {
   type: FieldType;
   required?: boolean;
   options?: { value: string; label: string }[];
+  optionsEndpoint?: string;   // fetch options from API: GET endpoint → { ecoles: [{id, nom}] }
+  optionsDataKey?: string;    // key in the JSON response (e.g. 'ecoles')
   default?: string | number | boolean;
   half?: boolean; // half-width on desktop
 };
@@ -28,7 +30,12 @@ export type StatConfig = {
 export type FilterConfig = {
   name: string;          // field name to filter on
   label: string;         // dropdown label
-  options?: { value: string; label: string }[]; // static options; if omitted, derived from data
+  options?: { value: string; label: string; [key: string]: any }[]; // static options; if omitted, derived from data
+  optionsEndpoint?: string;   // fetch options from API
+  optionsDataKey?: string;    // key in the JSON response
+  dependsOn?: string;         // parent filter name (cascading)
+  matchField?: string;        // field in this filter's options to match against parent value
+  parentMatchField?: string;  // field in parent's options to get match value (default: parent's value)
 };
 
 export type CrudConfig = {
@@ -99,6 +106,50 @@ export function CrudManager({ config }: { config: CrudConfig }) {
   const [formLoading, setFormLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [asyncOptions, setAsyncOptions] = useState<Record<string, { value: string; label: string; [key: string]: any }[]>>({});
+
+  // Load async options for fields and filters with optionsEndpoint
+  useEffect(() => {
+    const fieldEndpoints = config.fields.filter((f) => f.optionsEndpoint);
+    const filterEndpoints = (config.filters ?? []).filter((f) => f.optionsEndpoint);
+    const all = [
+      ...fieldEndpoints.map((f) => ({ name: f.name, endpoint: f.optionsEndpoint!, dataKey: f.optionsDataKey })),
+      ...filterEndpoints.map((f) => ({ name: f.name, endpoint: f.optionsEndpoint!, dataKey: f.optionsDataKey })),
+    ];
+    if (all.length === 0) return;
+    // Deduplicate by endpoint
+    const seen = new Set<string>();
+    const unique = all.filter((e) => {
+      const key = `${e.endpoint}::${e.name}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        unique.map(async (e) => {
+          try {
+            const res = await fetch(e.endpoint);
+            const data = await res.json();
+            const key = e.dataKey || 'items';
+            const items = data[key] ?? [];
+            return [e.name, items.map((i: any) => ({ ...i, value: i.id, label: i.nom }))] as const;
+          } catch {
+            return [e.name, []] as const;
+          }
+        })
+      );
+      if (!cancelled) {
+        setAsyncOptions((prev) => {
+          const next = { ...prev };
+          for (const [name, opts] of entries) (next as any)[name] = opts;
+          return next;
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Actions groupées ──
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -376,7 +427,7 @@ export function CrudManager({ config }: { config: CrudConfig }) {
                       className={inputClass}
                     >
                       <option value="">— Choisir —</option>
-                      {f.options?.map((o) => (
+                      {(f.options ?? asyncOptions[f.name] ?? []).map((o) => (
                         <option key={o.value} value={o.value}>{o.label}</option>
                       ))}
                     </select>
@@ -466,7 +517,7 @@ export function CrudManager({ config }: { config: CrudConfig }) {
                       className={`${inputClass} disabled:opacity-40`}
                     >
                       <option value="">— Choisir —</option>
-                      {f.options?.map((o) => (
+                      {(f.options ?? asyncOptions[f.name] ?? []).map((o) => (
                         <option key={o.value} value={o.value}>{o.label}</option>
                       ))}
                     </select>
@@ -528,13 +579,46 @@ export function CrudManager({ config }: { config: CrudConfig }) {
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
             {config.filters?.map((f) => {
-              const options = f.options ?? [...new Set(items.map((i) => i[f.name]).filter(Boolean))].sort().map((v) => ({ value: String(v), label: String(v) }));
+              let options = f.options ?? asyncOptions[f.name] ?? [...new Set(items.map((i) => i[f.name]).filter(Boolean))].sort().map((v) => ({ value: String(v), label: String(v) }));
+
+              // Cascading: filter options based on parent filter's value
+              if (f.dependsOn && f.matchField) {
+                const parentValue = filters[f.dependsOn];
+                if (parentValue) {
+                  let matchValue: string = parentValue;
+                  if (f.parentMatchField) {
+                    const parentFilter = config.filters?.find((ff) => ff.name === f.dependsOn);
+                    const parentOptions = parentFilter?.options ?? asyncOptions[f.dependsOn] ?? [];
+                    const parentRecord = parentOptions.find((o: any) => o.value === parentValue);
+                    if (parentRecord) matchValue = (parentRecord as any)[f.parentMatchField];
+                  }
+                  options = options.filter((o: any) => (o as any)[f.matchField!] === matchValue);
+                } else {
+                  options = [];
+                }
+              }
+
               return (
                 <select
                   key={f.name}
                   value={filters[f.name] ?? ''}
-                  onChange={(e) => setFilters({ ...filters, [f.name]: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:w-52"
+                  disabled={!!f.dependsOn && !filters[f.dependsOn]}
+                  onChange={(e) => {
+                    const newFilters = { ...filters, [f.name]: e.target.value };
+                    // Reset every descendant filter (enfant, petit-enfant…) : sinon une valeur
+                    // devenue invalide resterait appliquée à la requête alors que la liste est masquée.
+                    const resetDescendants = (parent: string) => {
+                      for (const child of config.filters ?? []) {
+                        if (child.dependsOn === parent) {
+                          newFilters[child.name] = '';
+                          resetDescendants(child.name);
+                        }
+                      }
+                    };
+                    resetDescendants(f.name);
+                    setFilters(newFilters);
+                  }}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-40 sm:w-52"
                 >
                   <option value="">{f.label}</option>
                   {options.map((o) => (

@@ -1,31 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ALLOWED_FILE_TYPES = [
-  ...ALLOWED_IMAGE_TYPES,
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain',
-  'text/csv',
-  'application/zip',
-  'video/mp4',
-  'audio/mpeg',
-  'audio/mp4',
-  'audio/webm',
-  'audio/ogg',
-  'audio/wav',
-];
+import { uploadFile, resolveFileUrl } from '@/lib/storage';
+import { getStoredFileSize, validateChatFile } from '@/lib/chat-files';
 
 export async function GET(
   request: NextRequest,
@@ -74,17 +51,20 @@ export async function GET(
   });
 
   return NextResponse.json(
-    messages.map((m) => ({
-      id: m.id,
-      content: m.content,
-      senderId: m.senderId,
-      createdAt: m.createdAt,
-      read: m.read,
-      fileUrl: m.fileUrl,
-      fileName: m.fileName,
-      fileType: m.fileType,
-      replyToId: m.replyToId,
-    }))
+    await Promise.all(
+      messages.map(async (m) => ({
+        id: m.id,
+        content: m.content,
+        senderId: m.senderId,
+        createdAt: m.createdAt,
+        read: m.read,
+        fileUrl: await resolveFileUrl(m.fileUrl, { signed: true }),
+        fileName: m.fileName,
+        fileType: m.fileType,
+        fileSize: await getStoredFileSize(m.fileUrl),
+        replyToId: m.replyToId,
+      }))
+    )
   );
 }
 
@@ -115,6 +95,7 @@ export async function POST(
   let fileUrl: string | null = null;
   let fileName: string | null = null;
   let fileType: string | null = null;
+  let fileSize: number | null = null;
   let replyToId: string | null = null;
 
   if (contentType.includes('multipart/form-data')) {
@@ -131,30 +112,21 @@ export async function POST(
       return NextResponse.json({ error: 'Aucun fichier reçu.' }, { status: 400 });
     }
 
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Type de fichier non supporté.' }, { status: 400 });
+    const validationError = validateChatFile(file);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'Le fichier dépasse 10 Mo.' }, { status: 400 });
-    }
-
-    // Sauvegarde le fichier
-    const ext = file.name.split('.').pop() || 'bin';
+    // Sauvegarde le fichier (R2 ou local)
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const uniqueName = `${Date.now()}-${safeName}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'chat-files');
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const { storedUrl } = await uploadFile('chat-files', uniqueName, bytes, file.type || 'application/octet-stream');
 
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    const bytes = await file.arrayBuffer();
-    await writeFile(path.join(uploadDir, uniqueName), Buffer.from(bytes));
-
-    fileUrl = `/uploads/chat-files/${uniqueName}`;
+    fileUrl = storedUrl;
     fileName = file.name;
     fileType = file.type;
+    fileSize = file.size;
   } else {
     // ── Message texte seul ──
     const body = await request.json();
@@ -190,9 +162,10 @@ export async function POST(
     senderId: message.senderId,
     createdAt: message.createdAt,
     read: message.read,
-    fileUrl: message.fileUrl,
+    fileUrl: await resolveFileUrl(message.fileUrl, { signed: true }),
     fileName: message.fileName,
     fileType: message.fileType,
+    fileSize,
     replyToId: message.replyToId,
   });
 }

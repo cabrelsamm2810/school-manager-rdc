@@ -6,8 +6,8 @@ import { PageHeader } from '@/components/ui/Card';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrImportDialog } from '@/components/import/OcrImportDialog';
 
-type ImportType = 'etablissements' | 'enseignants' | null;
-type OcrType = 'etablissements' | 'enseignants' | 'eleves' | null;
+type ImportType = 'ecoles' | 'enseignants' | null;
+type OcrType = 'ecoles' | 'enseignants' | 'eleves' | null;
 
 export default function ImportPage() {
   const [activeImport, setActiveImport] = useState<ImportType>(null);
@@ -24,9 +24,9 @@ export default function ImportPage() {
           />
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {/* Carte Établissements */}
+            {/* Carte Écoles */}
             <button
-              onClick={() => setActiveImport('etablissements')}
+              onClick={() => setActiveImport('ecoles')}
               className="group rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-soft transition hover:border-blue-300 hover:shadow-md"
             >
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-100">
@@ -35,7 +35,7 @@ export default function ImportPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                 </svg>
               </div>
-              <h3 className="text-base font-bold text-slate-900">Importer des établissements</h3>
+              <h3 className="text-base font-bold text-slate-900">Importer des écoles</h3>
               <p className="mt-1 text-sm text-slate-500">
                 Écoles, collèges, lycées — nom, type, province, effectif…
               </p>
@@ -54,7 +54,7 @@ export default function ImportPage() {
               </div>
               <h3 className="text-base font-bold text-slate-900">Importer des enseignants</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Nom, matricule, grade, établissement, spécialité…
+                Nom, matricule, grade, école, spécialité…
               </p>
               <p className="mt-3 text-xs font-medium text-blue-600">Téléverser un fichier →</p>
             </button>
@@ -88,13 +88,13 @@ export default function ImportPage() {
                 <p className="mt-0.5 text-xs text-slate-500">Photo d'un registre</p>
               </button>
               <button
-                onClick={() => setActiveOcr('etablissements')}
+                onClick={() => setActiveOcr('ecoles')}
                 className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-soft transition hover:border-blue-300 hover:shadow-md"
               >
                 <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-100">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" /></svg>
                 </div>
-                <h4 className="text-sm font-bold text-slate-900">Établissements</h4>
+                <h4 className="text-sm font-bold text-slate-900">Écoles</h4>
                 <p className="mt-0.5 text-xs text-slate-500">Photo d'une fiche d'école</p>
               </button>
             </div>
@@ -113,10 +113,10 @@ export default function ImportPage() {
         </div>
       </div>
 
-      {activeImport === 'etablissements' && (
+      {activeImport === 'ecoles' && (
         <ImportDialog
-          endpoint="/api/import/etablissements"
-          moduleName="Établissements"
+          endpoint="/api/import/ecoles"
+          moduleName="Écoles"
           columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
           onImported={() => {}}
           onClose={() => setActiveImport(null)}
@@ -127,7 +127,7 @@ export default function ImportPage() {
         <ImportDialog
           endpoint="/api/import/enseignants"
           moduleName="Enseignants"
-          columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
+          columns={['nom', 'matricule', 'grade', 'ecole', 'specialite', 'telephone', 'email', 'statut']}
           onImported={() => {}}
           onClose={() => setActiveImport(null)}
         />
@@ -137,7 +137,7 @@ export default function ImportPage() {
         <OcrImportDialog
           endpoint="/api/import/eleves"
           moduleName="Élèves"
-          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId']}
+          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'ecoleId']}
           onImported={() => {}}
           onClose={() => setActiveOcr(null)}
         />
@@ -147,16 +147,16 @@ export default function ImportPage() {
         <OcrImportDialog
           endpoint="/api/import/enseignants"
           moduleName="Enseignants"
-          columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
+          columns={['nom', 'matricule', 'grade', 'ecole', 'specialite', 'telephone', 'email', 'statut']}
           onImported={() => {}}
           onClose={() => setActiveOcr(null)}
         />
       )}
 
-      {activeOcr === 'etablissements' && (
+      {activeOcr === 'ecoles' && (
         <OcrImportDialog
-          endpoint="/api/import/etablissements"
-          moduleName="Établissements"
+          endpoint="/api/import/ecoles"
+          moduleName="Écoles"
           columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
           onImported={() => {}}
           onClose={() => setActiveOcr(null)}

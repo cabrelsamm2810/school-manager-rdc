@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
-import { getScopeLevel } from '@/lib/territory-filter';
+import { buildEleveScopeWhere } from '@/lib/territory-filter';
 
 const createSchema = z.object({
   matricule: z.string().trim().min(1, 'Le matricule est obligatoire.'),
@@ -19,24 +19,24 @@ const createSchema = z.object({
   nomTuteur: z.string().trim().optional().or(z.literal('')),
   telephoneTuteur: z.string().trim().optional().or(z.literal('')),
   emailTuteur: z.string().trim().email('L\u2019email du parent est invalide.').optional().or(z.literal('')),
-  etablissementId: z.string().trim().optional().or(z.literal(''))
+  ecoleId: z.string().trim().optional().or(z.literal(''))
 });
 
 /** GET /api/eleves — liste des élèves (filtrable par classe et recherche). */
 export async function GET(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
   const classe = searchParams.get('classe') || undefined;
-  const etablissementId = searchParams.get('etablissementId') || undefined;
+  const ecoleId = searchParams.get('ecoleId') || undefined;
   const search = searchParams.get('search') || undefined;
 
   const where: Record<string, unknown> = {};
   if (classe) where.classe = classe;
-  if (etablissementId) where.etablissementId = etablissementId;
+  if (ecoleId) where.ecoleId = ecoleId;
   if (search) {
     where.OR = [
       { nom: { contains: search, mode: 'insensitive' } },
@@ -46,22 +46,12 @@ export async function GET(request: NextRequest) {
     ];
   }
 
-  // Filtrage hiérarchique par périmètre territorial (via l'établissement)
-  const scope = getScopeLevel(auth.user.role);
-  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
-    where.etablissement = { coordSousProvincialeId: (auth.user as any).coordSousProvincialeId };
-  } else if (scope === 'school' && (auth.user as any).etablissementId) {
-    where.etablissementId = (auth.user as any).etablissementId;
-  } else if (scope !== 'national') {
-    const userProv = (auth.user as any).provinceAdministrative;
-    if (userProv) {
-      where.etablissement = { province: userProv };
-    }
-  }
+  // Filtrage hiérarchique par périmètre territorial (via l'école)
+  Object.assign(where, buildEleveScopeWhere(auth.user));
 
   const eleves = await prisma.eleve.findMany({
     where,
-    include: { etablissement: { select: { id: true, nom: true, province: true } } },
+    include: { ecole: { select: { id: true, nom: true, province: true } } },
     orderBy: [{ classe: 'asc' }, { nom: 'asc' }]
   });
 
@@ -70,7 +60,7 @@ export async function GET(request: NextRequest) {
 
 /** POST /api/eleves — enregistrer un nouvel élève. */
 export async function POST(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
@@ -106,8 +96,8 @@ export async function POST(request: NextRequest) {
       nomTuteur: data.nomTuteur ?? '',
       telephoneTuteur: data.telephoneTuteur ?? '',
       emailTuteur: data.emailTuteur ?? '',
-      etablissement: data.etablissementId
-        ? { connect: { id: data.etablissementId } }
+      ecole: data.ecoleId
+        ? { connect: { id: data.ecoleId } }
         : undefined
     }
   });
@@ -117,7 +107,7 @@ export async function POST(request: NextRequest) {
 
 /** PATCH /api/eleves — mise à jour groupée de plusieurs élèves. */
 export async function PATCH(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
@@ -128,10 +118,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   const updateData: Record<string, unknown> = {};
-  const allowedFields = ['classe', 'sexe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'emailTuteur', 'etablissementId'];
+  const allowedFields = ['classe', 'sexe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'emailTuteur', 'ecoleId'];
   for (const field of allowedFields) {
     if (body.data?.[field] === undefined || body.data[field] === '' || body.data[field] === null) continue;
-    updateData[field] = field === 'etablissementId'
+    updateData[field] = field === 'ecoleId'
       ? body.data[field]
       : body.data[field];
   }
@@ -141,16 +131,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   // Filtrage hiérarchique
-  const scope = getScopeLevel(auth.user.role);
-  const scopeWhere: Record<string, unknown> = {};
-  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
-    scopeWhere.etablissement = { coordSousProvincialeId: (auth.user as any).coordSousProvincialeId };
-  } else if (scope === 'school' && (auth.user as any).etablissementId) {
-    scopeWhere.etablissementId = (auth.user as any).etablissementId;
-  } else if (scope !== 'national') {
-    const userProv = (auth.user as any).provinceAdministrative;
-    if (userProv) scopeWhere.etablissement = { province: userProv };
-  }
+  const scopeWhere = buildEleveScopeWhere(auth.user);
 
   const result = await prisma.eleve.updateMany({
     where: { id: { in: body.ids }, ...scopeWhere },
@@ -162,7 +143,7 @@ export async function PATCH(request: NextRequest) {
 
 /** DELETE /api/eleves — suppression groupée de plusieurs élèves. */
 export async function DELETE(request: NextRequest) {
-  const auth = await requireRole(request, 'DIRECTION_ECOLE');
+  const auth = await requireRole(request, 'COMPTABLE');
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: 403 });
   }
@@ -173,16 +154,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   // Filtrage hiérarchique
-  const scope = getScopeLevel(auth.user.role);
-  const scopeWhere: Record<string, unknown> = {};
-  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
-    scopeWhere.etablissement = { coordSousProvincialeId: (auth.user as any).coordSousProvincialeId };
-  } else if (scope === 'school' && (auth.user as any).etablissementId) {
-    scopeWhere.etablissementId = (auth.user as any).etablissementId;
-  } else if (scope !== 'national') {
-    const userProv = (auth.user as any).provinceAdministrative;
-    if (userProv) scopeWhere.etablissement = { province: userProv };
-  }
+  const scopeWhere = buildEleveScopeWhere(auth.user);
 
   const result = await prisma.eleve.deleteMany({
     where: { id: { in: body.ids }, ...scopeWhere },
