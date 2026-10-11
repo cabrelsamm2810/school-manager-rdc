@@ -114,6 +114,18 @@ export async function GET(request: NextRequest) {
     ...recentVisites.map((v) => `Visite — ${v.ecole}${v.objet ? ' : ' + v.objet : ''}`),
   ];
 
+  // ── Coordonnées GPS de l'école (scope school uniquement) ──
+  let ecoleGeo: { latitude: number | null; longitude: number | null } | null = null;
+  if (scope === 'school' && etabId) {
+    const ecole = await prisma.ecole.findUnique({
+      where: { id: etabId },
+      select: { latitude: true, longitude: true },
+    });
+    if (ecole) {
+      ecoleGeo = { latitude: ecole.latitude, longitude: ecole.longitude };
+    }
+  }
+
   return NextResponse.json({
     stats: {
       totalEleves,
@@ -132,5 +144,6 @@ export async function GET(request: NextRequest) {
     activite: activite.slice(0, 5),
     scope,
     provinceLabel: prov || null,
+    ecoleGeo,
   });
 }

@@ -3,17 +3,19 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { canAccessPath } from '@/lib/route-access';
+import { GeoLocationMap } from '@/components/ecoles/GeoLocationMap';
 import { StatCard } from './StatCard';
 import { DonutChart, BarCompare } from './Charts';
 import { RecentActivity } from './RecentActivity';
 import type { BreakdownItem, ChartItem, DashboardStats } from './types';
 
-export function SchoolDashboard({ stats, breakdown, chartData, activite, role }: {
+export function SchoolDashboard({ stats, breakdown, chartData, activite, role, ecoleGeo }: {
   stats: DashboardStats;
   breakdown: BreakdownItem[];
   chartData: ChartItem[];
   activite: string[];
   role: string;
+  ecoleGeo: { latitude: number | null; longitude: number | null } | null;
 }) {
   const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -64,6 +66,17 @@ export function SchoolDashboard({ stats, breakdown, chartData, activite, role }:
               ]}
             />
           </div>
+        </div>
+      </div>
+
+      {/* ── Géolocalisation de l'école ── */}
+      <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-shadow duration-300 hover:shadow-md sm:p-5">
+        <div className="flex items-center gap-2">
+          <Icon name="location" className="h-5 w-5 text-amber-600" />
+          <h2 className="text-[15px] font-semibold text-slate-900">Localisation de l'école</h2>
+        </div>
+        <div className="mt-4">
+          <GeoLocationMap latitude={ecoleGeo?.latitude ?? null} longitude={ecoleGeo?.longitude ?? null} />
         </div>
       </div>
 
