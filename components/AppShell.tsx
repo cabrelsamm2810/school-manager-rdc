@@ -13,6 +13,7 @@ import { SchoolChatMark } from '@/components/ui/SchoolChatMark';
 import { DigitalClock } from '@/components/dashboards/DigitalClock';
 import { BottomNav } from '@/components/dashboards/BottomNav';
 import { RefreshButton } from '@/components/ui/RefreshButton';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { MobileNavDrawer } from '@/components/dashboards/MobileNavDrawer';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -92,17 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <RefreshButton />
 
-            <Link
-              href="/notifications"
-              className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 active:bg-slate-200"
-              aria-label="Notifications"
-            >
-              <Icon name="bell" className="h-[18px] w-[18px]" />
-              <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
-              </span>
-            </Link>
+            <NotificationBell />
 
             {user ? (
               <div className="relative">

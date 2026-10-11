@@ -162,6 +162,63 @@ export async function sendPresenceNotification(opts: {
 }
 
 /**
+ * Envoie un email de notification aux coordinateurs quand une école soumet son dossier.
+ */
+export async function sendDocumentSubmissionEmail(opts: {
+  to: string;
+  coordinatorName: string;
+  ecoleNom: string;
+  docCount: number;
+  coordName: string;
+}): Promise<void> {
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #1e3a5f; font-size: 22px; margin: 0;">School Manager RDC</h1>
+        <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Nouveau dossier reçu</p>
+      </div>
+      <div style="background: #f0f9ff; border-left: 4px solid #2563eb; border-radius: 12px; padding: 24px;">
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">
+          Bonjour ${opts.coordinatorName || 'Coordonnateur'},
+        </p>
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">
+          L'école <strong>${opts.ecoleNom}</strong> a soumis son dossier de documents officiels
+          (${opts.docCount} document${opts.docCount > 1 ? 's' : ''}) pour vérification.
+        </p>
+        <div style="background: white; border-radius: 8px; padding: 14px; margin: 16px 0;">
+          <p style="color: #64748b; font-size: 13px; margin: 0;">
+            Le dossier est désormais <strong>en attente de vérification</strong>.
+            Connectez-vous à votre espace pour consulter et traiter les documents soumis.
+          </p>
+        </div>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/coordination-sous-provinciale"
+           style="display: inline-block; background: #2563eb; color: white; text-decoration: none;
+                  padding: 12px 28px; border-radius: 9999px; font-size: 14px; font-weight: 600; margin-top: 8px;">
+          Consulter le dossier
+        </a>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">
+        Cet email a été envoyé automatiquement par School Manager RDC.
+      </p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: opts.to,
+      subject: `School Manager RDC — Dossier reçu : ${opts.ecoleNom}`,
+      html,
+    });
+  } catch (error) {
+    console.error('Erreur envoi notification de dossier:', error);
+    throw error;
+  }
+}
+
+/**
  * Envoie un email de rappel de saisie des cotes à un enseignant.
  */
 export async function sendRappelCote(
