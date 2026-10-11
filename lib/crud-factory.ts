@@ -10,6 +10,7 @@ export type CrudFieldDef = {
   required?: boolean;
   unique?: boolean;
   min?: number;
+  nullable?: boolean; // empty string → null in payload (for optional FKs)
 };
 
 export type CrudModelConfig = {
@@ -20,10 +21,12 @@ export type CrudModelConfig = {
   searchFields: string[];
   fields: CrudFieldDef[];
   defaultSort?: { field: string; order: 'asc' | 'desc' };
-  provinceField?: string;
+  provinceField?: string | false;
   sousProvincialeField?: string;
-  etablissementField?: string;
+  ecoleField?: string;
   institutionField?: string | false;
+  include?: Record<string, unknown>; // Prisma relations to include in GET
+  extraFilters?: Record<string, (val: string) => Record<string, unknown>>; // custom filters (e.g. through relations)
 };
 
 function buildSchema(fields: CrudFieldDef[]) {
@@ -57,6 +60,7 @@ function toPayload(body: Record<string, any>, fields: CrudFieldDef[]) {
       payload[f.name] = val ? new Date(val) : null;
     } else {
       payload[f.name] = val ?? '';
+      if (f.nullable && !payload[f.name]) payload[f.name] = null;
     }
   }
   return payload;
@@ -93,7 +97,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeConfig: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeWhere = buildScopeWhere(auth.user, scopeConfig);
@@ -104,11 +108,25 @@ export function createCrudHandlers(config: CrudModelConfig) {
       }
     }
 
+    // Apply extra custom filters (e.g. through relations)
+    if (config.extraFilters) {
+      for (const [paramName, filterFn] of Object.entries(config.extraFilters)) {
+        const val = searchParams.get(paramName);
+        if (val) {
+          Object.assign(where, filterFn(val));
+        }
+      }
+    }
+
     const orderBy = config.defaultSort
       ? { [config.defaultSort.field]: config.defaultSort.order }
       : { createdAt: 'desc' as const };
 
-    const items = await config.delegate.findMany({ where, orderBy });
+    const items = await config.delegate.findMany({
+      where,
+      orderBy,
+      ...(config.include ? { include: config.include } : {}),
+    });
     return NextResponse.json({ [config.entityNamePlural]: items });
   }
 
@@ -161,7 +179,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
@@ -198,7 +216,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
@@ -242,7 +260,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);
@@ -270,7 +288,7 @@ export function createCrudHandlers(config: CrudModelConfig) {
     const scopeCfg: ScopeConfig = {
       provinceField: config.provinceField,
       sousProvincialeField: config.sousProvincialeField,
-      etablissementField: config.etablissementField,
+      ecoleField: config.ecoleField,
       institutionField: config.institutionField,
     };
     const scopeW = buildScopeWhere(auth.user, scopeCfg);

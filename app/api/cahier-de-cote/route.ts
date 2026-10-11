@@ -4,28 +4,31 @@ import { requireRole } from '@/lib/rbac';
 import { buildScopeWhere } from '@/lib/territory-filter';
 import { calculateGrades, getCurrentAnneeScolaire, isValidCote } from '@/lib/cahier-de-cote';
 
-/** GET — liste des cotes filtrées par établissement, classe, cours, période. */
+/** GET — liste des cotes filtrées par école, classe, cours, période. */
 export async function GET(request: NextRequest) {
   const auth = await requireRole(request, 'ENSEIGNANT');
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const etablissementId = searchParams.get('etablissementId') || undefined;
+  const ecoleId = searchParams.get('ecoleId') || undefined;
   const classe = searchParams.get('classe') || undefined;
   const cours = searchParams.get('cours') || undefined;
   const periode = searchParams.get('periode') || undefined;
   const anneeScolaire = searchParams.get('anneeScolaire') || getCurrentAnneeScolaire();
 
   const where: Record<string, unknown> = { anneeScolaire };
-  if (etablissementId) where.etablissementId = etablissementId;
+  if (ecoleId) where.ecoleId = ecoleId;
   if (classe) where.classe = classe;
   if (cours) where.cours = cours;
   if (periode) where.periode = periode;
 
   // Filtrage hiérarchique par périmètre
   const scopeWhere = buildScopeWhere(auth.user, {
-    etablissementField: 'etablissementId',
-    provinceField: 'etablissementNom',
+    ecoleField: 'ecoleId',
+    // CahierDeCote n'a pas de champ `institution` ni `province` : le libellé
+    // `ecoleNom` sert de repli provincial, le filtre institution est désactivé.
+    provinceField: 'ecoleNom',
+    institutionField: false,
   });
   if (Object.keys(scopeWhere).length > 0) {
     where.AND = [scopeWhere];
@@ -50,8 +53,8 @@ export async function POST(request: NextRequest) {
   }
 
   const {
-    etablissementId = null,
-    etablissementNom = '',
+    ecoleId = null,
+    ecoleNom = '',
     classe,
     cours,
     enseignantNom = '',
@@ -89,8 +92,8 @@ export async function POST(request: NextRequest) {
     const { total, moyenne, pourcentage, mention } = calculateGrades(d1, d2, ex);
 
     const data = {
-      etablissementId: etablissementId || null,
-      etablissementNom,
+      ecoleId: ecoleId || null,
+      ecoleNom,
       classe,
       cours,
       enseignantNom,

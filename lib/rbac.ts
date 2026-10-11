@@ -1,41 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/session-user';
+import { ROLE_LABELS, ROLE_RANK } from '@/lib/roles';
 
-/**
- * Hiérarchie des rôles RBAC de School Manager RDC.
- * Plus le rang est élevé, plus l'utilisateur a de privilèges.
- */
-export const ROLE_RANK: Record<string, number> = {
-  SUPER_ADMIN: 10,
-  COORDINATION_NATIONALE: 9,
-  COORDINATION_PROVINCIALE: 8,
-  AGENT_PROVINCIAL: 7,
-  COORDINATION_SOUS_PROVINCIALE: 6,
-  AGENT_SOUS_PROVINCIAL: 5,
-  DIRECTION_ECOLE: 4,
-  ENSEIGNANT: 3,
-  PARENT: 2,
-  ELEVE: 1
-};
+// Hiérarchie et libellés des rôles : définis dans `lib/roles.ts` (module pur,
+// importable par le middleware edge) et ré-exportés ici pour les appelants
+// historiques de `@/lib/rbac`.
+export { ROLE_LABELS, ROLE_RANK };
 
 export const ALL_ROLES = Object.keys(ROLE_RANK) as (keyof typeof ROLE_RANK)[];
 
-/** Labels affichables pour chaque rôle. */
-export const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: 'Super administrateur',
-  COORDINATION_NATIONALE: 'Coordination nationale',
-  COORDINATION_PROVINCIALE: 'Coordination provinciale',
-  AGENT_PROVINCIAL: 'Agent provincial',
-  COORDINATION_SOUS_PROVINCIALE: 'Coordination sous provinciale',
-  AGENT_SOUS_PROVINCIAL: 'Agent sous provincial',
-  DIRECTION_ECOLE: 'Chef d’établissement',
-  ENSEIGNANT: 'Enseignant',
-  PARENT: 'Parent',
-  ELEVE: 'Élève'
-};
-
 export function isSuperAdmin(role: string): boolean {
   return role === 'SUPER_ADMIN';
+}
+
+export function isAdminSMD(role: string): boolean {
+  return role === 'ADMIN_SCHOOL_MANAGER_RDC';
+}
+
+export function isRestrictedRole(role: string): boolean {
+  return role === 'SUPER_ADMIN' || role === 'ADMIN_SCHOOL_MANAGER_RDC';
 }
 
 export function hasAtLeastRole(userRole: string, requiredRole: string): boolean {

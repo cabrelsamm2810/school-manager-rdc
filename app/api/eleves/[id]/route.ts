@@ -18,7 +18,7 @@ const updateSchema = z.object({
   nomTuteur: z.string().trim().optional().or(z.literal('')),
   telephoneTuteur: z.string().trim().optional().or(z.literal('')),
   emailTuteur: z.string().trim().email('L\u2019email du parent est invalide.').optional().or(z.literal('')),
-  etablissementId: z.string().trim().optional().or(z.literal(''))
+  ecoleId: z.string().trim().optional().or(z.literal(''))
 });
 
 /** PUT /api/eleves/[id] — modifier un élève. */
@@ -68,8 +68,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       nomTuteur: data.nomTuteur ?? '',
       telephoneTuteur: data.telephoneTuteur ?? '',
       emailTuteur: data.emailTuteur ?? '',
-      etablissement: data.etablissementId
-        ? { connect: { id: data.etablissementId } }
+      ecole: data.ecoleId
+        ? { connect: { id: data.ecoleId } }
         : { disconnect: true }
     }
   });

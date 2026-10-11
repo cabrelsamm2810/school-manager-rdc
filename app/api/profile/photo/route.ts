@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
+import { resolveFileUrl } from '@/lib/storage';
 
 const uploadProfilePhotoSchema = z.object({
   profilePhotoUrl: z.string().url('URL de photo invalide.')
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     message: 'Photo de profil mise à jour.',
     user: {
       id: user.id,
-      profilePhotoUrl: user.profilePhotoUrl
+      profilePhotoUrl: await resolveFileUrl(user.profilePhotoUrl)
     }
   });
 }

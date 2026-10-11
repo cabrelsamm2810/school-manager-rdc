@@ -9,7 +9,7 @@ type Bulletin = {
   eleveNom: string;
   eleveMatricule: string;
   classe: string;
-  etablissementNom: string;
+  ecoleNom: string;
   periode: string;
   anneeScolaire: string;
   donnees: string;
@@ -154,7 +154,7 @@ export function BulletinPreview({
                     <img src="/logo.png" alt="School Manager RDC" className="h-14 w-14 object-contain" />
                     <div>
                       <h1 className="text-lg font-bold text-slate-900">School Manager RDC</h1>
-                      <p className="text-xs text-slate-500">{bulletin.etablissementNom || 'Établissement'}</p>
+                      <p className="text-xs text-slate-500">{bulletin.ecoleNom || 'École'}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -179,8 +179,8 @@ export function BulletinPreview({
                     <p className="text-sm font-medium text-slate-700">{bulletin.classe}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Établissement</p>
-                    <p className="text-sm font-medium text-slate-700">{bulletin.etablissementNom || '—'}</p>
+                    <p className="text-xs text-slate-500">École</p>
+                    <p className="text-sm font-medium text-slate-700">{bulletin.ecoleNom || '—'}</p>
                   </div>
                 </div>
 

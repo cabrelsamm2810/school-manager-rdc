@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { PresenceScanner } from './PresenceScanner';
+import { isSimpleFlowClass } from '@/lib/presence-flow';
 
 type Eleve = {
   id: string;
@@ -40,11 +41,13 @@ export function PresenceManager() {
 
   // Charger les classes disponibles
   useEffect(() => {
-    fetch('/api/eleves')
+    fetch('/api/enseignant/eleves')
       .then((r) => r.json())
       .then((data) => {
         if (data.eleves) {
-          const uniqueClasses = [...new Set<string>(data.eleves.map((e: Eleve) => e.classe))].sort();
+          const uniqueClasses = [...new Set<string>(data.eleves.map((e: Eleve) => e.classe))]
+            .filter(isSimpleFlowClass)
+            .sort();
           setClasses(uniqueClasses);
         }
       })
@@ -57,7 +60,7 @@ export function PresenceManager() {
       setEleves([]);
       return;
     }
-    fetch(`/api/eleves?classe=${encodeURIComponent(selectedClass)}`)
+    fetch(`/api/enseignant/eleves?classe=${encodeURIComponent(selectedClass)}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.eleves) {

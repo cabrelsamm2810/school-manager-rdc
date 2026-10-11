@@ -20,12 +20,12 @@ type EleveFormProps = {
     nomTuteur: string;
     telephoneTuteur: string;
     emailTuteur: string;
-    etablissementId: string | null;
+    ecoleId: string | null;
   };
   onUpdated?: () => void;
 };
 
-type Etablissement = {
+type Ecole = {
   id: string;
   nom: string;
 };
@@ -45,7 +45,7 @@ const emptyForm = {
   nomTuteur: '',
   telephoneTuteur: '',
   emailTuteur: '',
-  etablissementId: ''
+  ecoleId: ''
 };
 
 const inputClass =
@@ -58,13 +58,13 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [etablissements, setEtablissements] = useState<Etablissement[]>([]);
+  const [ecoles, setEcoles] = useState<Ecole[]>([]);
 
   useEffect(() => {
-    fetch('/api/etablissements')
+    fetch('/api/ecoles')
       .then((res) => res.json())
       .then((data) => {
-        if (data.etablissements) setEtablissements(data.etablissements);
+        if (data.ecoles) setEcoles(data.ecoles);
       })
       .catch(() => {});
   }, []);
@@ -87,7 +87,7 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
         nomTuteur: eleve.nomTuteur,
         telephoneTuteur: eleve.telephoneTuteur,
         emailTuteur: eleve.emailTuteur ?? '',
-        etablissementId: eleve.etablissementId ?? '',
+        ecoleId: eleve.ecoleId ?? '',
       });
     }
   }, [eleve]);
@@ -151,15 +151,15 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="etablissementId" className={labelClass}>Établissement</label>
+          <label htmlFor="ecoleId" className={labelClass}>École</label>
           <select
-            id="etablissementId"
-            value={form.etablissementId}
-            onChange={(e) => updateField('etablissementId', e.target.value)}
+            id="ecoleId"
+            value={form.ecoleId}
+            onChange={(e) => updateField('ecoleId', e.target.value)}
             className={inputClass}
           >
             <option value="">— Non assigné —</option>
-            {etablissements.map((et) => (
+            {ecoles.map((et) => (
               <option key={et.id} value={et.id}>{et.nom}</option>
             ))}
           </select>

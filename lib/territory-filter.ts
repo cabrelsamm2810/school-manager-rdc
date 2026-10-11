@@ -1,11 +1,9 @@
-import { ROLE_RANK } from '@/lib/rbac';
-
 export type AuthUser = {
   id: string;
   role: string;
   provinceAdministrative?: string;
   coordSousProvincialeId?: string | null;
-  etablissementId?: string | null;
+  ecoleId?: string | null;
   typeInstitution?: string;
   institutionName?: string;
 };
@@ -13,12 +11,12 @@ export type AuthUser = {
 export type ScopeLevel = 'national' | 'provincial' | 'sousProvincial' | 'school';
 
 export type ScopeConfig = {
-  /** Champ du modèle correspondant à la province (défaut: 'province'). */
-  provinceField?: string;
+  /** Champ du modèle correspondant à la province (défaut: 'province'). Mettre à false pour désactiver le filtre. */
+  provinceField?: string | false;
   /** Champ du modèle correspondant à coordSousProvincialeId (FK). Utiliser 'id' si le modèle EST CoordSousProvinciale. */
   sousProvincialeField?: string;
-  /** Champ du modèle correspondant à etablissementId (FK). Utiliser 'id' si le modèle EST Etablissement. */
-  etablissementField?: string;
+  /** Champ du modèle correspondant à ecoleId (FK). Utiliser 'id' si le modèle EST Ecole. */
+  ecoleField?: string;
   /** Champ du modèle correspondant à l'institution (défaut: 'institution'). Mettre à false pour désactiver le filtre. */
   institutionField?: string | false;
 };
@@ -28,14 +26,23 @@ export type ScopeConfig = {
  * - national : SUPER_ADMIN, COORDINATION_NATIONALE → voient tout
  * - provincial : COORDINATION_PROVINCIALE, AGENT_PROVINCIAL → voient leur province
  * - sousProvincial : COORDINATION_SOUS_PROVINCIALE, AGENT_SOUS_PROVINCIAL → voient leur sous-division
- * - school : DIRECTION_ECOLE, ENSEIGNANT → voient leur établissement
+ * - school : DIRECTION_ECOLE, ENSEIGNANT → voient leur école
  */
 export function getScopeLevel(role: string): ScopeLevel {
-  const rank = ROLE_RANK[role] ?? 0;
-  if (rank >= ROLE_RANK['COORDINATION_NATIONALE']) return 'national';
-  if (rank >= ROLE_RANK['COORDINATION_PROVINCIALE']) return 'provincial';
-  if (rank >= ROLE_RANK['COORDINATION_SOUS_PROVINCIALE']) return 'sousProvincial';
-  return 'school';
+  switch (role) {
+    case 'SUPER_ADMIN':
+    case 'ADMIN_SCHOOL_MANAGER_RDC':
+    case 'COORDINATION_NATIONALE':
+      return 'national';
+    case 'COORDINATION_PROVINCIALE':
+    case 'AGENT_PROVINCIAL':
+      return 'provincial';
+    case 'COORDINATION_SOUS_PROVINCIALE':
+    case 'AGENT_SOUS_PROVINCIAL':
+      return 'sousProvincial';
+    default:
+      return 'school';
+  }
 }
 
 /** Renvoie true si l'utilisateur a un accès national (voit toutes les données). */
@@ -68,9 +75,13 @@ export function buildScopeWhere(
 
   if (scope === 'national') return where;
 
+  // Certains modèles n'ont aucun champ territorial (provinceField: false) :
+  // ils ne peuvent pas être filtrés par périmètre.
+  const provinceField = config.provinceField === false ? null : config.provinceField ?? 'province';
+
   if (scope === 'provincial') {
     const prov = user.provinceAdministrative;
-    if (prov) where[config.provinceField ?? 'province'] = prov;
+    if (provinceField && prov) where[provinceField] = prov;
     return where;
   }
 
@@ -81,18 +92,18 @@ export function buildScopeWhere(
     } else {
       // Sinon, repli sur la province
       const prov = user.provinceAdministrative;
-      if (prov) where[config.provinceField ?? 'province'] = prov;
+      if (provinceField && prov) where[provinceField] = prov;
     }
     return where;
   }
 
   // school : DIRECTION_ECOLE, ENSEIGNANT
-  if (config.etablissementField && user.etablissementId) {
-    where[config.etablissementField] = user.etablissementId;
+  if (config.ecoleField && user.ecoleId) {
+    where[config.ecoleField] = user.ecoleId;
   } else {
-    // Repli sur la province pour les modèles sans lien direct à un établissement
+    // Repli sur la province pour les modèles sans lien direct à un école
     const prov = user.provinceAdministrative;
-    if (prov) where[config.provinceField ?? 'province'] = prov;
+    if (provinceField && prov) where[provinceField] = prov;
   }
   return where;
 }
@@ -108,4 +119,29 @@ export function mergeScopeFilter(
   const scopeFilter = buildScopeWhere(user, config);
   if (Object.keys(scopeFilter).length === 0) return baseWhere;
   return { AND: [baseWhere, scopeFilter] };
+}
+
+/**
+ * Filtre de périmètre pour les modèles élèves (`Eleve`) : ils n'ont ni `province`
+ * ni `institution`, la province passe donc par la relation `ecole`.
+ *
+ * @returns Un objet `where` Prisma valide pour `prisma.eleve`.
+ */
+export function buildEleveScopeWhere(user: AuthUser | null): Record<string, unknown> {
+  if (!user) return {};
+
+  const scope = getScopeLevel(user.role);
+  const where: Record<string, unknown> = {};
+
+  if (scope === 'national') return where;
+
+  if (scope === 'sousProvincial' && user.coordSousProvincialeId) {
+    where.ecole = { coordSousProvincialeId: user.coordSousProvincialeId };
+  } else if (scope === 'school' && user.ecoleId) {
+    where.ecoleId = user.ecoleId;
+  } else if (user.provinceAdministrative) {
+    where.ecole = { province: user.provinceAdministrative };
+  }
+
+  return where;
 }

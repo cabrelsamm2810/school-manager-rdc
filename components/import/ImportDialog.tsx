@@ -77,7 +77,7 @@ export function ImportDialog({ endpoint, moduleName, columns, onImported, onClos
         adresse: 'Commune de Gombe',
         nomTuteur: 'Kalonji Paul',
         telephoneTuteur: '+243899112233',
-        etablissementId: '',
+        ecoleId: '',
       };
       return examples[col] ?? '';
     });

@@ -9,7 +9,7 @@ type VerifyData = {
     eleveNom: string;
     eleveMatricule: string;
     classe: string;
-    etablissementNom: string;
+    ecoleNom: string;
     periode: string;
     anneeScolaire: string;
     moyenneGenerale: number;
@@ -106,8 +106,8 @@ function VerifyContent() {
                   <p className="text-sm font-medium text-slate-700">{data.bulletin.classe}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Établissement</p>
-                  <p className="text-sm font-medium text-slate-700">{data.bulletin.etablissementNom || '—'}</p>
+                  <p className="text-xs text-slate-500">École</p>
+                  <p className="text-sm font-medium text-slate-700">{data.bulletin.ecoleNom || '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Période</p>

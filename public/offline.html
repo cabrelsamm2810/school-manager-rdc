@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hors connexion — School Manager RDC</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 62%);
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .icon { width: 80px; height: 80px; margin-bottom: 24px; opacity: 0.9; }
+    h1 { font-size: 1.5rem; margin-bottom: 12px; color: #2563eb; }
+    p { font-size: 1rem; line-height: 1.6; color: #64748b; max-width: 320px; margin-bottom: 24px; }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:active { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <img class="icon" src="/logo.png" alt="School Manager RDC" />
+  <h1>Vous êtes hors connexion</h1>
+  <p>Une connexion Internet est nécessaire pour accéder à School Manager RDC. Vérifiez votre réseau et réessayez.</p>
+  <button onclick="window.location.reload()">Réessayer</button>
+</body>
+</html>

@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { ModulePage } from '@/components/ModulePage';
-import { CrudManager } from '@/components/CrudManager';
-import { crudConfigs } from '@/lib/crud-configs';
+import { EnseignantsManager } from '@/components/enseignant/EnseignantsManager';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrImportDialog } from '@/components/import/OcrImportDialog';
 
@@ -23,13 +22,13 @@ export default function EnseignantsPage() {
         </button>
       </div>
 
-      <CrudManager key={refreshKey} config={crudConfigs.enseignants} />
+      <EnseignantsManager key={refreshKey} />
 
       {showImport && (
         <ImportDialog
           endpoint="/api/import/enseignants"
           moduleName="Enseignants"
-          columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
+          columns={['nom', 'matricule', 'grade', 'ecole', 'specialite', 'telephone', 'email', 'statut']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowImport(false)}
         />
@@ -39,7 +38,7 @@ export default function EnseignantsPage() {
         <OcrImportDialog
           endpoint="/api/import/enseignants"
           moduleName="Enseignants"
-          columns={['nom', 'matricule', 'grade', 'etablissement', 'specialite', 'telephone', 'email', 'statut']}
+          columns={['nom', 'matricule', 'grade', 'ecole', 'specialite', 'telephone', 'email', 'statut']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowOcr(false)}
         />

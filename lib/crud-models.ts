@@ -4,6 +4,11 @@ import type { CrudModelConfig } from '@/lib/crud-factory';
 /**
  * Configuration centrale de tous les modèles CRUD.
  * Chaque entrée définit le modèle Prisma, les champs, les rôles et la recherche.
+ *
+ * Règle de périmètre : `buildScopeWhere()` ajoute par défaut un filtre `province` et
+ * `institution`. Un modèle Prisma qui ne possède pas ces champs DOIT donc déclarer
+ * `provinceField: false` / `institutionField: false`, sinon Prisma rejette le `where`
+ * (`PrismaClientValidationError` → 500) pour tout rôle non national.
  */
 
 export const crudModels: Record<string, CrudModelConfig> = {
@@ -12,14 +17,24 @@ export const crudModels: Record<string, CrudModelConfig> = {
     entityName: 'enseignant',
     entityNamePlural: 'enseignants',
     minRole: 'DIRECTION_ECOLE',
-    searchFields: ['nom', 'matricule', 'etablissement'],
+    searchFields: ['nom', 'matricule', 'ecole'],
     defaultSort: { field: 'nom', order: 'asc' },
+    // L'enseignant n'a pas de province : aucun filtre de périmètre n'est applicable.
+    provinceField: false,
     institutionField: false,
+    include: { ecoleRattachee: { select: { id: true, nom: true } } },
+    // Filtres territoriaux cascades via la relation ecoleRattachee
+    extraFilters: {
+      provinceAdministrative: (val) => ({ ecoleRattachee: { province: val } }),
+      provinceEducationnelle: (val) => ({ ecoleRattachee: { provinceEducationnelle: val } }),
+      coordSousProvincialeId: (val) => ({ ecoleRattachee: { coordSousProvincialeId: val } }),
+    },
     fields: [
       { name: 'nom', type: 'string', required: true },
       { name: 'matricule', type: 'string', required: true, unique: true },
       { name: 'grade', type: 'string' },
-      { name: 'etablissement', type: 'string' },
+      { name: 'ecole', type: 'string' },
+      { name: 'ecoleId', type: 'string', nullable: true },
       { name: 'specialite', type: 'string' },
       { name: 'telephone', type: 'string' },
       { name: 'email', type: 'string' },
@@ -39,7 +54,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     fields: [
       { name: 'nom', type: 'string', required: true, unique: true },
       { name: 'chefLieu', type: 'string' },
-      { name: 'etablissements', type: 'number' },
+      { name: 'ecoles', type: 'number' },
       { name: 'eleves', type: 'number' },
       { name: 'statut', type: 'string' },
     ],
@@ -59,7 +74,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
       { name: 'provinceAdministrative', type: 'string' },
       { name: 'chefLieu', type: 'string' },
       { name: 'sousDivisions', type: 'number' },
-      { name: 'etablissements', type: 'number' },
+      { name: 'ecoles', type: 'number' },
       { name: 'eleves', type: 'number' },
       { name: 'statut', type: 'string' },
     ],
@@ -79,7 +94,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
       { name: 'provinceEducationnelle', type: 'string', required: true },
       { name: 'provinceAdministrative', type: 'string' },
       { name: 'lieuImplantation', type: 'string' },
-      { name: 'etablissements', type: 'number' },
+      { name: 'ecoles', type: 'number' },
       { name: 'eleves', type: 'number' },
       { name: 'statut', type: 'string' },
     ],
@@ -162,6 +177,8 @@ export const crudModels: Record<string, CrudModelConfig> = {
     ],
   },
 
+  // Les modèles ci-dessous n'ont ni `province` ni `institution` : le filtre de
+  // périmètre y est inapplicable et doit être désactivé explicitement.
   'bureaux-fonctions': {
     delegate: prisma.bureau,
     entityName: 'bureau',
@@ -169,6 +186,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['bureau', 'fonction', 'titulaire', 'localisation'],
     defaultSort: { field: 'bureau', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'bureau', type: 'string', required: true },
@@ -185,6 +203,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'COORDINATION_PROVINCIALE',
     searchFields: ['grade', 'categorie'],
     defaultSort: { field: 'grade', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'grade', type: 'string', required: true },
@@ -201,6 +220,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_PROVINCIAL',
     searchFields: ['reference', 'objet', 'demandeur'],
     defaultSort: { field: 'createdAt', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'reference', type: 'string', required: true, unique: true },
@@ -215,13 +235,14 @@ export const crudModels: Record<string, CrudModelConfig> = {
     delegate: prisma.visite,
     entityName: 'visite',
     entityNamePlural: 'visites',
-    minRole: 'AGENT_PROVINCIAL',
-    searchFields: ['etablissement', 'visiteur', 'objet'],
+    minRole: 'SECRETAIRE',
+    searchFields: ['ecole', 'visiteur', 'objet'],
     defaultSort: { field: 'date', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'date', type: 'date' },
-      { name: 'etablissement', type: 'string', required: true },
+      { name: 'ecole', type: 'string', required: true },
       { name: 'visiteur', type: 'string' },
       { name: 'objet', type: 'string' },
       { name: 'statut', type: 'string' },
@@ -235,6 +256,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'AGENT_SOUS_PROVINCIAL',
     searchFields: ['service'],
     defaultSort: { field: 'service', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'service', type: 'string', required: true },
@@ -251,6 +273,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'ELEVE',
     searchFields: ['titre', 'message', 'type'],
     defaultSort: { field: 'createdAt', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'titre', type: 'string', required: true },
@@ -264,9 +287,10 @@ export const crudModels: Record<string, CrudModelConfig> = {
     delegate: prisma.paiement,
     entityName: 'paiement',
     entityNamePlural: 'paiements',
-    minRole: 'DIRECTION_ECOLE',
+    minRole: 'COMPTABLE',
     searchFields: ['reference', 'description'],
     defaultSort: { field: 'date', order: 'desc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'reference', type: 'string', required: true, unique: true },
@@ -284,6 +308,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'cycle', 'diplome'],
     defaultSort: { field: 'ordre', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true, unique: true },
@@ -301,6 +326,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'cycle', 'domaine'],
     defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true },
@@ -318,6 +344,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'DIRECTION_ECOLE',
     searchFields: ['nom', 'cycle', 'type', 'description'],
     defaultSort: { field: 'nom', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'nom', type: 'string', required: true },
@@ -335,6 +362,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     minRole: 'ENSEIGNANT',
     searchFields: ['eleve', 'classe'],
     defaultSort: { field: 'eleve', order: 'asc' },
+    provinceField: false,
     institutionField: false,
     fields: [
       { name: 'eleve', type: 'string', required: true },

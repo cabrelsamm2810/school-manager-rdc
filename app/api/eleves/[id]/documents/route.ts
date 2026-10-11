@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { uploadFile, resolveFileUrl, deleteFile } from '@/lib/storage';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = [
@@ -25,7 +23,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json(docs);
+  // Résout les URLs R2 en URLs signées
+  const resolved = await Promise.all(
+    docs.map(async (d) => ({
+      ...d,
+      fileUrl: await resolveFileUrl(d.fileUrl, { signed: true }),
+    }))
+  );
+
+  return NextResponse.json(resolved);
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -53,10 +59,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const uniqueName = `${Date.now()}-${safeName}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'dossiers-eleves');
-    if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true });
-    const bytes = await file.arrayBuffer();
-    await writeFile(path.join(uploadDir, uniqueName), Buffer.from(bytes));
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const { storedUrl } = await uploadFile('dossiers-eleves', uniqueName, bytes, file.type || 'application/octet-stream');
 
     const doc = await prisma.dossierEleveDocument.create({
       data: {
@@ -64,14 +68,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         type,
         titre,
         description,
-        fileUrl: `/uploads/dossiers-eleves/${uniqueName}`,
+        fileUrl: storedUrl,
         fileName: file.name,
         fileType: file.type,
         uploadedBy: `${user.prenom} ${user.nom}`.trim(),
       },
     });
 
-    return NextResponse.json(doc, { status: 201 });
+    return NextResponse.json({ ...doc, fileUrl: await resolveFileUrl(storedUrl, { signed: true }) }, { status: 201 });
   }
 
   // JSON mode (link-based document, no file upload)
@@ -142,6 +146,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const docId = searchParams.get('docId');
   if (!docId) return NextResponse.json({ error: 'ID document manquant.' }, { status: 400 });
 
+  const doc = await prisma.dossierEleveDocument.findFirst({ where: { id: docId, eleveId: params.id } });
+  if (!doc) return NextResponse.json({ error: 'Document introuvable.' }, { status: 404 });
+
+  await deleteFile(doc.fileUrl);
   await prisma.dossierEleveDocument.delete({ where: { id: docId, eleveId: params.id } });
   return NextResponse.json({ ok: true });
 }
