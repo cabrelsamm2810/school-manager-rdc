@@ -588,6 +588,16 @@ export function EcolesEnAttente() {
 }
 
 /* ── Panneau de détail dépliable ── */
+type TransmittedDoc = {
+  id: string;
+  type: string;
+  titre: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  createdAt: string;
+};
+
 function EcoleDetailPanel({
   ecole,
   expandedIndex,
@@ -607,6 +617,25 @@ function EcoleDetailPanel({
   const docCount = ecole._count?.documents ?? 0;
   const hasPrev = expandedIndex > 0;
   const hasNext = expandedIndex >= 0 && expandedIndex < total - 1;
+
+  const [docs, setDocs] = useState<TransmittedDoc[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+
+  useEffect(() => {
+    if (docCount === 0) return;
+    let cancelled = false;
+    setDocsLoading(true);
+    fetch(`/api/ecoles/${ecole.id}/documents-transmis`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.documents)) setDocs(data.documents);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setDocsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [ecole.id, docCount]);
 
   const detailRows = [
     { icon: 'region', label: 'Province', value: ecole.province || '—' },
@@ -659,14 +688,47 @@ function EcoleDetailPanel({
         ))}
       </div>
 
-      {/* Indicateur documents */}
-      <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2">
-        <Icon name="paperclip" className="h-4 w-4 text-slate-500" />
-        <span className="text-xs text-slate-600">
-          <span className="font-semibold text-slate-800">{docCount}</span> document{docCount > 1 ? 's' : ''} justificatif{docCount > 1 ? 's' : ''} soumis{docCount > 1 ? 's' : ''}
-        </span>
-        {docCount === 0 && (
-          <span className="ml-auto text-xs font-medium text-amber-600">Aucun document</span>
+      {/* Documents transmis */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <Icon name="paperclip" className="h-4 w-4 text-slate-500" />
+          <span className="text-xs font-semibold text-slate-700">
+            Documents soumis ({docCount})
+          </span>
+        </div>
+        {docsLoading ? (
+          <div className="flex items-center gap-2 py-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            <span className="text-xs text-slate-500">Chargement des documents…</span>
+          </div>
+        ) : docs.length > 0 ? (
+          <div className="space-y-1.5">
+            {docs.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon name="document" className="h-4 w-4 shrink-0 text-slate-400" />
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-slate-900">{doc.titre}</p>
+                    <p className="truncate text-xs text-slate-400">
+                      {doc.type || 'Sans type'} · {formatDate(doc.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-100"
+                >
+                  Voir
+                </a>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="py-2 text-xs text-slate-400">
+            {docCount === 0 ? 'Aucun document soumis.' : 'Impossible de charger les documents.'}
+          </p>
         )}
       </div>
 
