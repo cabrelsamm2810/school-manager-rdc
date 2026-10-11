@@ -45,10 +45,18 @@ export type StorageConfig = {
 export const SIGNED_URL_TTL = Number(process.env.S3_SIGNED_URL_TTL || 300);
 
 export function getStorageConfig(): StorageConfig | null {
-  const endpoint = (process.env.S3_ENDPOINT || '').trim();
-  const bucket = (process.env.S3_BUCKET || '').trim();
-  const accessKeyId = (process.env.S3_ACCESS_KEY_ID || '').trim();
-  const secretAccessKey = (process.env.S3_SECRET_ACCESS_KEY || '').trim();
+  // S3_* variables (local s3mock, ou S3-compatible) ont priorité.
+  // R2_* variables (Cloudflare R2) servent de repli — utiles sur Vercel
+  // où l'utilisateur définit R2_* plutôt que S3_*.
+  const accountId = (process.env.R2_ACCOUNT_ID || '').trim();
+  const r2Endpoint = accountId
+    ? `https://${accountId}.r2.cloudflarestorage.com`
+    : '';
+
+  const endpoint = (process.env.S3_ENDPOINT || r2Endpoint || '').trim();
+  const bucket = (process.env.S3_BUCKET || process.env.R2_BUCKET_NAME || '').trim();
+  const accessKeyId = (process.env.S3_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID || '').trim();
+  const secretAccessKey = (process.env.S3_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || '').trim();
 
   if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return null;
 
@@ -72,7 +80,7 @@ export function isStorageEnabled(): boolean {
  * Sinon l'objet est servi par le serveur applicatif (utile en développement).
  */
 function publicEndpoint(): string | null {
-  const value = (process.env.S3_PUBLIC_ENDPOINT || '').trim();
+  const value = (process.env.S3_PUBLIC_ENDPOINT || process.env.R2_PUBLIC_URL || '').trim();
   return value || null;
 }
 
