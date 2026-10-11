@@ -7,7 +7,7 @@ interface EnseignantRetardataire {
   nom: string;
   matricule: string;
   email: string;
-  etablissement: string;
+  ecole: string;
   telephone: string;
 }
 
@@ -25,7 +25,7 @@ interface HistoriqueRappel {
   id: string;
   enseignantNom: string;
   enseignantEmail: string;
-  etablissement: string;
+  ecole: string;
   periode: string;
   anneeScolaire: string;
   statut: string;
@@ -171,7 +171,7 @@ export function RappelsCotesManager() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-slate-800">{e.nom}</p>
                   <p className="truncate text-xs text-slate-400">
-                    {e.matricule} {e.etablissement ? `· ${e.etablissement}` : ''}
+                    {e.matricule} {e.ecole ? `· ${e.ecole}` : ''}
                   </p>
                 </div>
                 <div className="text-right">

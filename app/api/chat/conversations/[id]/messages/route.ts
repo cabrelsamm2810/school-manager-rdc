@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
-import { isUploadError, saveUploadedFile } from '@/lib/storage';
+import { uploadFile, resolveFileUrl } from '@/lib/storage';
+import { getStoredFileSize, validateChatFile } from '@/lib/chat-files';
 
 export async function GET(
   request: NextRequest,
@@ -50,17 +51,20 @@ export async function GET(
   });
 
   return NextResponse.json(
-    messages.map((m) => ({
-      id: m.id,
-      content: m.content,
-      senderId: m.senderId,
-      createdAt: m.createdAt,
-      read: m.read,
-      fileUrl: m.fileUrl,
-      fileName: m.fileName,
-      fileType: m.fileType,
-      replyToId: m.replyToId,
-    }))
+    await Promise.all(
+      messages.map(async (m) => ({
+        id: m.id,
+        content: m.content,
+        senderId: m.senderId,
+        createdAt: m.createdAt,
+        read: m.read,
+        fileUrl: await resolveFileUrl(m.fileUrl, { signed: true }),
+        fileName: m.fileName,
+        fileType: m.fileType,
+        fileSize: await getStoredFileSize(m.fileUrl),
+        replyToId: m.replyToId,
+      }))
+    )
   );
 }
 
@@ -91,6 +95,7 @@ export async function POST(
   let fileUrl: string | null = null;
   let fileName: string | null = null;
   let fileType: string | null = null;
+  let fileSize: number | null = null;
   let replyToId: string | null = null;
 
   if (contentType.includes('multipart/form-data')) {
@@ -107,18 +112,21 @@ export async function POST(
       return NextResponse.json({ error: 'Aucun fichier reçu.' }, { status: 400 });
     }
 
-    // Sauvegarde le fichier (R2 si configuré, sinon public/uploads)
-    let saved;
-    try {
-      saved = await saveUploadedFile(file, { category: 'chat-attachment', folder: 'chat-files' });
-    } catch (error) {
-      if (isUploadError(error)) return NextResponse.json({ error: error.message }, { status: error.status });
-      throw error;
+    const validationError = validateChatFile(file);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    fileUrl = saved.fileUrl;
-    fileName = saved.fileName;
-    fileType = saved.fileType;
+    // Sauvegarde le fichier (R2 ou local)
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const uniqueName = `${Date.now()}-${safeName}`;
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const { storedUrl } = await uploadFile('chat-files', uniqueName, bytes, file.type || 'application/octet-stream');
+
+    fileUrl = storedUrl;
+    fileName = file.name;
+    fileType = file.type;
+    fileSize = file.size;
   } else {
     // ── Message texte seul ──
     const body = await request.json();
@@ -154,9 +162,10 @@ export async function POST(
     senderId: message.senderId,
     createdAt: message.createdAt,
     read: message.read,
-    fileUrl: message.fileUrl,
+    fileUrl: await resolveFileUrl(message.fileUrl, { signed: true }),
     fileName: message.fileName,
     fileType: message.fileType,
+    fileSize,
     replyToId: message.replyToId,
   });
 }

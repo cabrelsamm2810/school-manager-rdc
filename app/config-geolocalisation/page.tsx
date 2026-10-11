@@ -70,7 +70,7 @@ export default function ConfigGeolocalisationPage() {
         update('schoolLatitude', pos.coords.latitude);
         update('schoolLongitude', pos.coords.longitude);
         setTestStatus('success');
-        setTestResult(`Coordonnées de l'établissement définies : ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+        setTestResult(`Coordonnées de l'école définies : ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
       },
       (err) => {
         setTestStatus('error');
@@ -85,7 +85,7 @@ export default function ConfigGeolocalisationPage() {
       icon="location"
       eyebrow="Services"
       title="Configuration de la géolocalisation"
-      description="Paramètres de capture GPS lors du scan de présence et géo-repérage de l'établissement."
+      description="Paramètres de capture GPS lors du scan de présence et géo-repérage de l'école."
     >
       <div className="space-y-6">
         {/* Activation */}
@@ -149,13 +149,13 @@ export default function ConfigGeolocalisationPage() {
           </div>
         </Card>
 
-        {/* Géo-repérage de l'établissement */}
+        {/* Géo-repérage de l'école */}
         <Card>
-          <h3 className="mb-4 font-bold text-slate-900">Géo-repérage de l'établissement</h3>
+          <h3 className="mb-4 font-bold text-slate-900">Géo-repérage de l'école</h3>
           <label className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
             <div>
               <span className="text-sm font-medium text-slate-700">Vérifier la zone scolaire</span>
-              <p className="text-xs text-slate-400">Valide que le scan est effectué dans le rayon de l'établissement</p>
+              <p className="text-xs text-slate-400">Valide que le scan est effectué dans le rayon de l'école</p>
             </div>
             <input
               type="checkbox"
@@ -169,7 +169,7 @@ export default function ConfigGeolocalisationPage() {
             <div className="mt-4 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className={labelClass}>Latitude de l'établissement</label>
+                  <label className={labelClass}>Latitude de l'école</label>
                   <input
                     type="number"
                     step="any"
@@ -180,7 +180,7 @@ export default function ConfigGeolocalisationPage() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Longitude de l'établissement</label>
+                  <label className={labelClass}>Longitude de l'école</label>
                   <input
                     type="number"
                     step="any"

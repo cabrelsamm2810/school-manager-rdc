@@ -13,11 +13,11 @@ async function main() {
 
   // ── Enseignants ──
   const enseignants = [
-    { nom: 'Mukendi Kalonji', matricule: 'ENS-001', grade: 'Chef de travaux', etablissement: 'Institut Tuendelee', specialite: 'Mathématiques', telephone: '', email: '', statut: 'Actif' },
-    { nom: 'Kabeya Tshibangu', matricule: 'ENS-002', grade: 'Professeur', etablissement: 'Collège Boboto', specialite: 'Sciences', telephone: '', email: '', statut: 'Actif' },
-    { nom: 'Mwamba Ilunga', matricule: 'ENS-003', grade: 'Instituteur', etablissement: 'École Primaire Bambelo', specialite: 'Primaire', telephone: '', email: '', statut: 'Actif' },
-    { nom: 'Tshisekedi Mujinga', matricule: 'ENS-004', grade: 'Professeur', etablissement: 'Lycée Sainte-Germaine', specialite: 'Français', telephone: '', email: '', statut: 'Congé' },
-    { nom: 'Kasongo Mbuyi', matricule: 'ENS-005', grade: 'Instituteur principal', etablissement: 'École Maman Mobali', specialite: 'Primaire', telephone: '', email: '', statut: 'Actif' },
+    { nom: 'Mukendi Kalonji', matricule: 'ENS-001', grade: 'Chef de travaux', ecole: 'Institut Tuendelee', specialite: 'Mathématiques', telephone: '', email: '', statut: 'Actif' },
+    { nom: 'Kabeya Tshibangu', matricule: 'ENS-002', grade: 'Professeur', ecole: 'Collège Boboto', specialite: 'Sciences', telephone: '', email: '', statut: 'Actif' },
+    { nom: 'Mwamba Ilunga', matricule: 'ENS-003', grade: 'Instituteur', ecole: 'École Primaire Bambelo', specialite: 'Primaire', telephone: '', email: '', statut: 'Actif' },
+    { nom: 'Tshisekedi Mujinga', matricule: 'ENS-004', grade: 'Professeur', ecole: 'Lycée Sainte-Germaine', specialite: 'Français', telephone: '', email: '', statut: 'Congé' },
+    { nom: 'Kasongo Mbuyi', matricule: 'ENS-005', grade: 'Instituteur principal', ecole: 'École Maman Mobali', specialite: 'Primaire', telephone: '', email: '', statut: 'Actif' },
   ];
   for (const e of enseignants) {
     await prisma.enseignant.upsert({ where: { matricule: e.matricule }, create: e, update: {} });
@@ -25,32 +25,32 @@ async function main() {
 
   // ── Provinces : les 26 provinces administratives et éducationnelles de la RDC ──
   const provinces = [
-    { nom: 'Kinshasa', chefLieu: 'Kinshasa', etablissements: 320, eleves: 485000, statut: 'Actif' },
-    { nom: 'Kongo Central', chefLieu: 'Matadi', etablissements: 180, eleves: 210000, statut: 'Actif' },
-    { nom: 'Kwango', chefLieu: 'Kenge', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kwilu', chefLieu: 'Bandundu', etablissements: 95, eleves: 120000, statut: 'Actif' },
-    { nom: 'Mai-Ndombe', chefLieu: 'Inongo', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï', chefLieu: 'Tshikapa', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï Central', chefLieu: 'Kananga', etablissements: 85, eleves: 110000, statut: 'Actif' },
-    { nom: 'Kasaï Oriental', chefLieu: 'Mbuji-Mayi', etablissements: 130, eleves: 170000, statut: 'Actif' },
-    { nom: 'Lomami', chefLieu: 'Kabinda', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sankuru', chefLieu: 'Lusambo', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Maniema', chefLieu: 'Kindu', etablissements: 60, eleves: 75000, statut: 'Actif' },
-    { nom: 'Sud-Kivu', chefLieu: 'Bukavu', etablissements: 120, eleves: 160000, statut: 'Actif' },
-    { nom: 'Nord-Kivu', chefLieu: 'Goma', etablissements: 150, eleves: 180000, statut: 'Actif' },
-    { nom: 'Ituri', chefLieu: 'Bunia', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Uele', chefLieu: 'Isiro', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Bas-Uele', chefLieu: 'Buta', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tshopo', chefLieu: 'Kisangani', etablissements: 110, eleves: 140000, statut: 'Actif' },
-    { nom: 'Mongala', chefLieu: 'Lisala', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Nord-Ubangi', chefLieu: 'Gbadolite', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sud-Ubangi', chefLieu: 'Gemena', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Équateur', chefLieu: 'Mbandaka', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tshuapa', chefLieu: 'Boende', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Lomami', chefLieu: 'Kamina', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Lualaba', chefLieu: 'Kolwezi', etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Katanga', chefLieu: 'Lubumbashi', etablissements: 240, eleves: 320000, statut: 'Actif' },
-    { nom: 'Tanganyika', chefLieu: 'Kalemie', etablissements: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kinshasa', chefLieu: 'Kinshasa', ecoles: 320, eleves: 485000, statut: 'Actif' },
+    { nom: 'Kongo Central', chefLieu: 'Matadi', ecoles: 180, eleves: 210000, statut: 'Actif' },
+    { nom: 'Kwango', chefLieu: 'Kenge', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kwilu', chefLieu: 'Bandundu', ecoles: 95, eleves: 120000, statut: 'Actif' },
+    { nom: 'Mai-Ndombe', chefLieu: 'Inongo', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï', chefLieu: 'Tshikapa', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï Central', chefLieu: 'Kananga', ecoles: 85, eleves: 110000, statut: 'Actif' },
+    { nom: 'Kasaï Oriental', chefLieu: 'Mbuji-Mayi', ecoles: 130, eleves: 170000, statut: 'Actif' },
+    { nom: 'Lomami', chefLieu: 'Kabinda', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sankuru', chefLieu: 'Lusambo', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Maniema', chefLieu: 'Kindu', ecoles: 60, eleves: 75000, statut: 'Actif' },
+    { nom: 'Sud-Kivu', chefLieu: 'Bukavu', ecoles: 120, eleves: 160000, statut: 'Actif' },
+    { nom: 'Nord-Kivu', chefLieu: 'Goma', ecoles: 150, eleves: 180000, statut: 'Actif' },
+    { nom: 'Ituri', chefLieu: 'Bunia', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Uele', chefLieu: 'Isiro', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Bas-Uele', chefLieu: 'Buta', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tshopo', chefLieu: 'Kisangani', ecoles: 110, eleves: 140000, statut: 'Actif' },
+    { nom: 'Mongala', chefLieu: 'Lisala', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Nord-Ubangi', chefLieu: 'Gbadolite', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sud-Ubangi', chefLieu: 'Gemena', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Équateur', chefLieu: 'Mbandaka', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tshuapa', chefLieu: 'Boende', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Lomami', chefLieu: 'Kamina', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Lualaba', chefLieu: 'Kolwezi', ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Katanga', chefLieu: 'Lubumbashi', ecoles: 240, eleves: 320000, statut: 'Actif' },
+    { nom: 'Tanganyika', chefLieu: 'Kalemie', ecoles: 0, eleves: 0, statut: 'Actif' },
   ];
   for (const p of provinces) {
     await prisma.province.upsert({ where: { nom: p.nom }, create: p, update: {} });
@@ -58,120 +58,268 @@ async function main() {
 
   // ── Provinces éducationnelles (EPST) : les 60 provinces éducationnelles de la RDC ──
   const provincesEduc = [
-    { nom: 'Kinshasa Lukunga', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 13, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kinshasa Funa', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 12, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kinshasa Mont-Amba', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 10, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kinshasa Tshangu', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 10, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kinshasa Plateau', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kongo Central 1', provinceAdministrative: 'Kongo Central', chefLieu: 'Matadi', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kongo Central 2', provinceAdministrative: 'Kongo Central', chefLieu: 'Boma', sousDivisions: 7, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kongo Central 3', provinceAdministrative: 'Kongo Central', chefLieu: 'Moanda', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Bas-Uélé', provinceAdministrative: 'Bas-Uele', chefLieu: 'Buta', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Équateur 1', provinceAdministrative: 'Équateur', chefLieu: 'Mbandaka', sousDivisions: 23, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Équateur 2', provinceAdministrative: 'Équateur', chefLieu: 'Basankusu', sousDivisions: 15, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Katanga 1', provinceAdministrative: 'Haut-Katanga', chefLieu: 'Lubumbashi', sousDivisions: 10, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Katanga 2', provinceAdministrative: 'Haut-Katanga', chefLieu: 'Pweto', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Lomami 1', provinceAdministrative: 'Haut-Lomami', chefLieu: 'Kamina', sousDivisions: 12, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Lomami 2', provinceAdministrative: 'Haut-Lomami', chefLieu: 'Bukama', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Uélé 1', provinceAdministrative: 'Haut-Uele', chefLieu: 'Isiro', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Haut-Uélé 2', provinceAdministrative: 'Haut-Uele', chefLieu: 'Watsa', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Ituri 1', provinceAdministrative: 'Ituri', chefLieu: 'Bunia', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Ituri 2', provinceAdministrative: 'Ituri', chefLieu: 'Irumu', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Ituri 3', provinceAdministrative: 'Ituri', chefLieu: 'Aru', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï 1', provinceAdministrative: 'Kasaï', chefLieu: 'Tshikapa', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï 2', provinceAdministrative: 'Kasaï', chefLieu: 'Luebo', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï-Central 1', provinceAdministrative: 'Kasaï Central', chefLieu: 'Kananga', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï-Central 2', provinceAdministrative: 'Kasaï Central', chefLieu: 'Tshikapa', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï-Oriental 1', provinceAdministrative: 'Kasaï Oriental', chefLieu: 'Mbuji-Mayi', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kasaï-Oriental 2', provinceAdministrative: 'Kasaï Oriental', chefLieu: 'Mbuji-Mayi', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kwango 1', provinceAdministrative: 'Kwango', chefLieu: 'Kenge', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kwango 2', provinceAdministrative: 'Kwango', chefLieu: 'Popokabaka', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kwilu 1', provinceAdministrative: 'Kwilu', chefLieu: 'Bandundu', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kwilu 2', provinceAdministrative: 'Kwilu', chefLieu: 'Kikwit', sousDivisions: 10, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Kwilu 3', provinceAdministrative: 'Kwilu', chefLieu: 'Bulungu', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Lomami 1', provinceAdministrative: 'Lomami', chefLieu: 'Kabinda', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Lomami 2', provinceAdministrative: 'Lomami', chefLieu: 'Ngandajika', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Lualaba 1', provinceAdministrative: 'Lualaba', chefLieu: 'Kolwezi', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Lualaba 2', provinceAdministrative: 'Lualaba', chefLieu: 'Likasi', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Mai-Ndombe 1', provinceAdministrative: 'Mai-Ndombe', chefLieu: 'Inongo', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Mai-Ndombe 2', provinceAdministrative: 'Mai-Ndombe', chefLieu: 'Oshwe', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Mai-Ndombe 3', provinceAdministrative: 'Mai-Ndombe', chefLieu: 'Kwamouth', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Maniema 1', provinceAdministrative: 'Maniema', chefLieu: 'Kindu', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Maniema 2', provinceAdministrative: 'Maniema', chefLieu: 'Kasongo', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Mongala 1', provinceAdministrative: 'Mongala', chefLieu: 'Lisala', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Mongala 2', provinceAdministrative: 'Mongala', chefLieu: 'Bumba', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Nord-Kivu 1', provinceAdministrative: 'Nord-Kivu', chefLieu: 'Goma', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Nord-Kivu 2', provinceAdministrative: 'Nord-Kivu', chefLieu: 'Beni', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Nord-Kivu 3', provinceAdministrative: 'Nord-Kivu', chefLieu: 'Masisi', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Nord-Ubangi 1', provinceAdministrative: 'Nord-Ubangi', chefLieu: 'Gbadolite', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Nord-Ubangi 2', provinceAdministrative: 'Nord-Ubangi', chefLieu: 'Yakoma', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sankuru 1', provinceAdministrative: 'Sankuru', chefLieu: 'Lusambo', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sankuru 2', provinceAdministrative: 'Sankuru', chefLieu: 'Lodja', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sud-Kivu 1', provinceAdministrative: 'Sud-Kivu', chefLieu: 'Bukavu', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sud-Kivu 2', provinceAdministrative: 'Sud-Kivu', chefLieu: 'Uvira', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sud-Kivu 3', provinceAdministrative: 'Sud-Kivu', chefLieu: 'Shabunda', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sud-Ubangi 1', provinceAdministrative: 'Sud-Ubangi', chefLieu: 'Gemena', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Sud-Ubangi 2', provinceAdministrative: 'Sud-Ubangi', chefLieu: 'Libenge', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tanganyika 1', provinceAdministrative: 'Tanganyika', chefLieu: 'Kalemie', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tanganyika 2', provinceAdministrative: 'Tanganyika', chefLieu: 'Kabalo', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tshopo 1', provinceAdministrative: 'Tshopo', chefLieu: 'Kisangani', sousDivisions: 8, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tshopo 2', provinceAdministrative: 'Tshopo', chefLieu: 'Isangi', sousDivisions: 5, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tshuapa 1', provinceAdministrative: 'Tshuapa', chefLieu: 'Boende', sousDivisions: 6, etablissements: 0, eleves: 0, statut: 'Actif' },
-    { nom: 'Tshuapa 2', provinceAdministrative: 'Tshuapa', chefLieu: 'Bokungu', sousDivisions: 4, etablissements: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kinshasa Lukunga', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 13, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kinshasa Funa', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 12, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kinshasa Mont-Amba', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 10, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kinshasa Tshangu', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 10, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kinshasa Plateau', provinceAdministrative: 'Kinshasa', chefLieu: 'Kinshasa', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kongo Central 1', provinceAdministrative: 'Kongo Central', chefLieu: 'Matadi', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kongo Central 2', provinceAdministrative: 'Kongo Central', chefLieu: 'Boma', sousDivisions: 7, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kongo Central 3', provinceAdministrative: 'Kongo Central', chefLieu: 'Moanda', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Bas-Uélé', provinceAdministrative: 'Bas-Uele', chefLieu: 'Buta', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Équateur 1', provinceAdministrative: 'Équateur', chefLieu: 'Mbandaka', sousDivisions: 23, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Équateur 2', provinceAdministrative: 'Équateur', chefLieu: 'Basankusu', sousDivisions: 15, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Katanga 1', provinceAdministrative: 'Haut-Katanga', chefLieu: 'Lubumbashi', sousDivisions: 10, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Katanga 2', provinceAdministrative: 'Haut-Katanga', chefLieu: 'Pweto', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Lomami 1', provinceAdministrative: 'Haut-Lomami', chefLieu: 'Kamina', sousDivisions: 12, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Lomami 2', provinceAdministrative: 'Haut-Lomami', chefLieu: 'Bukama', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Uélé 1', provinceAdministrative: 'Haut-Uele', chefLieu: 'Isiro', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Haut-Uélé 2', provinceAdministrative: 'Haut-Uele', chefLieu: 'Watsa', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Ituri 1', provinceAdministrative: 'Ituri', chefLieu: 'Bunia', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Ituri 2', provinceAdministrative: 'Ituri', chefLieu: 'Irumu', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Ituri 3', provinceAdministrative: 'Ituri', chefLieu: 'Aru', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï 1', provinceAdministrative: 'Kasaï', chefLieu: 'Tshikapa', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï 2', provinceAdministrative: 'Kasaï', chefLieu: 'Luebo', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï-Central 1', provinceAdministrative: 'Kasaï Central', chefLieu: 'Kananga', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï-Central 2', provinceAdministrative: 'Kasaï Central', chefLieu: 'Tshikapa', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï-Oriental 1', provinceAdministrative: 'Kasaï Oriental', chefLieu: 'Mbuji-Mayi', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kasaï-Oriental 2', provinceAdministrative: 'Kasaï Oriental', chefLieu: 'Mbuji-Mayi', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kwango 1', provinceAdministrative: 'Kwango', chefLieu: 'Kenge', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kwango 2', provinceAdministrative: 'Kwango', chefLieu: 'Popokabaka', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kwilu 1', provinceAdministrative: 'Kwilu', chefLieu: 'Bandundu', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kwilu 2', provinceAdministrative: 'Kwilu', chefLieu: 'Kikwit', sousDivisions: 10, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Kwilu 3', provinceAdministrative: 'Kwilu', chefLieu: 'Bulungu', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Lomami 1', provinceAdministrative: 'Lomami', chefLieu: 'Kabinda', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Lomami 2', provinceAdministrative: 'Lomami', chefLieu: 'Ngandajika', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Lualaba 1', provinceAdministrative: 'Lualaba', chefLieu: 'Kolwezi', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Lualaba 2', provinceAdministrative: 'Lualaba', chefLieu: 'Likasi', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Mai-Ndombe 1', provinceAdministrative: 'Mai-Ndombe', chefLieu: 'Inongo', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Mai-Ndombe 2', provinceAdministrative: 'Mai-Ndombe', chefLieu: 'Oshwe', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Mai-Ndombe 3', provinceAdministrative: 'Mai-Ndombe', chefLieu: 'Kwamouth', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Maniema 1', provinceAdministrative: 'Maniema', chefLieu: 'Kindu', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Maniema 2', provinceAdministrative: 'Maniema', chefLieu: 'Kasongo', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Mongala 1', provinceAdministrative: 'Mongala', chefLieu: 'Lisala', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Mongala 2', provinceAdministrative: 'Mongala', chefLieu: 'Bumba', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Nord-Kivu 1', provinceAdministrative: 'Nord-Kivu', chefLieu: 'Goma', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Nord-Kivu 2', provinceAdministrative: 'Nord-Kivu', chefLieu: 'Beni', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Nord-Kivu 3', provinceAdministrative: 'Nord-Kivu', chefLieu: 'Masisi', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Nord-Ubangi 1', provinceAdministrative: 'Nord-Ubangi', chefLieu: 'Gbadolite', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Nord-Ubangi 2', provinceAdministrative: 'Nord-Ubangi', chefLieu: 'Yakoma', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sankuru 1', provinceAdministrative: 'Sankuru', chefLieu: 'Lusambo', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sankuru 2', provinceAdministrative: 'Sankuru', chefLieu: 'Lodja', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sud-Kivu 1', provinceAdministrative: 'Sud-Kivu', chefLieu: 'Bukavu', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sud-Kivu 2', provinceAdministrative: 'Sud-Kivu', chefLieu: 'Uvira', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sud-Kivu 3', provinceAdministrative: 'Sud-Kivu', chefLieu: 'Shabunda', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sud-Ubangi 1', provinceAdministrative: 'Sud-Ubangi', chefLieu: 'Gemena', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Sud-Ubangi 2', provinceAdministrative: 'Sud-Ubangi', chefLieu: 'Libenge', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tanganyika 1', provinceAdministrative: 'Tanganyika', chefLieu: 'Kalemie', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tanganyika 2', provinceAdministrative: 'Tanganyika', chefLieu: 'Kabalo', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tshopo 1', provinceAdministrative: 'Tshopo', chefLieu: 'Kisangani', sousDivisions: 8, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tshopo 2', provinceAdministrative: 'Tshopo', chefLieu: 'Isangi', sousDivisions: 5, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tshuapa 1', provinceAdministrative: 'Tshuapa', chefLieu: 'Boende', sousDivisions: 6, ecoles: 0, eleves: 0, statut: 'Actif' },
+    { nom: 'Tshuapa 2', provinceAdministrative: 'Tshuapa', chefLieu: 'Bokungu', sousDivisions: 4, ecoles: 0, eleves: 0, statut: 'Actif' },
   ];
   for (const pe of provincesEduc) {
     await prisma.provinceEducationnelle.upsert({ where: { nom: pe.nom }, create: pe, update: {} });
   }
 
-  // ── EC-ERC ──
+  // ── EC-ERC : une entité par province (26 provinces) ──
   const ecErc = [
-    { nom: 'EC Kinshasa-Est', type: 'Entité EC', province: 'Kinshasa', ecoles: 160, statut: 'Actif' },
-    { nom: 'ERC Kinshasa-Ouest', type: 'Entité ERC', province: 'Kinshasa', ecoles: 160, statut: 'Actif' },
-    { nom: 'EC Lubumbashi', type: 'Entité EC', province: 'Haut-Katanga', ecoles: 120, statut: 'Actif' },
-    { nom: 'ERC Goma', type: 'Entité ERC', province: 'Nord-Kivu', ecoles: 75, statut: 'Actif' },
-    { nom: 'EC Matadi', type: 'Entité EC', province: 'Kongo Central', ecoles: 90, statut: 'En setup' },
+    { nom: 'EC Kinshasa-Est', type: 'Entité EC', province: 'Kinshasa', nbEcoles: 160, statut: 'Actif' },
+    { nom: 'ERC Kinshasa-Ouest', type: 'Entité ERC', province: 'Kinshasa', nbEcoles: 160, statut: 'Actif' },
+    { nom: 'EC Lubumbashi', type: 'Entité EC', province: 'Haut-Katanga', nbEcoles: 120, statut: 'Actif' },
+    { nom: 'ERC Goma', type: 'Entité ERC', province: 'Nord-Kivu', nbEcoles: 75, statut: 'Actif' },
+    { nom: 'EC Matadi', type: 'Entité EC', province: 'Kongo Central', nbEcoles: 90, statut: 'En setup' },
+    { nom: 'EC Kenge', type: 'Entité EC', province: 'Kwango', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Bandundu', type: 'Entité EC', province: 'Kwilu', nbEcoles: 45, statut: 'Actif' },
+    { nom: 'EC Inongo', type: 'Entité EC', province: 'Mai-Ndombe', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Tshikapa', type: 'Entité EC', province: 'Kasaï', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kananga', type: 'Entité EC', province: 'Kasaï Central', nbEcoles: 40, statut: 'Actif' },
+    { nom: 'EC Mbuji-Mayi', type: 'Entité EC', province: 'Kasaï Oriental', nbEcoles: 65, statut: 'Actif' },
+    { nom: 'EC Kabinda', type: 'Entité EC', province: 'Lomami', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Lusambo', type: 'Entité EC', province: 'Sankuru', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kindu', type: 'Entité EC', province: 'Maniema', nbEcoles: 30, statut: 'Actif' },
+    { nom: 'EC Bukavu', type: 'Entité EC', province: 'Sud-Kivu', nbEcoles: 60, statut: 'Actif' },
+    { nom: 'EC Bunia', type: 'Entité EC', province: 'Ituri', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Isiro', type: 'Entité EC', province: 'Haut-Uele', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Buta', type: 'Entité EC', province: 'Bas-Uele', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kisangani', type: 'Entité EC', province: 'Tshopo', nbEcoles: 55, statut: 'Actif' },
+    { nom: 'EC Lisala', type: 'Entité EC', province: 'Mongala', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Gbadolite', type: 'Entité EC', province: 'Nord-Ubangi', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Gemena', type: 'Entité EC', province: 'Sud-Ubangi', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Mbandaka', type: 'Entité EC', province: 'Équateur', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Boende', type: 'Entité EC', province: 'Tshuapa', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kamina', type: 'Entité EC', province: 'Haut-Lomami', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kolwezi', type: 'Entité EC', province: 'Lualaba', nbEcoles: 0, statut: 'En setup' },
+    { nom: 'EC Kalemie', type: 'Entité EC', province: 'Tanganyika', nbEcoles: 0, statut: 'En setup' },
   ];
   for (const e of ecErc) {
     const existing = await prisma.ecErc.findFirst({ where: { nom: e.nom } });
     if (!existing) await prisma.ecErc.create({ data: e });
   }
+  console.log(`Seed terminé : ${ecErc.length} entités EC-ERC (26 provinces couvertes).`);
 
-  // ── Coordination nationale ──
+  // ── Coordination nationale : une par province (26 provinces) ──
   const coordNat = [
     { province: 'Kinshasa', coordonnateur: 'Dr. Mukendi Kalonji', ecoles: 320, eleves: 485000, statut: 'Actif' },
     { province: 'Haut-Katanga', coordonnateur: 'Prof. Kabeya Tshibangu', ecoles: 240, eleves: 320000, statut: 'Actif' },
     { province: 'Nord-Kivu', coordonnateur: 'M. Mwamba Ilunga', ecoles: 150, eleves: 180000, statut: 'Actif' },
     { province: 'Kongo Central', coordonnateur: 'Mme. Mujinga Tshisekedi', ecoles: 180, eleves: 210000, statut: 'Actif' },
     { province: 'Kwilu', coordonnateur: '', ecoles: 95, eleves: 120000, statut: 'Vacant' },
+    { province: 'Kwango', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Mai-Ndombe', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Kasaï', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Kasaï Central', coordonnateur: '', ecoles: 85, eleves: 110000, statut: 'Actif' },
+    { province: 'Kasaï Oriental', coordonnateur: '', ecoles: 130, eleves: 170000, statut: 'Actif' },
+    { province: 'Lomami', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Sankuru', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Maniema', coordonnateur: '', ecoles: 60, eleves: 75000, statut: 'Actif' },
+    { province: 'Sud-Kivu', coordonnateur: '', ecoles: 120, eleves: 160000, statut: 'Actif' },
+    { province: 'Ituri', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Haut-Uele', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Bas-Uele', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Tshopo', coordonnateur: '', ecoles: 110, eleves: 140000, statut: 'Actif' },
+    { province: 'Mongala', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Nord-Ubangi', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Sud-Ubangi', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Équateur', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Tshuapa', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Haut-Lomami', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Lualaba', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
+    { province: 'Tanganyika', coordonnateur: '', ecoles: 0, eleves: 0, statut: 'Vacant' },
   ];
   for (const c of coordNat) {
     const existing = await prisma.coordNationale.findFirst({ where: { province: c.province } });
     if (!existing) await prisma.coordNationale.create({ data: c });
   }
+  console.log(`Seed terminé : ${coordNat.length} coordinations nationales (26 provinces).`);
 
-  // ── Coordination provinciale ──
+  // ── Coordination provinciale : une par province (26 provinces) ──
   const coordProv = [
-    { province: 'Kinshasa', bureaux: 4, agents: 28, dossiers: 1450, statut: 'Actif' },
-    { province: 'Haut-Katanga', bureaux: 3, agents: 18, dossiers: 820, statut: 'Actif' },
-    { province: 'Nord-Kivu', bureaux: 2, agents: 12, dossiers: 540, statut: 'Actif' },
+    { province: 'Kinshasa', bureaux: 5, agents: 28, dossiers: 1450, statut: 'Actif' },
     { province: 'Kongo Central', bureaux: 2, agents: 10, dossiers: 430, statut: 'Actif' },
+    { province: 'Kwango', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Kwilu', bureaux: 2, agents: 8, dossiers: 210, statut: 'Actif' },
+    { province: 'Mai-Ndombe', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Kasaï', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Kasaï Central', bureaux: 2, agents: 8, dossiers: 180, statut: 'Actif' },
+    { province: 'Kasaï Oriental', bureaux: 2, agents: 10, dossiers: 250, statut: 'Actif' },
+    { province: 'Lomami', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Sankuru', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Maniema', bureaux: 1, agents: 5, dossiers: 90, statut: 'Actif' },
+    { province: 'Sud-Kivu', bureaux: 2, agents: 10, dossiers: 280, statut: 'Actif' },
+    { province: 'Nord-Kivu', bureaux: 2, agents: 12, dossiers: 540, statut: 'Actif' },
+    { province: 'Ituri', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Haut-Uele', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Bas-Uele', bureaux: 1, agents: 2, dossiers: 0, statut: 'En setup' },
+    { province: 'Tshopo', bureaux: 2, agents: 8, dossiers: 160, statut: 'Actif' },
+    { province: 'Mongala', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Nord-Ubangi', bureaux: 1, agents: 2, dossiers: 0, statut: 'En setup' },
+    { province: 'Sud-Ubangi', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Équateur', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Tshuapa', bureaux: 1, agents: 2, dossiers: 0, statut: 'En setup' },
+    { province: 'Haut-Lomami', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Lualaba', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
+    { province: 'Haut-Katanga', bureaux: 3, agents: 18, dossiers: 820, statut: 'Actif' },
+    { province: 'Tanganyika', bureaux: 1, agents: 3, dossiers: 0, statut: 'En setup' },
   ];
+  const coordProvIds: Record<string, string> = {};
   for (const c of coordProv) {
     const existing = await prisma.coordProvinciale.findFirst({ where: { province: c.province } });
-    if (!existing) await prisma.coordProvinciale.create({ data: c });
+    if (existing) {
+      coordProvIds[c.province] = existing.id;
+    } else {
+      const created = await prisma.coordProvinciale.create({ data: c });
+      coordProvIds[c.province] = created.id;
+    }
   }
+  console.log(`Seed terminé : ${coordProv.length} coordinations provinciales (26 provinces).`);
 
   // ── Coordination sous-provinciale ──
+  // Kinshasa : 5 coordinations sous-provinciales (Lukunga, Funa, Mont-Amba, Tshangu, Plateau)
+  // Autres provinces : au moins une par province, liée à sa coordination provinciale
   const coordSous = [
-    { nom: 'Sous-division Lukunga', province: 'Kinshasa', bureaux: 2, agents: 8, statut: 'Actif' },
-    { nom: 'Sous-division Tshangu', province: 'Kinshasa', bureaux: 2, agents: 7, statut: 'Actif' },
-    { nom: 'Sous-division Likasi', province: 'Haut-Katanga', bureaux: 1, agents: 5, statut: 'Actif' },
-    { nom: 'Sous-division Beni', province: 'Nord-Kivu', bureaux: 1, agents: 4, statut: 'En setup' },
+    // Kinshasa — 5 coordinations sous-provinciales
+    { nom: 'Coordination SP Lukunga', province: 'Kinshasa', bureaux: 2, agents: 8, statut: 'Actif' },
+    { nom: 'Coordination SP Funa', province: 'Kinshasa', bureaux: 2, agents: 7, statut: 'Actif' },
+    { nom: 'Coordination SP Mont-Amba', province: 'Kinshasa', bureaux: 1, agents: 6, statut: 'Actif' },
+    { nom: 'Coordination SP Tshangu', province: 'Kinshasa', bureaux: 2, agents: 7, statut: 'Actif' },
+    { nom: 'Coordination SP Plateau', province: 'Kinshasa', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Kongo Central
+    { nom: 'Coordination SP Matadi', province: 'Kongo Central', bureaux: 1, agents: 5, statut: 'Actif' },
+    { nom: 'Coordination SP Boma', province: 'Kongo Central', bureaux: 1, agents: 4, statut: 'En setup' },
+    { nom: 'Coordination SP Moanda', province: 'Kongo Central', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Kwango
+    { nom: 'Coordination SP Kenge', province: 'Kwango', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Kwilu
+    { nom: 'Coordination SP Bandundu', province: 'Kwilu', bureaux: 1, agents: 4, statut: 'Actif' },
+    { nom: 'Coordination SP Kikwit', province: 'Kwilu', bureaux: 1, agents: 4, statut: 'Actif' },
+    // Mai-Ndombe
+    { nom: 'Coordination SP Inongo', province: 'Mai-Ndombe', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Kasaï
+    { nom: 'Coordination SP Tshikapa', province: 'Kasaï', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Kasaï Central
+    { nom: 'Coordination SP Kananga', province: 'Kasaï Central', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Kasaï Oriental
+    { nom: 'Coordination SP Mbuji-Mayi', province: 'Kasaï Oriental', bureaux: 1, agents: 6, statut: 'Actif' },
+    // Lomami
+    { nom: 'Coordination SP Kabinda', province: 'Lomami', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Sankuru
+    { nom: 'Coordination SP Lusambo', province: 'Sankuru', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Maniema
+    { nom: 'Coordination SP Kindu', province: 'Maniema', bureaux: 1, agents: 4, statut: 'Actif' },
+    // Sud-Kivu
+    { nom: 'Coordination SP Bukavu', province: 'Sud-Kivu', bureaux: 1, agents: 5, statut: 'Actif' },
+    { nom: 'Coordination SP Uvira', province: 'Sud-Kivu', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Nord-Kivu
+    { nom: 'Coordination SP Goma', province: 'Nord-Kivu', bureaux: 1, agents: 5, statut: 'Actif' },
+    { nom: 'Coordination SP Beni', province: 'Nord-Kivu', bureaux: 1, agents: 4, statut: 'En setup' },
+    // Ituri
+    { nom: 'Coordination SP Bunia', province: 'Ituri', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Haut-Uele
+    { nom: 'Coordination SP Isiro', province: 'Haut-Uele', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Bas-Uele
+    { nom: 'Coordination SP Buta', province: 'Bas-Uele', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Tshopo
+    { nom: 'Coordination SP Kisangani', province: 'Tshopo', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Mongala
+    { nom: 'Coordination SP Lisala', province: 'Mongala', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Nord-Ubangi
+    { nom: 'Coordination SP Gbadolite', province: 'Nord-Ubangi', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Sud-Ubangi
+    { nom: 'Coordination SP Gemena', province: 'Sud-Ubangi', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Équateur
+    { nom: 'Coordination SP Mbandaka', province: 'Équateur', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Tshuapa
+    { nom: 'Coordination SP Boende', province: 'Tshuapa', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Haut-Lomami
+    { nom: 'Coordination SP Kamina', province: 'Haut-Lomami', bureaux: 1, agents: 2, statut: 'En setup' },
+    // Lualaba
+    { nom: 'Coordination SP Kolwezi', province: 'Lualaba', bureaux: 1, agents: 3, statut: 'En setup' },
+    // Haut-Katanga
+    { nom: 'Coordination SP Lubumbashi', province: 'Haut-Katanga', bureaux: 2, agents: 8, statut: 'Actif' },
+    { nom: 'Coordination SP Likasi', province: 'Haut-Katanga', bureaux: 1, agents: 5, statut: 'Actif' },
+    // Tanganyika
+    { nom: 'Coordination SP Kalemie', province: 'Tanganyika', bureaux: 1, agents: 2, statut: 'En setup' },
   ];
   for (const c of coordSous) {
     const existing = await prisma.coordSousProvinciale.findFirst({ where: { nom: c.nom } });
-    if (!existing) await prisma.coordSousProvinciale.create({ data: c });
+    const coordProvincialeId = coordProvIds[c.province] || null;
+    if (existing) {
+      // Mettre à jour le lien avec la coordination provinciale si manquant
+      if (!existing.coordProvincialeId && coordProvincialeId) {
+        await prisma.coordSousProvinciale.update({
+          where: { id: existing.id },
+          data: { coordProvincialeId },
+        });
+      }
+    } else {
+      await prisma.coordSousProvinciale.create({
+        data: { ...c, coordProvincialeId },
+      });
+    }
   }
+  console.log(`Seed terminé : ${coordSous.length} coordinations sous-provinciales (5 à Kinshasa, 26 provinces couvertes).`);
 
   // ── Bureaux ──
   const bureaux = [
@@ -214,13 +362,13 @@ async function main() {
 
   // ── Visites ──
   const visites = [
-    { date: new Date('2026-10-05'), etablissement: 'Institut Tuendelee', visiteur: 'Dr. Mukendi', objet: 'Inspection pédagogique', statut: 'Planifiée' },
-    { date: new Date('2026-10-07'), etablissement: 'Collège Boboto', visiteur: 'M. Kabeya', objet: 'Suivi administratif', statut: 'Planifiée' },
-    { date: new Date('2026-09-30'), etablissement: 'École Primaire Bambelo', visiteur: 'Mme. Mujinga', objet: 'Évaluation continue', statut: 'Terminée' },
-    { date: new Date('2026-10-10'), etablissement: 'Lycée Sainte-Germaine', visiteur: 'M. Mwamba', objet: 'Audit financier', statut: 'Planifiée' },
+    { date: new Date('2026-10-05'), ecole: 'Institut Tuendelee', visiteur: 'Dr. Mukendi', objet: 'Inspection pédagogique', statut: 'Planifiée' },
+    { date: new Date('2026-10-07'), ecole: 'Collège Boboto', visiteur: 'M. Kabeya', objet: 'Suivi administratif', statut: 'Planifiée' },
+    { date: new Date('2026-09-30'), ecole: 'École Primaire Bambelo', visiteur: 'Mme. Mujinga', objet: 'Évaluation continue', statut: 'Terminée' },
+    { date: new Date('2026-10-10'), ecole: 'Lycée Sainte-Germaine', visiteur: 'M. Mwamba', objet: 'Audit financier', statut: 'Planifiée' },
   ];
   for (const v of visites) {
-    const existing = await prisma.visite.findFirst({ where: { etablissement: v.etablissement, date: v.date } });
+    const existing = await prisma.visite.findFirst({ where: { ecole: v.ecole, date: v.date } });
     if (!existing) await prisma.visite.create({ data: v });
   }
 
@@ -287,7 +435,7 @@ async function main() {
           provinceEducationnelle: sd.provinceEducationnelle,
           provinceAdministrative: sd.provinceAdministrative,
           lieuImplantation: sd.lieuImplantation,
-          etablissements: 0,
+          ecoles: 0,
           eleves: 0,
           statut: 'Actif',
         },

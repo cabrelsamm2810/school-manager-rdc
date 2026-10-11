@@ -28,7 +28,7 @@ export interface ClasseStat {
 }
 
 export interface RapportAbsencesData {
-  etablissementNom: string;
+  ecoleNom: string;
   mois: string;
   anneeScolaire: string;
   generePar: string;
@@ -96,7 +96,7 @@ function renderRapport(doc: PDFKit.PDFDocument, data: RapportAbsencesData): void
     .fillColor(COLORS.muted)
     .fontSize(10)
     .font('Helvetica')
-    .text(data.etablissementNom || 'Établissement', 50, y + 23);
+    .text(data.ecoleNom || 'École', 50, y + 23);
 
   doc
     .fillColor(COLORS.muted)

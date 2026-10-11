@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { ROLE_LABELS } from '@/lib/rbac';
+import { resolveFileUrl } from '@/lib/storage';
 
 export async function GET(request: NextRequest) {
   const currentUser = await getSessionUser(request);
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json(
-    conversations.map((c) => {
+    await Promise.all(conversations.map(async (c) => {
       const otherId = c.user1Id === currentUser.id ? c.user2Id : c.user1Id;
       const other = userMap.get(otherId);
       const lastMsg = c.messages[0];
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
         otherUser: other
           ? {
               ...other,
+              profilePhotoUrl: await resolveFileUrl(other.profilePhotoUrl),
               roleLabel: ROLE_LABELS[other.role] ?? other.role,
               displayName: `${other.prenom} ${other.nom}`.trim(),
             }
@@ -106,6 +108,8 @@ export async function GET(request: NextRequest) {
               senderId: lastMsg.senderId,
               fileUrl: lastMsg.fileUrl,
               fileName: lastMsg.fileName,
+              fileType: lastMsg.fileType,
+              read: lastMsg.read,
             }
           : null,
         unreadCount: unreadMap.get(c.id) ?? 0,
@@ -114,7 +118,7 @@ export async function GET(request: NextRequest) {
           : null,
         updatedAt: c.updatedAt,
       };
-    })
+    }))
   );
 }
 

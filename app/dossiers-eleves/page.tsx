@@ -12,7 +12,7 @@ type Eleve = {
   prenom: string;
   classe: string;
   sexe: string;
-  etablissement: { id: string; nom: string } | null;
+  ecole: { id: string; nom: string } | null;
 };
 
 export default function DossiersElevesPage() {

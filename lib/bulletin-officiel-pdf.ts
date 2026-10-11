@@ -17,7 +17,7 @@ export interface OfficialBulletinBranch {
 }
 
 export interface OfficialBulletinData {
-  // Établissement
+  // École
   province: string;
   provinceEducationnelle: string;
   ville: string;
@@ -42,7 +42,7 @@ export interface OfficialBulletinData {
   application: string;
   conduite: string;
   enseignantNom: string;
-  chefEtablissement: string;
+  chefEcole: string;
   // Vérification
   verifyUrl: string;
 }
@@ -106,7 +106,7 @@ async function renderOfficialPage(doc: PDFKit.PDFDocument, data: OfficialBulleti
   doc.moveTo(ml, y).lineTo(pageW - mr, y).lineWidth(1.5).strokeColor(C.primary).stroke();
   y += 8;
 
-  // === Informations établissement et élève ===
+  // === Informations école et élève ===
   const infoColW = usableW / 2;
   const labelFont = 'Helvetica-Bold';
   const valFont = 'Helvetica';

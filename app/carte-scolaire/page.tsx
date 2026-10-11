@@ -8,7 +8,7 @@ type Province = {
   id: string;
   nom: string;
   chefLieu: string;
-  etablissements: number;
+  ecoles: number;
   eleves: number;
   statut: string;
 };
@@ -27,15 +27,15 @@ export default function CarteScolairePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const totalEtablissements = provinces.reduce((s, p) => s + (p.etablissements || 0), 0);
+  const totalEcoles = provinces.reduce((s, p) => s + (p.ecoles || 0), 0);
   const totalEleves = provinces.reduce((s, p) => s + (p.eleves || 0), 0);
   const zonesActives = provinces.filter((p) => p.statut === 'Actif').length;
 
   return (
-    <ModulePage icon="map" eyebrow="Gestion scolaire" title="Carte scolaire numérique" description="Cartographie des établissements, zones et effectifs scolaires.">
+    <ModulePage icon="map" eyebrow="Gestion scolaire" title="Carte scolaire numérique" description="Cartographie des écoles, zones et effectifs scolaires.">
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Provinces couvertes" value={loading ? '—' : String(provinces.length)} />
-        <StatCard label="Établissements" value={loading ? '—' : totalEtablissements.toLocaleString('fr-FR')} />
+        <StatCard label="Écoles" value={loading ? '—' : totalEcoles.toLocaleString('fr-FR')} />
         <StatCard label="Élèves" value={loading ? '—' : totalEleves.toLocaleString('fr-FR')} />
         <StatCard label="Zones actives" value={loading ? '—' : String(zonesActives)} />
       </div>
@@ -58,8 +58,8 @@ export default function CarteScolairePage() {
               <p className="text-sm text-slate-500">Chef-lieu : {p.chefLieu || '—'}</p>
               <div className="mt-4 flex gap-4 text-sm">
                 <div>
-                  <p className="text-slate-400">Établissements</p>
-                  <p className="font-semibold text-slate-900">{p.etablissements}</p>
+                  <p className="text-slate-400">Écoles</p>
+                  <p className="font-semibold text-slate-900">{p.ecoles}</p>
                 </div>
                 <div>
                   <p className="text-slate-400">Élèves</p>

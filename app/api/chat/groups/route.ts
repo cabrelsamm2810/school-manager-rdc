@@ -65,20 +65,20 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, classe, etablissementId } = body as { name: string; classe: string; etablissementId?: string };
+  const { name, classe, ecoleId } = body as { name: string; classe: string; ecoleId?: string };
 
   if (!name?.trim() || !classe?.trim()) {
     return NextResponse.json({ error: 'Nom et classe requis.' }, { status: 400 });
   }
 
-  const etabId = etablissementId || currentUser.etablissementId || undefined;
+  const etabId = ecoleId || currentUser.ecoleId || undefined;
 
   // Crée le groupe
   const group = await prisma.chatGroup.create({
     data: {
       name: name.trim(),
       classe: classe.trim(),
-      etablissementId: etabId,
+      ecoleId: etabId,
       createdById: currentUser.id,
     },
   });
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     where: {
       role: 'ELEVE',
       classe: classe.trim(),
-      ...(etabId ? { etablissementId: etabId } : {}),
+      ...(etabId ? { ecoleId: etabId } : {}),
       isActive: true,
     },
     select: { id: true },

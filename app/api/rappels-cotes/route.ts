@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         data: {
           enseignantNom: enseignant.nom,
           enseignantEmail: '',
-          etablissement: enseignant.etablissement,
+          ecole: enseignant.ecole,
           periode,
           anneeScolaire,
           statut: 'échec',
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         data: {
           enseignantNom: enseignant.nom,
           enseignantEmail: enseignant.email,
-          etablissement: enseignant.etablissement,
+          ecole: enseignant.ecole,
           periode,
           anneeScolaire,
           statut: 'envoyé',
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         data: {
           enseignantNom: enseignant.nom,
           enseignantEmail: enseignant.email,
-          etablissement: enseignant.etablissement,
+          ecole: enseignant.ecole,
           periode,
           anneeScolaire,
           statut: 'échec',

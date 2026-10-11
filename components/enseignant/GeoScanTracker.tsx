@@ -168,7 +168,7 @@ export function GeoScanTracker() {
                         </a>
                         {hasGeofence && p.distance != null && (
                           <span className={inZoneFlag ? 'text-green-600' : 'text-red-600'}>
-                            {inZoneFlag ? '✅' : '⚠️'} {p.distance}m de l'établissement
+                            {inZoneFlag ? '✅' : '⚠️'} {p.distance}m de l'école
                           </span>
                         )}
                       </>

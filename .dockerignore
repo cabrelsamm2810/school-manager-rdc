@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+*.md
+docker-compose.base44.yml
+docker-compose.yml
+Dockerfile
+.dockerignore
+base44
+ tsconfig.tsbuildinfo

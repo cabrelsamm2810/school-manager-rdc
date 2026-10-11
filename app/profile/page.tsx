@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { Icon } from '@/components/ui/Icon';
 import { ROLE_LABELS } from '@/lib/rbac';
+import { PointageProfileSection } from '@/components/enseignant/PointageProfileSection';
 
 type Profile = {
   id: string;
@@ -18,6 +19,8 @@ type Profile = {
   typeInstitution?: string;
   institutionName?: string;
   provinceAdministrative?: string;
+  bureauAffectation?: string | null;
+  fonction?: string | null;
 };
 
 const INSTITUTION_LABELS: Record<string, string> = {
@@ -159,7 +162,8 @@ export default function ProfilePage() {
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
+    /* Session fermée : retour à l'accueil public. */
+    window.location.href = '/';
   }
 
   const initials = profile
@@ -293,15 +297,24 @@ export default function ProfilePage() {
                         <InfoRow icon="user" label="Email" value={profile.email} />
                         <InfoRow icon="shield" label="Rôle" value={ROLE_LABELS[profile.role] ?? profile.role} />
                         {profile.institutionName && (
-                          <InfoRow icon="school" label="Établissement" value={profile.institutionName} />
+                          <InfoRow icon="school" label="École" value={profile.institutionName} />
                         )}
                         {profile.provinceAdministrative && (
                           <InfoRow icon="location" label="Province" value={profile.provinceAdministrative} />
+                        )}
+                        {profile.bureauAffectation && (
+                          <InfoRow icon="office" label="Bureau d'affectation" value={profile.bureauAffectation} />
+                        )}
+                        {profile.fonction && (
+                          <InfoRow icon="shield" label="Fonction" value={profile.fonction} />
                         )}
                         <InfoRow icon="shield" label="Statut" value="Compte actif" />
                       </div>
                     </div>
                   </div>
+
+                  {/* ── Pointage matinal (enseignant uniquement) ── */}
+                  {profile.role === 'ENSEIGNANT' && <PointageProfileSection />}
 
                   {/* ── Action buttons ── */}
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row">

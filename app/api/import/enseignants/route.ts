@@ -7,7 +7,7 @@ interface ParsedRow {
   nom?: string;
   matricule?: string;
   grade?: string;
-  etablissement?: string;
+  ecole?: string;
   specialite?: string;
   telephone?: string;
   email?: string;
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
           nom,
           matricule,
           grade: String(row.grade ?? '').trim(),
-          etablissement: String(row.etablissement ?? '').trim(),
+          ecole: String(row.ecole ?? '').trim(),
           specialite: String(row.specialite ?? '').trim(),
           telephone: String(row.telephone ?? '').trim(),
           email: String(row.email ?? '').trim(),

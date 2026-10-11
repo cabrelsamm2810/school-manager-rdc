@@ -10,7 +10,7 @@ export interface BulletinPdfData {
   eleveNom: string;
   eleveMatricule: string;
   classe: string;
-  etablissementNom: string;
+  ecoleNom: string;
   periode: string;
   anneeScolaire: string;
   moyenneGenerale: number;
@@ -123,7 +123,7 @@ async function renderBulletinPage(doc: PDFKit.PDFDocument, data: BulletinPdfData
         .fillColor(COLORS.muted)
         .fontSize(10)
         .font('Helvetica')
-        .text(data.etablissementNom || 'Établissement', 50, 73);
+        .text(data.ecoleNom || 'École', 50, 73);
 
       // Bloc période (à droite)
       doc
@@ -160,7 +160,7 @@ async function renderBulletinPage(doc: PDFKit.PDFDocument, data: BulletinPdfData
         { label: 'Nom de l\'élève', value: data.eleveNom },
         { label: 'Matricule', value: data.eleveMatricule },
         { label: 'Classe', value: data.classe },
-        { label: 'Établissement', value: data.etablissementNom || '—' },
+        { label: 'École', value: data.ecoleNom || '—' },
       ];
 
       infoItems.forEach((item, i) => {

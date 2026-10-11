@@ -20,17 +20,17 @@ export async function GET(request: NextRequest) {
 
   // Filtre hiérarchique
   const scope = getScopeLevel(user.role);
-  const etabId = (user as any).etablissementId || '';
+  const etabId = (user as any).ecoleId || '';
   const sousProvId = (user as any).coordSousProvincialeId || '';
   const prov = (user as any).provinceAdministrative || '';
 
   let eleveWhere: Record<string, unknown> = {};
   if (scope === 'school' && etabId) {
-    eleveWhere = { etablissementId: etabId };
+    eleveWhere = { ecoleId: etabId };
   } else if (scope === 'sousProvincial' && sousProvId) {
-    eleveWhere = { etablissement: { coordSousProvincialeId: sousProvId } };
+    eleveWhere = { ecole: { coordSousProvincialeId: sousProvId } };
   } else if (scope !== 'national' && prov) {
-    eleveWhere = { etablissement: { province: prov } };
+    eleveWhere = { ecole: { province: prov } };
   }
 
   const dateDebut = new Date();

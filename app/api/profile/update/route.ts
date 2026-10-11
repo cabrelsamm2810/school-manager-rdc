@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { resolveFileUrl } from '@/lib/storage';
 
 const profileFields = { nom: true, postNom: true, prenom: true, email: true, telephone: true, profilePhotoUrl: true } as const;
 
@@ -14,5 +15,5 @@ export async function PATCH(request: NextRequest) {
     ...(typeof body.email === 'string' ? { email: body.email.trim() } : {}),
     ...(typeof body.telephone === 'string' ? { telephone: body.telephone.trim() } : {})
   }, select: { id: true, role: true, ...profileFields } });
-  return NextResponse.json({ ok: true, user });
+  return NextResponse.json({ ok: true, user: { ...user, profilePhotoUrl: await resolveFileUrl(user.profilePhotoUrl) } });
 }

@@ -1,14 +1,16 @@
 /**
- * Stockage de fichiers — Cloudflare R2 via le SDK S3 (compatible S3).
+ * Storage abstraction layer.
  *
- * Principes :
- * - Les secrets R2 restent côté serveur, lus uniquement dans les variables
- *   d'environnement (jamais exposés au navigateur ni commités).
- * - Le bucket est privé : les lectures passent par `/api/files/<clé>`, qui
- *   vérifie les autorisations puis soit redirige vers une URL signée temporaire
- *   (`S3_PUBLIC_ENDPOINT` configuré), soit sert l'objet depuis le serveur.
- * - Si R2 n'est pas configuré, on retombe sur le comportement historique
- *   (écriture dans `public/uploads`) pour ne rien casser.
+ * When Cloudflare R2 is configured (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+ * R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME all present), new uploads go to R2.
+ * Otherwise, files are stored on the local filesystem in public/uploads/ —
+ * the original behaviour — so the app keeps working without R2.
+ *
+ * Stored URL formats in the database:
+ *   - Local file:  /uploads/<category>/<filename>        (backward compatible)
+ *   - R2 file:     r2://<category>/<filename>            (resolved to signed URL on read)
+ *   - R2 public:   https://<R2_PUBLIC_URL>/<key>         (for public assets like profile photos)
+ *   - Data URL:    data:image/...                         (registration photos, untouched)
  */
 
 import {
@@ -16,299 +18,225 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
-  HeadBucketCommand,
-  CreateBucketCommand,
+  HeadObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { mkdir, unlink, writeFile } from 'fs/promises';
+import { writeFile, mkdir, stat, unlink } from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
-import {
-  buildFileUrl,
-  buildObjectKey,
-  isUploadError,
-  parseFileUrl,
-  UploadError,
-  validateUploadedFile,
-  type FileCategory,
-} from '@/lib/file-validation';
 
-export type StorageConfig = {
-  endpoint: string;
-  region: string;
-  bucket: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  forcePathStyle: boolean;
-};
+// ── R2 configuration ──────────────────────────────────────────
 
-/** URL signée : validité courte par défaut (5 minutes). */
-export const SIGNED_URL_TTL = Number(process.env.S3_SIGNED_URL_TTL || 300);
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
 
-export function getStorageConfig(): StorageConfig | null {
-  // S3_* variables (local s3mock, ou S3-compatible) ont priorité.
-  // R2_* variables (Cloudflare R2) servent de repli — utiles sur Vercel
-  // où l'utilisateur définit R2_* plutôt que S3_*.
-  const accountId = (process.env.R2_ACCOUNT_ID || '').trim();
-  const r2Endpoint = accountId
-    ? `https://${accountId}.r2.cloudflarestorage.com`
-    : '';
+const R2_PREFIX = 'r2://';
 
-  const endpoint = (process.env.S3_ENDPOINT || r2Endpoint || '').trim();
-  const bucket = (process.env.S3_BUCKET || process.env.R2_BUCKET_NAME || '').trim();
-  const accessKeyId = (process.env.S3_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID || '').trim();
-  const secretAccessKey = (process.env.S3_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || '').trim();
-
-  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return null;
-
-  return {
-    endpoint,
-    region: (process.env.S3_REGION || 'auto').trim(),
-    bucket,
-    accessKeyId,
-    secretAccessKey,
-    forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== 'false',
-  };
+/** Returns true when all required R2 credentials are set. */
+export function isR2Configured(): boolean {
+  return !!(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET_NAME);
 }
 
-export function isStorageEnabled(): boolean {
-  return getStorageConfig() !== null;
-}
-
-/**
- * Endpoint public (facultatif) : quand il est défini, les lectures redirigent
- * vers une URL signée temporaire servie directement par R2 au navigateur.
- * Sinon l'objet est servi par le serveur applicatif (utile en développement).
- */
-function publicEndpoint(): string | null {
-  const value = (process.env.S3_PUBLIC_ENDPOINT || process.env.R2_PUBLIC_URL || '').trim();
-  return value || null;
-}
-
-export function usesSignedRedirects(): boolean {
-  return isStorageEnabled() && publicEndpoint() !== null;
-}
-
-let cachedClient: { signature: string; client: S3Client } | null = null;
-
-function createClient(config: StorageConfig, endpoint: string): S3Client {
-  return new S3Client({
-    endpoint,
-    region: config.region,
-    forcePathStyle: config.forcePathStyle,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-  });
-}
-
-function getClient(config: StorageConfig): S3Client {
-  const signature = `${config.endpoint}|${config.region}|${config.accessKeyId}|${config.forcePathStyle}`;
-  if (!cachedClient || cachedClient.signature !== signature) {
-    cachedClient = { signature, client: createClient(config, config.endpoint) };
+let _s3: S3Client | null = null;
+function getS3(): S3Client {
+  if (!_s3) {
+    _s3 = new S3Client({
+      region: 'auto',
+      endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: R2_ACCESS_KEY_ID!,
+        secretAccessKey: R2_SECRET_ACCESS_KEY!,
+      },
+    });
   }
-  return cachedClient.client;
+  return _s3;
 }
 
-let bucketChecked = false;
+// ── Helpers ───────────────────────────────────────────────────
+
+export function isR2Url(url: string | null | undefined): boolean {
+  return !!url && url.startsWith(R2_PREFIX);
+}
+
+function r2Key(url: string): string {
+  return url.slice(R2_PREFIX.length);
+}
+
+// ── Upload ────────────────────────────────────────────────────
+
+export interface UploadResult {
+  /** Value to store in the database (fileUrl / profilePhotoUrl column). */
+  storedUrl: string;
+  /** True if the file was sent to R2, false if written locally. */
+  usedR2: boolean;
+}
 
 /**
- * Développement uniquement : crée le bucket s'il n'existe pas
- * (`S3_AUTO_CREATE_BUCKET=true`). Sur R2 le bucket est créé dans la console
- * Cloudflare, donc l'option reste désactivée par défaut.
+ * Uploads a file to R2 (when configured) or the local filesystem.
+ *
+ * @param category  Sub-folder, e.g. "chat-files", "profile-photos".
+ * @param filename  Unique filename (already sanitised by the caller).
+ * @param buffer    File content.
+ * @param contentType  MIME type.
+ * @param public_  When true and R2_PUBLIC_URL is set, the returned URL is a
+ *                 permanent public URL (no signing needed). Use for profile
+ *                 photos that are already public locally. When false, the
+ *                 returned URL is an opaque `r2://` reference that must be
+ *                 resolved via `resolveFileUrl()` before sending to the client.
  */
-async function ensureBucket(config: StorageConfig, client: S3Client): Promise<void> {
-  if (bucketChecked) return;
-  bucketChecked = true;
-  if (process.env.S3_AUTO_CREATE_BUCKET !== 'true') return;
-
-  try {
-    await client.send(new HeadBucketCommand({ Bucket: config.bucket }));
-  } catch {
+export async function uploadFile(
+  category: string,
+  filename: string,
+  buffer: Buffer,
+  contentType: string,
+  public_ = false,
+): Promise<UploadResult> {
+  if (isR2Configured()) {
+    const key = `${category}/${filename}`;
     try {
-      await client.send(new CreateBucketCommand({ Bucket: config.bucket }));
-    } catch {
-      // Ignoré : si la création n'est pas permise, l'upload remontera l'erreur réelle.
+      await getS3().send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET_NAME,
+          Key: key,
+          Body: buffer,
+          ContentType: contentType,
+        }),
+      );
+    } catch (err) {
+      throw new Error(
+        `Erreur lors du téléversement vers R2 (${category}/${filename}): ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
+
+    if (public_ && R2_PUBLIC_URL) {
+      return { storedUrl: `${R2_PUBLIC_URL}/${key}`, usedR2: true };
+    }
+    return { storedUrl: `${R2_PREFIX}${key}`, usedR2: true };
   }
-}
 
-function isNotFound(error: unknown): boolean {
-  const name = (error as { name?: string })?.name;
-  const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
-  return name === 'NoSuchKey' || name === 'NotFound' || status === 404;
-}
-
-export async function uploadObject(
-  key: string,
-  body: Uint8Array,
-  contentType: string
-): Promise<void> {
-  const config = getStorageConfig();
-  if (!config) throw new UploadError('Stockage R2 non configuré.', 503);
-
-  const client = getClient(config);
-  await ensureBucket(config, client);
-
-  try {
-    await client.send(
-      new PutObjectCommand({
-        Bucket: config.bucket,
-        Key: key,
-        Body: body,
-        ContentType: contentType || 'application/octet-stream',
-      })
-    );
-  } catch (error) {
-    console.error('[storage] échec du téléversement R2', key, error);
-    throw new UploadError('Échec du téléversement vers le stockage distant.', 502);
+  // ── Local fallback (original behaviour) ──
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads', category);
+  if (!existsSync(uploadDir)) {
+    await mkdir(uploadDir, { recursive: true });
   }
+  await writeFile(path.join(uploadDir, filename), buffer);
+  return { storedUrl: `/uploads/${category}/${filename}`, usedR2: false };
 }
 
-export type StoredObject = {
-  body: Uint8Array;
-  contentType: string;
-  contentLength: number;
-};
+// ── Resolve (stored URL → browser-accessible URL) ─────────────
 
-export async function readObject(key: string): Promise<StoredObject | null> {
-  const config = getStorageConfig();
-  if (!config) return null;
-
-  const client = getClient(config);
-  try {
-    const response = await client.send(
-      new GetObjectCommand({ Bucket: config.bucket, Key: key })
-    );
-    const bytes = await response.Body?.transformToByteArray();
-    if (!bytes) return null;
-    return {
-      body: bytes,
-      contentType: response.ContentType || 'application/octet-stream',
-      contentLength: bytes.byteLength,
-    };
-  } catch (error) {
-    if (isNotFound(error)) return null;
-    console.error('[storage] échec de lecture R2', key, error);
-    throw error;
-  }
-}
-
-export async function deleteObject(key: string): Promise<void> {
-  const config = getStorageConfig();
-  if (!config) return;
-
-  const client = getClient(config);
-  try {
-    await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
-  } catch (error) {
-    if (isNotFound(error)) return;
-    console.error('[storage] échec de suppression R2', key, error);
-  }
-}
-
-/** URL signée temporaire (bucket privé), à utiliser côté navigateur. */
-export async function getSignedDownloadUrl(
-  key: string,
-  options: { expiresIn?: number; fileName?: string } = {}
+/**
+ * Converts a stored URL to a URL the browser can fetch.
+ *
+ * - `/uploads/...` and `https://...` and `data:...` are returned as-is.
+ * - `r2://...` is resolved to a signed R2 URL (default 1 h expiry) or,
+ *   if `R2_PUBLIC_URL` is set and `signed` is false, to the public URL.
+ */
+export async function resolveFileUrl(
+  storedUrl: string | null | undefined,
+  opts?: { signed?: boolean; expiresIn?: number },
 ): Promise<string | null> {
-  const config = getStorageConfig();
-  if (!config) return null;
+  if (!storedUrl) return null;
+  if (!isR2Url(storedUrl)) return storedUrl;
 
-  const endpoint = publicEndpoint() || config.endpoint;
-  const client =
-    endpoint === config.endpoint ? getClient(config) : createClient(config, endpoint);
+  const key = r2Key(storedUrl);
 
-  return getSignedUrl(
-    client,
-    new GetObjectCommand({
-      Bucket: config.bucket,
-      Key: key,
-      ResponseContentDisposition: options.fileName
-        ? `inline; filename="${options.fileName}"`
-        : undefined,
-    }),
-    { expiresIn: options.expiresIn ?? SIGNED_URL_TTL }
-  );
-}
-
-export type SavedUpload = {
-  fileUrl: string;
-  fileName: string;
-  fileType: string;
-  storage: 'r2' | 'local';
-  key: string | null;
-};
-
-export type SaveUploadOptions = {
-  category: FileCategory;
-  /** Dossier logique : `profile-photos`, `chat-files`, `dossiers-eleves`, `etablissements/<id>`… */
-  folder: string;
-};
-
-/**
- * Valide puis enregistre un fichier téléversé.
- * R2 si configuré, sinon repli sur `public/uploads` (comportement historique).
- */
-export async function saveUploadedFile(
-  file: File,
-  { category, folder }: SaveUploadOptions
-): Promise<SavedUpload> {
-  const check = validateUploadedFile(
-    { name: file.name, type: file.type, size: file.size },
-    category
-  );
-  if (!check.ok) throw new UploadError(check.error, 400);
-
-  const fileName = file.name || 'fichier';
-  const fileType = file.type;
-  const bytes = new Uint8Array(await file.arrayBuffer());
-
-  if (isStorageEnabled()) {
-    const key = buildObjectKey(folder, fileName);
-    await uploadObject(key, bytes, fileType);
-    return { fileUrl: buildFileUrl(key), fileName, fileType, storage: 'r2', key };
+  // Public URL (no signing)
+  if (R2_PUBLIC_URL && !opts?.signed) {
+    return `${R2_PUBLIC_URL}/${key}`;
   }
 
-  const safeFolder = folder
-    .split('/')
-    .map((segment) => segment.replace(/[^a-zA-Z0-9._-]/g, '_'))
-    .filter(Boolean)
-    .join('/');
-  const uniqueName = buildObjectKey('', fileName);
-  const directory = path.join(process.cwd(), 'public', 'uploads', safeFolder);
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, uniqueName), Buffer.from(bytes));
+  // Signed URL
+  if (isR2Configured()) {
+    try {
+      return await getSignedUrl(
+        getS3(),
+        new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }),
+        { expiresIn: opts?.expiresIn ?? 3600 },
+      );
+    } catch (err) {
+      throw new Error(
+        `Erreur lors de la génération de l'URL signée R2 (${key}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
 
-  return {
-    fileUrl: `/uploads/${safeFolder}/${uniqueName}`,
-    fileName,
-    fileType,
-    storage: 'local',
-    key: null,
-  };
+  return null;
 }
 
 /**
- * Supprime le fichier référencé (R2 ou dossier public).
- * Toujours non bloquant : une suppression de fichier ne doit pas faire échouer
- * la suppression de l'entrée en base.
+ * Convenience: resolve an array of objects in-place, mapping a `urlField`
+ * property from `r2://` to a signed/public URL.
  */
-export async function deleteStoredFile(fileUrl: string | null | undefined): Promise<void> {
-  const parsed = parseFileUrl(fileUrl);
-  if (!parsed) return;
+export async function resolveFileUrls<T extends Record<string, any>>(
+  items: T[],
+  urlField: keyof T,
+  opts?: { signed?: boolean; expiresIn?: number },
+): Promise<T[]> {
+  return Promise.all(
+    items.map(async (item) => ({
+      ...item,
+      [urlField]: await resolveFileUrl(item[urlField] as string, opts),
+    })),
+  );
+}
 
-  try {
-    if (parsed.storage === 'r2') {
-      await deleteObject(parsed.key);
-      return;
+// ── Delete ────────────────────────────────────────────────────
+
+export async function deleteFile(storedUrl: string | null | undefined): Promise<void> {
+  if (!storedUrl) return;
+
+  if (isR2Url(storedUrl) && isR2Configured()) {
+    try {
+      await getS3().send(
+        new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: r2Key(storedUrl) }),
+      );
+    } catch (err) {
+      throw new Error(
+        `Erreur lors de la suppression du fichier R2 (${r2Key(storedUrl)}): ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
-    if (parsed.storage === 'local') {
-      await unlink(path.join(process.cwd(), 'public', 'uploads', parsed.relativePath));
+    return;
+  }
+
+  // Local file
+  if (storedUrl.startsWith('/uploads/')) {
+    try {
+      await unlink(path.join(process.cwd(), 'public', storedUrl.slice(1)));
+    } catch {
+      /* file may already be gone — ignore */
     }
-  } catch {
-    // Fichier déjà absent ou inaccessible : on ignore.
   }
 }
 
-export { isUploadError };
+// ── File size ─────────────────────────────────────────────────
+
+export async function getFileSize(storedUrl: string | null | undefined): Promise<number | null> {
+  if (!storedUrl) return null;
+
+  if (isR2Url(storedUrl) && isR2Configured()) {
+    try {
+      const res = await getS3().send(
+        new HeadObjectCommand({ Bucket: R2_BUCKET_NAME, Key: r2Key(storedUrl) }),
+      );
+      return res.ContentLength ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Local file
+  if (storedUrl.startsWith('/uploads/')) {
+    try {
+      const info = await stat(path.join(process.cwd(), 'public', storedUrl.slice(1)));
+      return info.size;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}

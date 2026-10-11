@@ -79,7 +79,7 @@ export default function ElevesPage() {
         <ImportDialog
           endpoint="/api/import/eleves"
           moduleName="Élèves"
-          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId']}
+          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'ecoleId']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowImport(false)}
         />
@@ -89,7 +89,7 @@ export default function ElevesPage() {
         <OcrImportDialog
           endpoint="/api/import/eleves"
           moduleName="Élèves"
-          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'etablissementId']}
+          columns={['matricule', 'nom', 'postNom', 'prenom', 'sexe', 'dateNaissance', 'lieuNaissance', 'classe', 'telephone', 'email', 'adresse', 'nomTuteur', 'telephoneTuteur', 'ecoleId']}
           onImported={() => setRefreshKey((k) => k + 1)}
           onClose={() => setShowOcr(false)}
         />

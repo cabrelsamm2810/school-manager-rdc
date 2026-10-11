@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
-import { deleteStoredFile, isUploadError, saveUploadedFile } from '@/lib/storage';
+import { uploadFile, resolveFileUrl, deleteFile } from '@/lib/storage';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain', 'text/csv',
+];
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getSessionUser(request);
@@ -12,7 +23,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json(docs);
+  // Résout les URLs R2 en URLs signées
+  const resolved = await Promise.all(
+    docs.map(async (d) => ({
+      ...d,
+      fileUrl: await resolveFileUrl(d.fileUrl, { signed: true }),
+    }))
+  );
+
+  return NextResponse.json(resolved);
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -35,14 +54,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     if (!titre) return NextResponse.json({ error: 'Le titre est obligatoire.' }, { status: 400 });
     if (!(file instanceof File)) return NextResponse.json({ error: 'Aucun fichier reçu.' }, { status: 400 });
+    if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: 'Type de fichier non supporté.' }, { status: 400 });
+    if (file.size > MAX_FILE_SIZE) return NextResponse.json({ error: 'Le fichier dépasse 10 Mo.' }, { status: 400 });
 
-    let saved;
-    try {
-      saved = await saveUploadedFile(file, { category: 'student-document', folder: 'dossiers-eleves' });
-    } catch (error) {
-      if (isUploadError(error)) return NextResponse.json({ error: error.message }, { status: error.status });
-      throw error;
-    }
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const uniqueName = `${Date.now()}-${safeName}`;
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const { storedUrl } = await uploadFile('dossiers-eleves', uniqueName, bytes, file.type || 'application/octet-stream');
 
     const doc = await prisma.dossierEleveDocument.create({
       data: {
@@ -50,14 +68,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         type,
         titre,
         description,
-        fileUrl: saved.fileUrl,
-        fileName: saved.fileName,
-        fileType: saved.fileType,
+        fileUrl: storedUrl,
+        fileName: file.name,
+        fileType: file.type,
         uploadedBy: `${user.prenom} ${user.nom}`.trim(),
       },
     });
 
-    return NextResponse.json(doc, { status: 201 });
+    return NextResponse.json({ ...doc, fileUrl: await resolveFileUrl(storedUrl, { signed: true }) }, { status: 201 });
   }
 
   // JSON mode (link-based document, no file upload)
@@ -128,13 +146,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const docId = searchParams.get('docId');
   if (!docId) return NextResponse.json({ error: 'ID document manquant.' }, { status: 400 });
 
-  const existing = await prisma.dossierEleveDocument.findFirst({
-    where: { id: docId, eleveId: params.id },
-    select: { fileUrl: true },
-  });
+  const doc = await prisma.dossierEleveDocument.findFirst({ where: { id: docId, eleveId: params.id } });
+  if (!doc) return NextResponse.json({ error: 'Document introuvable.' }, { status: 404 });
 
+  await deleteFile(doc.fileUrl);
   await prisma.dossierEleveDocument.delete({ where: { id: docId, eleveId: params.id } });
-  await deleteStoredFile(existing?.fileUrl);
-
   return NextResponse.json({ ok: true });
 }

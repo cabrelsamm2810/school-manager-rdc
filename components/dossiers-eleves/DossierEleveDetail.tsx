@@ -13,7 +13,7 @@ type Eleve = {
   prenom: string;
   classe: string;
   sexe: string;
-  etablissement: { id: string; nom: string } | null;
+  ecole: { id: string; nom: string } | null;
 };
 
 type Document = {
@@ -75,7 +75,7 @@ export function DossierEleveDetail({ eleve }: { eleve: Eleve }) {
           <h2 className="truncate text-base font-bold text-slate-900">{eleve.prenom} {eleve.nom}</h2>
           <p className="truncate text-xs text-slate-500">
             {eleve.matricule} • Classe {eleve.classe}
-            {eleve.etablissement ? ` • ${eleve.etablissement.nom}` : ''}
+            {eleve.ecole ? ` • ${eleve.ecole.nom}` : ''}
           </p>
         </div>
         <DossierEleveExportButton eleve={eleve} />
