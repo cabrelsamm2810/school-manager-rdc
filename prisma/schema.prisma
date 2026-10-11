@@ -246,6 +246,8 @@ model Ecole {
   commune              String   @default("")
   adresse              String   @default("")
   localisationGeo      String   @default("")
+  latitude             Float?
+  longitude            Float?
   telephone            String   @default("")
   email                String   @default("")
   chefEcole    String   @default("")

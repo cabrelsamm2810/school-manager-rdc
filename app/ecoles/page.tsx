@@ -31,6 +31,8 @@ type Ecole = {
   effectif: number;
   statut: string;
   statutValidation: string;
+  latitude: number | null;
+  longitude: number | null;
   coordSousProvincialeId: string | null;
   coordSousProvinciale?: { id: string; nom: string } | null;
   ecErcId: string | null;
@@ -101,6 +103,8 @@ export default function EcolesPage() {
       ville: et.ville, commune: et.commune, adresse: et.adresse,
       telephone: et.telephone, email: et.email, chefEcole: et.chefEcole,
       effectif: String(et.effectif), statut: et.statut, statutValidation: et.statutValidation,
+      latitude: et.latitude ?? null,
+      longitude: et.longitude ?? null,
       coordSousProvincialeId: et.coordSousProvincialeId ?? '',
       ecErcId: et.ecErcId ?? '',
       structureRattachementId: et.coordSousProvincialeId ?? '',
