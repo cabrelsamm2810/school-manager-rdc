@@ -62,6 +62,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Rapports de présence', href: '/rapports-pointage', icon: 'activity', minRole: 'DIRECTION_ECOLE' },
       { label: 'Importer mes données', href: '/import', icon: 'upload', minRole: 'DIRECTION_ECOLE' },
       { label: 'Documents officiels', href: '/documents-officiels', icon: 'document', minRole: 'DIRECTION_ECOLE' },
+      { label: 'Mes documents & photos', href: '/mes-documents', icon: 'upload' },
       { label: 'Dossiers des élèves', href: '/dossiers-eleves', icon: 'folder', minRole: 'DIRECTION_ECOLE' },
       { label: 'Classes & Niveaux', href: '/classes-rdc', icon: 'school', minRole: 'DIRECTION_ECOLE' },
       { label: 'Matières & Cours', href: '/matieres-rdc', icon: 'notebook', minRole: 'DIRECTION_ECOLE' },

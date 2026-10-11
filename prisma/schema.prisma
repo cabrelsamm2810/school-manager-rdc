@@ -59,6 +59,7 @@ model User {
   chatGroupsCreated     ChatGroup[]
   chatGroupMemberships  ChatGroupMember[]
   chatGroupMessages     ChatGroupMessage[]
+  userDocuments         UserDocument[]
 
   @@index([role])
   @@index([isActive])
@@ -912,4 +913,23 @@ model AuditLog {
   @@index([module])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model UserDocument {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categorie   String   @default("document")
+  type        String   @default("")
+  titre       String
+  fileUrl     String
+  fileName    String   @default("")
+  fileType    String   @default("")
+  fileSize    Int      @default(0)
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([categorie])
+  @@map("user_documents")
 }
