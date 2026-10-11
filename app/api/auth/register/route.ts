@@ -10,7 +10,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, user: result.user }, { status: 201 });
+    const { passwordHash, validationCode, ...safeUser } = result.user;
+    return NextResponse.json({ ok: true, user: safeUser }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Une erreur est survenue lors de l\u2019inscription.' }, { status: 500 });
   }
