@@ -54,7 +54,7 @@ services:
       - |
         npm install --no-audit --no-fund
         npx prisma generate
-        npx prisma db push --accept-data-loss
+        npx prisma db push --accept-data-loss --force-reset
         npx tsx prisma/seed.ts
 
   web:
