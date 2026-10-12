@@ -114,6 +114,7 @@ export function EcolesEnAttente() {
   // ── Filtres & recherche ──
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('tous');
+  const [provinceFilter, setProvinceFilter] = useState<string>('toutes');
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -142,6 +143,9 @@ export function EcolesEnAttente() {
     if (statutFilter !== 'tous') {
       list = list.filter((e) => e.statutValidation === statutFilter);
     }
+    if (provinceFilter !== 'toutes') {
+      list = list.filter((e) => e.province === provinceFilter);
+    }
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -169,7 +173,14 @@ export function EcolesEnAttente() {
       }
     });
     return sorted;
-  }, [ecoles, statutFilter, search, sortBy]);
+  }, [ecoles, statutFilter, provinceFilter, search, sortBy]);
+
+  // ── Provinces uniques pour le filtre ──
+  const provinces = useMemo(() => {
+    const set = new Set<string>();
+    ecoles.forEach((e) => { if (e.province) set.add(e.province); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [ecoles]);
 
   // ── Navigation entre dossiers ──
   const expandedIndex = useMemo(
@@ -324,6 +335,42 @@ export function EcolesEnAttente() {
               );
             })}
           </div>
+
+          {/* Filtre par province */}
+          {provinces.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-slate-400">
+                <Icon name="region" className="h-3.5 w-3.5" />
+                Province :
+              </span>
+              <button
+                onClick={() => setProvinceFilter('toutes')}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                  provinceFilter === 'toutes'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                Toutes
+              </button>
+              {provinces.map((p) => {
+                const active = provinceFilter === p;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setProvinceFilter(p)}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                      active
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Tri par date et par école */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
