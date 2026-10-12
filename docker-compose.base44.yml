@@ -59,7 +59,6 @@ services:
       BASE44_PUBLIC_HOST_SUFFIX: ${BASE44_PUBLIC_HOST_SUFFIX:-}
     volumes:
       - .:/app:cached
-      - /app/node_modules
       - /app/.next
     ports:
       - "3000:3000"
@@ -67,7 +66,11 @@ services:
       - sh
       - -ec
       - |
-        npm install --no-audit --no-fund
+        # node_modules is deliberately neither a volume nor installed here: `migrate`
+        # installs it into this bind-mounted tree and must exit 0 before `web` starts,
+        # so the install happens exactly once. A second full `npm install` in `web` used
+        # to run after migrate's and doubled the cold start (~60s), which is how the app
+        # missed the preview's startup window and was reported as failing to start.
         npx prisma generate
         # Clear the Next dev build cache on start: the persistent /app/.next volume keeps
         # chunks left by an unclean shutdown or a production build, which surface as

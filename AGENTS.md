@@ -14,10 +14,17 @@ docker compose -f docker-compose.base44.yml up -d
 - `migrate` — one-shot, must exit 0 before `web` starts (`depends_on: service_completed_successfully`):
   `npm install` → `prisma generate` → `prisma db push --accept-data-loss` → `tsx prisma/seed.ts`.
   It uses `db push`, not `migrate deploy`, because the database was created with `db push` and is not baselined
-  for migrations.
-- `web` — `next dev -H 0.0.0.0 -p 3000` from the bind-mounted repo; live reload is active. `node_modules` and
-  `.next` live in container volumes, so installs do not spill into the host working tree. It clears the contents
-  of `.next` on startup, so a stale dev cache from an unclean shutdown cannot break the boot.
+  for migrations. **The deploy build needs the same treatment**: `vercel.json`'s buildCommand must use
+  `prisma db push`, never `prisma migrate deploy`. `migrate deploy` on a database that was created with
+  `db push` (which is what this app's database is) exits 1 with `Error: P3005` — "The database schema is not
+  empty" — so the build fails and the deployment never starts. Verified: `npx prisma migrate deploy` against a
+  `db push`-created database → exit 1, P3005; `npx prisma db push --accept-data-loss` → "already in sync",
+  exit 0.
+- `web` — `next dev -H 0.0.0.0 -p 3000` from the bind-mounted repo; live reload is active. It does **not**
+  install dependencies: `migrate` installs `node_modules` into the bind-mounted repo tree (it has no volume, so
+  the install is shared) and must exit 0 first, so `web` always finds it complete. Only `.next` is a container
+  volume, and its contents are cleared on startup, so a stale dev cache from an unclean shutdown cannot break
+  the boot.
 
 Web entry point is host port 3000; the API is served by the same Next dev server (single-origin wiring).
 `/run/base44/app.env` (the platform-managed secrets file) is the only `env_file` — it carries the SMTP
@@ -27,8 +34,12 @@ credentials. Nothing external is required to boot.
 
 - **Prisma needs OpenSSL.** `node:22-bookworm-slim` lacks it and Prisma fails with an empty "Schema engine error".
   Both app services use `node:22-bookworm` (full Debian) — do not switch them to `-slim`.
-- **`migrate` and `web` each run `npm install`.** They never run concurrently, so they do not race each other;
-  do not add a third installer against the same `node_modules` volume.
+- **Only `migrate` installs dependencies.** It owns `npm install` against the bind-mounted `node_modules`, and
+  `web` starts only after migrate exits 0, so the two can never race. Do not re-add `npm install` (or a
+  `/app/node_modules` volume) to `web`: the duplicate install ran back-to-back with migrate's and added ~25 s to
+  a cold start, which is enough to miss the preview's startup window and be reported as "the app failed to
+  start" even though nothing errors. Cold start to first HTTP 200 measured: 61 s with the duplicate install,
+  40 s without it (same warm database, all caches removed before each run).
 - **`package-lock.json` is tracked**, but the service commands still use `npm install` (not `npm ci`), so a
   dependency change should be followed by an install to keep the lockfile in sync.
 - **Tailwind/PostCSS config must exist.** Without `postcss.config.mjs` Next.js skips PostCSS entirely, so the
@@ -144,23 +155,28 @@ fails non-deterministically (`PageNotFoundError: Cannot find module for page: /a
 next `next dev` boot then dies with `Error: Cannot find module './7787.js'` and serves `/` as 404/500 until it
 has finished recompiling.
 
-Verified command (`✓ Compiled successfully`, type-check step passed, exit 0) — a throwaway container that
-reuses `web`'s `node_modules` but gets its **own** `.next` volume, so `next dev` keeps running untouched:
+Verified command (`✓ Compiled successfully`, type-check step passed, exit 0) — a throwaway container that uses
+the repo tree's `node_modules` (installed by `migrate`; `web` no longer keeps its own copy) and gets its
+**own** `.next` volume, so `next dev` keeps running untouched. It runs exactly the `vercel.json` buildCommand,
+so it is also the deploy-build gate:
 
 ```bash
-NODE_VOL=$(docker inspect school-manager-rdc-web-1 -f '{{range .Mounts}}{{if eq .Destination "/app/node_modules"}}{{.Name}}{{end}}{{end}}')
 NET=$(docker inspect school-manager-rdc-web-1 -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}')
-docker run --rm -v "$PWD:/app" -v "$NODE_VOL:/app/node_modules" -v /app/.next \
+docker run --rm -v "$PWD:/app" -v /app/.next \
   --network "$NET" --env-file /run/base44/app.env \
   -e NODE_ENV=production \
   -e DATABASE_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
   -e DIRECT_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
-  -w /app node:22-bookworm npm run build
+  -w /app node:22-bookworm \
+  sh -c 'export PATH="/app/node_modules/.bin:$PATH"; npx prisma generate && npx prisma db push --accept-data-loss && next build'
 ```
 
-Reusing `node_modules` avoids a reinstall; the network name lets the build resolve `postgres`; `-v /app/.next`
-creates a fresh volume used only by that run. `next build` type-checks every file, so this is also the type
-gate. Verified with `web` up: exit 0, `web` kept answering 200, and `web`'s `.next` entry count was unchanged.
+The `PATH` export matters: Vercel puts `node_modules/.bin` on `PATH` for the buildCommand, a bare
+`sh -c` does not — without it the run dies at `sh: 1: next: not found` (exit 127), which looks like a build
+failure but is only a missing `PATH` entry.
+The network name lets the build resolve `postgres`; `-v /app/.next` creates a fresh volume used only by that
+run. `next build` type-checks every file, so this is also the type gate. Verified with `web` up: exit 0, `web`
+kept answering 200, and `web`'s `.next` entry count was unchanged.
 
 From a clean checkout, keep devDependencies in the install step too:
 
