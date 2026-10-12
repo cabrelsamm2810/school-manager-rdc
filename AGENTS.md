@@ -14,12 +14,15 @@ docker compose -f docker-compose.base44.yml up -d
 - `migrate` — one-shot, must exit 0 before `web` starts (`depends_on: service_completed_successfully`):
   `npm install` → `prisma generate` → `prisma db push --accept-data-loss` → `tsx prisma/seed.ts`.
   It uses `db push`, not `migrate deploy`, because the database was created with `db push` and is not baselined
-  for migrations. **The deploy build needs the same treatment**: `vercel.json`'s buildCommand must use
-  `prisma db push`, never `prisma migrate deploy`. `migrate deploy` on a database that was created with
-  `db push` (which is what this app's database is) exits 1 with `Error: P3005` — "The database schema is not
-  empty" — so the build fails and the deployment never starts. Verified: `npx prisma migrate deploy` against a
-  `db push`-created database → exit 1, P3005; `npx prisma db push --accept-data-loss` → "already in sync",
-  exit 0.
+  for migrations. **The deploy build must not run a database command at all** — `vercel.json`'s buildCommand is
+  `npx prisma generate && next build`, nothing else. `prisma generate` and `next build` both run with no
+  database env vars at all (verified with only `NODE_ENV=production` set), so the build cannot fail on database
+  access. Every schema command fails there instead: `npx prisma migrate deploy` against this `db push`-created
+  database → `Error: P3005` "The database schema is not empty"; `npx prisma db push --accept-data-loss` on a
+  build machine where `DIRECT_URL` is missing → `Error code: P1012 / Environment variable not found:
+  DIRECT_URL`, and where the database is unreachable → `P1001: Can't reach database server`. Schema sync stays
+  an operational step, run where the database is reachable: `npx prisma db push --accept-data-loss` with
+  `DATABASE_URL` + `DIRECT_URL` set (that is what the compose `migrate` service does on every sandbox boot).
 - `web` — `next dev -H 0.0.0.0 -p 3000` from the bind-mounted repo; live reload is active. It does **not**
   install dependencies: `migrate` installs `node_modules` into the bind-mounted repo tree (it has no volume, so
   the install is shared) and must exit 0 first, so `web` always finds it complete. Only `.next` is a container
@@ -163,14 +166,14 @@ so it is also the deploy-build gate:
 ```bash
 NET=$(docker inspect school-manager-rdc-web-1 -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}')
 docker run --rm -v "$PWD:/app" -v /app/.next \
-  --network "$NET" --env-file /run/base44/app.env \
+  --network "$NET" \
   -e NODE_ENV=production \
-  -e DATABASE_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
-  -e DIRECT_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
   -w /app node:22-bookworm \
-  sh -c 'export PATH="/app/node_modules/.bin:$PATH"; npx prisma generate && npx prisma db push --accept-data-loss && next build'
+  sh -c 'export PATH="/app/node_modules/.bin:$PATH"; npx prisma generate && next build'
 ```
 
+No `DATABASE_URL`/`DIRECT_URL` and no env file are passed on purpose: this is the deploy build, and it must
+succeed without any database access (verified: exit 0 with only `NODE_ENV=production` set).
 The `PATH` export matters: Vercel puts `node_modules/.bin` on `PATH` for the buildCommand, a bare
 `sh -c` does not — without it the run dies at `sh: 1: next: not found` (exit 127), which looks like a build
 failure but is only a missing `PATH` entry.
