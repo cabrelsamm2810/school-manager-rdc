@@ -69,6 +69,15 @@ const STATUT_FILTERS: { key: StatutFilter; label: string; icon: string }[] = [
   { key: 'En cours de vérification', label: 'En cours', icon: 'activity' },
 ];
 
+type SortBy = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc';
+
+const SORT_OPTIONS: { key: SortBy; label: string; icon: string }[] = [
+  { key: 'date-desc', label: 'Plus récentes', icon: 'arrow-down' },
+  { key: 'date-asc', label: 'Plus anciennes', icon: 'arrow-up' },
+  { key: 'name-asc', label: 'École A-Z', icon: 'arrow-down' },
+  { key: 'name-desc', label: 'École Z-A', icon: 'arrow-up' },
+];
+
 function StatutValidationBadge({ statutValidation }: { statutValidation: string }) {
   const sv = VALIDATION_STATUT_COLORS[statutValidation];
   const cls = sv ? STATUT_BADGE_CLASSES[sv.color] : 'bg-slate-100 text-slate-700';
@@ -105,6 +114,7 @@ export function EcolesEnAttente() {
   // ── Filtres & recherche ──
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('tous');
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -126,7 +136,7 @@ export function EcolesEnAttente() {
     loadData();
   }, [loadData]);
 
-  // ── Liste filtrée ──
+  // ── Liste filtrée et triée ──
   const filteredEcoles = useMemo(() => {
     let list = ecoles;
     if (statutFilter !== 'tous') {
@@ -143,8 +153,23 @@ export function EcolesEnAttente() {
           (e.province ?? '').toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [ecoles, statutFilter, search]);
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'date-asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'name-asc':
+          return a.nom.localeCompare(b.nom, 'fr');
+        case 'name-desc':
+          return b.nom.localeCompare(a.nom, 'fr');
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [ecoles, statutFilter, search, sortBy]);
 
   // ── Navigation entre dossiers ──
   const expandedIndex = useMemo(
@@ -295,6 +320,31 @@ export function EcolesEnAttente() {
                   <span className={`rounded-md px-1.5 py-0.5 text-xs font-bold ${active ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
                     {count}
                   </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Tri par date et par école */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-slate-400">
+              <Icon name="filter" className="h-3.5 w-3.5" />
+              Trier :
+            </span>
+            {SORT_OPTIONS.map((opt) => {
+              const active = sortBy === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => setSortBy(opt.key)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                    active
+                      ? 'bg-slate-800 text-white shadow-sm'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon name={opt.icon} className="h-3.5 w-3.5" />
+                  {opt.label}
                 </button>
               );
             })}
