@@ -6,6 +6,7 @@ import { StatutBadge } from '@/components/ui/StatutBadge';
 import { useSessionUser } from '@/lib/use-session-user';
 import { DocumentAuditTrail } from '@/components/ecoles/DocumentAuditTrail';
 import type { DocumentAudit } from '@/components/ecoles/DocumentAuditTrail';
+import { GeoLocationMap } from '@/components/ecoles/GeoLocationMap';
 
 /** Rôles autorisés à téléverser/supprimer des documents (école uniquement). */
 const SCHOOL_ROLES = ['DIRECTION_ECOLE', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'];
@@ -40,6 +41,8 @@ type Ecole = {
   commune: string;
   adresse: string;
   localisationGeo: string;
+  latitude: number | null;
+  longitude: number | null;
   telephone: string;
   email: string;
   chefEcole: string;
@@ -241,8 +244,13 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
           <div><p className={labelClass}>Commune</p><p className={valueClass}>{ecole.commune || '—'}</p></div>
           <div><p className={labelClass}>Ville</p><p className={valueClass}>{ecole.ville || '—'}</p></div>
           <div className="sm:col-span-2"><p className={labelClass}>Adresse</p><p className={valueClass}>{ecole.adresse || '—'}</p></div>
-          <div className="sm:col-span-2 lg:col-span-1"><p className={labelClass}>Localisation géo.</p><p className={valueClass}>{ecole.localisationGeo || '—'}</p></div>
         </div>
+      </div>
+
+      {/* Géolocalisation */}
+      <div className={sectionClass}>
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Géolocalisation</h3>
+        <GeoLocationMap latitude={ecole.latitude} longitude={ecole.longitude} />
       </div>
 
       {/* Documents justificatifs */}

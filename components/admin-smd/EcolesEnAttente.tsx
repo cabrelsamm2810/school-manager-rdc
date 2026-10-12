@@ -69,6 +69,15 @@ const STATUT_FILTERS: { key: StatutFilter; label: string; icon: string }[] = [
   { key: 'En cours de vérification', label: 'En cours', icon: 'activity' },
 ];
 
+type SortBy = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc';
+
+const SORT_OPTIONS: { key: SortBy; label: string; icon: string }[] = [
+  { key: 'date-desc', label: 'Plus récentes', icon: 'arrow-down' },
+  { key: 'date-asc', label: 'Plus anciennes', icon: 'arrow-up' },
+  { key: 'name-asc', label: 'École A-Z', icon: 'arrow-down' },
+  { key: 'name-desc', label: 'École Z-A', icon: 'arrow-up' },
+];
+
 function StatutValidationBadge({ statutValidation }: { statutValidation: string }) {
   const sv = VALIDATION_STATUT_COLORS[statutValidation];
   const cls = sv ? STATUT_BADGE_CLASSES[sv.color] : 'bg-slate-100 text-slate-700';
@@ -105,6 +114,8 @@ export function EcolesEnAttente() {
   // ── Filtres & recherche ──
   const [search, setSearch] = useState('');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('tous');
+  const [provinceFilter, setProvinceFilter] = useState<string>('toutes');
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -126,11 +137,14 @@ export function EcolesEnAttente() {
     loadData();
   }, [loadData]);
 
-  // ── Liste filtrée ──
+  // ── Liste filtrée et triée ──
   const filteredEcoles = useMemo(() => {
     let list = ecoles;
     if (statutFilter !== 'tous') {
       list = list.filter((e) => e.statutValidation === statutFilter);
+    }
+    if (provinceFilter !== 'toutes') {
+      list = list.filter((e) => e.province === provinceFilter);
     }
     const q = search.trim().toLowerCase();
     if (q) {
@@ -143,8 +157,30 @@ export function EcolesEnAttente() {
           (e.province ?? '').toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [ecoles, statutFilter, search]);
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'date-asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'name-asc':
+          return a.nom.localeCompare(b.nom, 'fr');
+        case 'name-desc':
+          return b.nom.localeCompare(a.nom, 'fr');
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  }, [ecoles, statutFilter, provinceFilter, search, sortBy]);
+
+  // ── Provinces uniques pour le filtre ──
+  const provinces = useMemo(() => {
+    const set = new Set<string>();
+    ecoles.forEach((e) => { if (e.province) set.add(e.province); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [ecoles]);
 
   // ── Navigation entre dossiers ──
   const expandedIndex = useMemo(
@@ -295,6 +331,67 @@ export function EcolesEnAttente() {
                   <span className={`rounded-md px-1.5 py-0.5 text-xs font-bold ${active ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
                     {count}
                   </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filtre par province */}
+          {provinces.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-slate-400">
+                <Icon name="region" className="h-3.5 w-3.5" />
+                Province :
+              </span>
+              <button
+                onClick={() => setProvinceFilter('toutes')}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                  provinceFilter === 'toutes'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                Toutes
+              </button>
+              {provinces.map((p) => {
+                const active = provinceFilter === p;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setProvinceFilter(p)}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                      active
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Tri par date et par école */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-slate-400">
+              <Icon name="filter" className="h-3.5 w-3.5" />
+              Trier :
+            </span>
+            {SORT_OPTIONS.map((opt) => {
+              const active = sortBy === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => setSortBy(opt.key)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                    active
+                      ? 'bg-slate-800 text-white shadow-sm'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon name={opt.icon} className="h-3.5 w-3.5" />
+                  {opt.label}
                 </button>
               );
             })}
@@ -588,6 +685,16 @@ export function EcolesEnAttente() {
 }
 
 /* ── Panneau de détail dépliable ── */
+type TransmittedDoc = {
+  id: string;
+  type: string;
+  titre: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  createdAt: string;
+};
+
 function EcoleDetailPanel({
   ecole,
   expandedIndex,
@@ -607,6 +714,25 @@ function EcoleDetailPanel({
   const docCount = ecole._count?.documents ?? 0;
   const hasPrev = expandedIndex > 0;
   const hasNext = expandedIndex >= 0 && expandedIndex < total - 1;
+
+  const [docs, setDocs] = useState<TransmittedDoc[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+
+  useEffect(() => {
+    if (docCount === 0) return;
+    let cancelled = false;
+    setDocsLoading(true);
+    fetch(`/api/ecoles/${ecole.id}/documents-transmis`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.documents)) setDocs(data.documents);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setDocsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [ecole.id, docCount]);
 
   const detailRows = [
     { icon: 'region', label: 'Province', value: ecole.province || '—' },
@@ -659,14 +785,47 @@ function EcoleDetailPanel({
         ))}
       </div>
 
-      {/* Indicateur documents */}
-      <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2">
-        <Icon name="paperclip" className="h-4 w-4 text-slate-500" />
-        <span className="text-xs text-slate-600">
-          <span className="font-semibold text-slate-800">{docCount}</span> document{docCount > 1 ? 's' : ''} justificatif{docCount > 1 ? 's' : ''} soumis{docCount > 1 ? 's' : ''}
-        </span>
-        {docCount === 0 && (
-          <span className="ml-auto text-xs font-medium text-amber-600">Aucun document</span>
+      {/* Documents transmis */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <Icon name="paperclip" className="h-4 w-4 text-slate-500" />
+          <span className="text-xs font-semibold text-slate-700">
+            Documents soumis ({docCount})
+          </span>
+        </div>
+        {docsLoading ? (
+          <div className="flex items-center gap-2 py-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            <span className="text-xs text-slate-500">Chargement des documents…</span>
+          </div>
+        ) : docs.length > 0 ? (
+          <div className="space-y-1.5">
+            {docs.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon name="document" className="h-4 w-4 shrink-0 text-slate-400" />
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-slate-900">{doc.titre}</p>
+                    <p className="truncate text-xs text-slate-400">
+                      {doc.type || 'Sans type'} · {formatDate(doc.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-100"
+                >
+                  Voir
+                </a>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="py-2 text-xs text-slate-400">
+            {docCount === 0 ? 'Aucun document soumis.' : 'Impossible de charger les documents.'}
+          </p>
         )}
       </div>
 

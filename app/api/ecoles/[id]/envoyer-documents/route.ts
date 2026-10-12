@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { canTransition } from '@/lib/institutions';
 import { logAudit, getClientIP } from '@/lib/audit';
+import { sendDocumentSubmissionEmail } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const existing = await prisma.ecole.findUnique({
     where: { id: params.id },
-    include: { documents: true },
+    include: {
+      documents: true,
+      coordSousProvinciale: true,
+    },
   });
   if (!existing) {
     return NextResponse.json({ error: 'École introuvable.' }, { status: 404 });
@@ -125,6 +129,51 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       type: 'École',
     },
   });
+
+  // ── Email aux coordinateurs concernés ──
+  const coordName = existing.coordSousProvinciale?.nom || 'Coordination sous-provinciale';
+
+  // Coordinateurs sous-provinciaux liés à la sous-division de l'école
+  const sousProvincialCoordinators = existing.coordSousProvincialeId
+    ? await prisma.user.findMany({
+        where: {
+          role: 'COORDINATION_SOUS_PROVINCIALE',
+          coordSousProvincialeId: existing.coordSousProvincialeId,
+          isActive: true,
+          NOT: { email: '' },
+        },
+        select: { email: true, nom: true, prenom: true },
+      })
+    : [];
+
+  // Coordinateurs provinciaux couvrant la province de l'école
+  const provincialCoordinators = existing.province
+    ? await prisma.user.findMany({
+        where: {
+          role: 'COORDINATION_PROVINCIALE',
+          provinceAdministrative: existing.province,
+          isActive: true,
+          NOT: { email: '' },
+        },
+        select: { email: true, nom: true, prenom: true },
+      })
+    : [];
+
+  // Envoi des emails (non bloquant — une erreur d'envoi n'empêche pas la soumission)
+  for (const coord of [...sousProvincialCoordinators, ...provincialCoordinators]) {
+    const coordinatorName = `${coord.prenom} ${coord.nom}`.trim();
+    try {
+      await sendDocumentSubmissionEmail({
+        to: coord.email,
+        coordinatorName,
+        ecoleNom: existing.nom,
+        docCount,
+        coordName,
+      });
+    } catch {
+      // Une erreur d'envoi email ne doit pas bloquer le flux
+    }
+  }
 
   return NextResponse.json({
     ecole,

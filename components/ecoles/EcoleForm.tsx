@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { INSTITUTIONS, DOCUMENT_TYPES, VALIDATION_STATUTS } from '@/lib/institutions';
 import { allProvinces, educationProvincesByAdmin } from '@/lib/meta-data';
 import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
+import { GeoLocationInput } from '@/components/ecoles/GeoLocationInput';
 
 export type EcoleFormData = {
   nom: string;
@@ -16,6 +17,8 @@ export type EcoleFormData = {
   commune: string;
   adresse: string;
   localisationGeo: string;
+  latitude: number | null;
+  longitude: number | null;
   telephone: string;
   email: string;
   chefEcole: string;
@@ -32,7 +35,8 @@ export type EcoleFormData = {
 export const emptyForm: EcoleFormData = {
   nom: '', type: '', institution: '', dinacope: '', province: '',
   provinceEducationnelle: '', ville: '', commune: '', adresse: '',
-  localisationGeo: '', telephone: '', email: '', chefEcole: '',
+  localisationGeo: '', latitude: null, longitude: null,
+  telephone: '', email: '', chefEcole: '',
   logoUrl: '', effectif: '', statut: 'Actif', statutValidation: 'Brouillon',
   coordSousProvincialeId: '', ecErcId: '', structureRattachementId: '',
   structureRattachementType: '',
@@ -370,10 +374,20 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
                 className={inputClass} placeholder="Avenue, numéro, quartier" />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass} htmlFor="etab-geo">Localisation géographique</label>
-              <input id="etab-geo" type="text" value={form.localisationGeo}
-                onChange={(e) => update('localisationGeo', e.target.value)}
-                className={inputClass} placeholder="Latitude, Longitude (ex. -4.325, 15.322)" />
+              <label className={labelClass}>Géolocalisation</label>
+              <GeoLocationInput
+                latitude={form.latitude}
+                longitude={form.longitude}
+                onChange={(lat, lng) => {
+                  update('latitude', lat);
+                  update('longitude', lng);
+                  if (lat != null && lng != null) {
+                    update('localisationGeo', `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+                  } else {
+                    update('localisationGeo', '');
+                  }
+                }}
+              />
             </div>
             <div>
               <label className={labelClass} htmlFor="etab-effectif">Effectif</label>

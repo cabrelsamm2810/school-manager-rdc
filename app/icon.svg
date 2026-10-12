@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="School Manager RDC">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="capGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <path d="M100 10 L180 40 L180 100 C180 145 145 175 100 190 C55 175 20 145 20 100 L20 40 Z" fill="url(#shieldGrad)" stroke="#1e3a8a" stroke-width="2"/>
+  <path d="M100 22 L168 47 L168 100 C168 138 138 165 100 178 C62 165 32 138 32 100 L32 47 Z" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+  <g transform="translate(100 85)">
+    <path d="M-40 0 L0 -18 L40 0 L0 18 Z" fill="url(#capGrad)"/>
+    <path d="M-22 8 L-22 22 C-22 28 22 28 22 22 L22 8 L0 18 Z" fill="#3b82f6"/>
+    <line x1="40" y1="0" x2="40" y2="14" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="40" cy="17" r="3" fill="#fbbf24"/>
+  </g>
+  <text x="100" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ffffff" letter-spacing="2">RDC</text>
+  <circle cx="60" cy="160" r="2" fill="#60a5fa" opacity="0.6"/>
+  <circle cx="100" cy="165" r="2" fill="#60a5fa" opacity="0.6"/>
+  <circle cx="140" cy="160" r="2" fill="#60a5fa" opacity="0.6"/>
+</svg>
