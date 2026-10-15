@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { createWorker, type Worker } from 'tesseract.js';
+import type { Worker } from 'tesseract.js';
 import {
   TXT_COLUMNS,
   normalizeInstitution,
@@ -217,6 +217,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setError('');
 
     try {
+      const { createWorker } = await import('tesseract.js');
       const worker = await createWorker('fra', 1, {
         logger: (m: { status: string; progress: number }) => {
           if (m.status === 'recognizing text') {

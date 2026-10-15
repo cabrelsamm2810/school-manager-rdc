@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { createWorker, type Worker } from 'tesseract.js';
+import type { Worker } from 'tesseract.js';
 
 type ImportResult = {
   imported: number;
@@ -79,6 +79,7 @@ export function OcrImportDialog({ endpoint, moduleName, columns, onImported, onC
     setError('');
 
     try {
+      const { createWorker } = await import('tesseract.js');
       const worker = await createWorker('fra', 1, {
         logger: (m: { status: string; progress: number }) => {
           if (m.status === 'recognizing text') {
