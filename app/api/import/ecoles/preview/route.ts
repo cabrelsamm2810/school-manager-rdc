@@ -6,11 +6,17 @@ import { normalizeInstitution, type ParsedSchoolRow, type PreviewRow } from '@/l
 /**
  * POST /api/import/ecoles/preview
  *
- * Reçoit un tableau de lignes parsées depuis un fichier TXT,
- * vérifie les doublons potentiels en base et renvoie chaque ligne
- * avec son statut (ok / warning / error).
+ * Reçoit un tableau de lignes parsées depuis un fichier TXT ou une photo OCR,
+ * vérifie les doublons potentiels en base et dans le lot lui-même, puis renvoie
+ * chaque ligne avec son statut (ok / warning / error).
  *
  * Aucune donnée n'est enregistrée : cette route est purement consultative.
+ *
+ * Détection des doublons (étape 4) :
+ *  1. Doublons exacts en base — nom identique (insensible à la casse).
+ *  2. Doublons similaires en base — nom normalisé proche (Levenshtein ≤ 2).
+ *  3. Doublons par identifiant — DINACOPE, téléphone ou e-mail déjà en base.
+ *  4. Doublons intra-lot — même nom ou même identifiant répété dans l'import.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireRole(request, 'DIRECTION_ECOLE');
@@ -32,54 +38,215 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Trop de lignes (maximum 500 par import).' }, { status: 400 });
   }
 
-  // Récupérer tous les noms d'écoles existants pour la détection de doublons
+  // ── 1. Collecter les valeurs à rechercher en base ──
   const noms = rows
     .map((r) => r.nom?.trim())
-    .filter((n): n is string => !!n && n.length > 0)
-    .map((n) => n.toLowerCase());
+    .filter((n): n is string => !!n && n.length > 0);
 
-  const existing = noms.length > 0
+  const dinacopes = rows
+    .map((r) => r.dinacope?.trim())
+    .filter((d): d is string => !!d && d.length > 0);
+
+  const telephones = rows
+    .map((r) => r.telephone?.trim())
+    .filter((t): t is string => !!t && t.length > 0);
+
+  const emails = rows
+    .map((r) => r.email?.trim())
+    .filter((e): e is string => !!e && e.length > 0);
+
+  // ── 2. Recherche groupée en base (une seule requête au lieu de N) ──
+  const orConditions: object[] = [];
+  if (noms.length > 0) {
+    orConditions.push(
+      ...noms.map((n) => ({ nom: { equals: n, mode: 'insensitive' as const } })),
+    );
+  }
+  if (dinacopes.length > 0) {
+    orConditions.push(
+      ...dinacopes.map((d) => ({ dinacope: { equals: d, mode: 'insensitive' as const } })),
+    );
+  }
+  if (telephones.length > 0) {
+    orConditions.push(
+      ...telephones.map((t) => ({ telephone: { equals: t, mode: 'insensitive' as const } })),
+    );
+  }
+  if (emails.length > 0) {
+    orConditions.push(
+      ...emails.map((e) => ({ email: { equals: e, mode: 'insensitive' as const } })),
+    );
+  }
+
+  const existing = orConditions.length > 0
     ? await prisma.ecole.findMany({
-        where: {
-          OR: noms.map((n) => ({
-            nom: { contains: n, mode: 'insensitive' as const },
-          })),
-        },
-        select: { id: true, nom: true },
+        where: { OR: orConditions },
+        select: { id: true, nom: true, dinacope: true, telephone: true, email: true },
       })
     : [];
 
-  // Index des écoles existantes par nom normalisé
-  const existingByExactName = new Map<string, { id: string; nom: string }>();
-  const existingNames = existing.map((e) => {
-    const key = e.nom.toLowerCase().trim();
-    existingByExactName.set(key, e);
-    return { id: e.id, nom: e.nom, key };
+  // Index des écoles existantes par clé normalisée
+  const existingByNom = new Map<string, { id: string; nom: string }>();
+  const existingByDinacope = new Map<string, { id: string; nom: string }>();
+  const existingByTel = new Map<string, { id: string; nom: string }>();
+  const existingByEmail = new Map<string, { id: string; nom: string }>();
+  const existingNomsNormalized: { key: string; nom: string; id: string }[] = [];
+
+  for (const e of existing) {
+    const nomKey = e.nom.toLowerCase().trim();
+    if (nomKey) {
+      existingByNom.set(nomKey, { id: e.id, nom: e.nom });
+      existingNomsNormalized.push({ key: nomKey, nom: e.nom, id: e.id });
+    }
+    if (e.dinacope?.trim()) existingByDinacope.set(e.dinacope.trim().toLowerCase(), { id: e.id, nom: e.nom });
+    if (e.telephone?.trim()) existingByTel.set(e.telephone.trim(), { id: e.id, nom: e.nom });
+    if (e.email?.trim()) existingByEmail.set(e.email.trim().toLowerCase(), { id: e.id, nom: e.nom });
+  }
+
+  // ── 3. Détection des doublons intra-lot ──
+  const seenNomInBatch = new Map<string, number[]>(); // nom normalisé → indices
+  const seenDinacopeInBatch = new Map<string, number[]>();
+  const seenTelInBatch = new Map<string, number[]>();
+  const seenEmailInBatch = new Map<string, number[]>();
+
+  rows.forEach((row, i) => {
+    const nom = row.nom?.trim().toLowerCase();
+    if (nom) {
+      if (!seenNomInBatch.has(nom)) seenNomInBatch.set(nom, []);
+      seenNomInBatch.get(nom)!.push(i);
+    }
+    const din = row.dinacope?.trim().toLowerCase();
+    if (din) {
+      if (!seenDinacopeInBatch.has(din)) seenDinacopeInBatch.set(din, []);
+      seenDinacopeInBatch.get(din)!.push(i);
+    }
+    const tel = row.telephone?.trim();
+    if (tel) {
+      if (!seenTelInBatch.has(tel)) seenTelInBatch.set(tel, []);
+      seenTelInBatch.get(tel)!.push(i);
+    }
+    const em = row.email?.trim().toLowerCase();
+    if (em) {
+      if (!seenEmailInBatch.has(em)) seenEmailInBatch.set(em, []);
+      seenEmailInBatch.get(em)!.push(i);
+    }
   });
 
+  // ── 4. Distance de Levenshtein pour similarité ──
+  function levenshtein(a: string, b: string): number {
+    if (a === b) return 0;
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    const matrix: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost,
+        );
+      }
+    }
+    return matrix[a.length][b.length];
+  }
+
+  // ── 5. Construire les lignes prévisualisées ──
   const previewRows: PreviewRow[] = rows.map((row, i) => {
     const messages: string[] = [];
     let status: 'ok' | 'warning' | 'error' = 'ok';
 
     const nom = row.nom?.trim() ?? '';
+    const nomLower = nom.toLowerCase();
+
     if (!nom) {
       status = 'error';
       messages.push("Le nom de l'école est obligatoire.");
     } else {
-      const key = nom.toLowerCase();
-      const exact = existingByExactName.get(key);
+      // 5a. Doublon exact en base (par nom)
+      const exact = existingByNom.get(nomLower);
       if (exact) {
         status = 'warning';
         messages.push(`Doublon : « ${exact.nom} » existe déjà (ID: ${exact.id}).`);
       } else {
-        // Recherche de similarité (contient ou est contenu)
-        const similar = existingNames.find((e) => {
-          if (e.key === key) return false;
-          return e.key.includes(key) || key.includes(e.key);
-        });
-        if (similar) {
+        // 5b. Doublon similaire en base (Levenshtein ≤ 2 sur noms de longueur ≥ 5)
+        if (nomLower.length >= 5) {
+          const similar = existingNomsNormalized.find((e) => {
+            if (e.key === nomLower) return false;
+            const dist = levenshtein(nomLower, e.key);
+            // Tolérance proportionnelle à la longueur : max 2 erreurs ou 10% du nom
+            const tolerance = Math.max(2, Math.floor(Math.max(nomLower.length, e.key.length) / 10));
+            return dist > 0 && dist <= tolerance;
+          });
+          if (similar) {
+            status = 'warning';
+            messages.push(`Doublon potentiel : « ${similar.nom} » ressemble à cette école.`);
+          }
+        }
+      }
+
+      // 5c. Doublon par DINACOPE en base
+      const din = row.dinacope?.trim();
+      if (din) {
+        const dinMatch = existingByDinacope.get(din.toLowerCase());
+        if (dinMatch) {
           status = 'warning';
-          messages.push(`Doublon potentiel : « ${similar.nom} » ressemble à cette école.`);
+          messages.push(`DINACOPE « ${din} » déjà utilisé par « ${dinMatch.nom} ».`);
+        }
+      }
+
+      // 5d. Doublon par téléphone en base
+      const tel = row.telephone?.trim();
+      if (tel) {
+        const telMatch = existingByTel.get(tel);
+        if (telMatch) {
+          status = 'warning';
+          messages.push(`Téléphone « ${tel} » déjà utilisé par « ${telMatch.nom} ».`);
+        }
+      }
+
+      // 5e. Doublon par e-mail en base
+      const em = row.email?.trim();
+      if (em) {
+        const emMatch = existingByEmail.get(em.toLowerCase());
+        if (emMatch) {
+          status = 'warning';
+          messages.push(`E-mail « ${em} » déjà utilisé par « ${emMatch.nom} ».`);
+        }
+      }
+
+      // 5f. Doublons intra-lot (par nom)
+      const batchNomIndices = seenNomInBatch.get(nomLower);
+      if (batchNomIndices && batchNomIndices.length > 1) {
+        status = 'warning';
+        messages.push(`Doublon dans ce lot : « ${nom} » apparaît ${batchNomIndices.length} fois.`);
+      }
+
+      // 5g. Doublons intra-lot (par DINACOPE)
+      if (din) {
+        const batchDinIndices = seenDinacopeInBatch.get(din.toLowerCase());
+        if (batchDinIndices && batchDinIndices.length > 1) {
+          status = 'warning';
+          messages.push(`DINACOPE « ${din} » répété ${batchDinIndices.length} fois dans ce lot.`);
+        }
+      }
+
+      // 5h. Doublons intra-lot (par téléphone)
+      if (tel) {
+        const batchTelIndices = seenTelInBatch.get(tel);
+        if (batchTelIndices && batchTelIndices.length > 1) {
+          status = 'warning';
+          messages.push(`Téléphone « ${tel} » répété ${batchTelIndices.length} fois dans ce lot.`);
+        }
+      }
+
+      // 5i. Doublons intra-lot (par e-mail)
+      if (em) {
+        const batchEmIndices = seenEmailInBatch.get(em.toLowerCase());
+        if (batchEmIndices && batchEmIndices.length > 1) {
+          status = 'warning';
+          messages.push(`E-mail « ${em} » répété ${batchEmIndices.length} fois dans ce lot.`);
         }
       }
     }
@@ -100,13 +267,15 @@ export async function POST(request: NextRequest) {
       messages.push('Adresse e-mail invalide.');
     }
 
+    const exact = nomLower ? existingByNom.get(nomLower) : undefined;
+
     return {
       ...row,
       rowIndex: i,
       status,
       messages,
-      duplicateId: existingByExactName.get(nom.toLowerCase())?.id,
-      duplicateNom: existingByExactName.get(nom.toLowerCase())?.nom,
+      duplicateId: exact?.id,
+      duplicateNom: exact?.nom,
     };
   });
 
