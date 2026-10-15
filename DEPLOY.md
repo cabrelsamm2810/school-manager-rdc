@@ -68,3 +68,22 @@ Le code lit `S3_*` en priorité, puis `R2_*` en repli. Vous pouvez utiliser l'un
 
 ### Fichiers non accessibles (404 sur /api/files/...)
 → Les variables R2 ne sont pas définies. Sans stockage configuré, l'app retombe sur `public/uploads` qui n'existe pas sur Vercel (système de fichiers éphémère). Définir les variables R2.
+
+## Sauvegarde automatique vers main
+
+`.github/workflows/sauvegarde-auto.yml` reporte toutes les 15 minutes dans `main` les commits déjà poussés sur la
+branche de travail (`github-backup-codespace` par défaut ; modifiable via `env.SOURCE_BRANCH` ou un lancement
+manuel depuis l'onglet Actions). Avance rapide quand c'est possible, fusion classique en cas de divergence, et
+arrêt sans rien pousser en cas de conflit.
+
+À retenir :
+
+- Le déclencheur `schedule` ne s'exécute que si le fichier est présent sur la branche **par défaut** (`main`) : la
+  sauvegarde ne démarre donc qu'après la fusion du workflow dans `main`.
+- Un workflow ne voit que ce qui est **déjà poussé** sur GitHub : des fichiers modifiés mais non commités dans un
+  codespace ne peuvent pas être repris (`git commit` + `git push` côté codespace d'abord).
+- Le `GITHUB_TOKEN` ne contourne pas une protection de branche : si `main` exige une pull request, le push échoue
+  et le journal du job le dit.
+- Chaque sauvegarde qui modifie `main` déclenche un déploiement Vercel.
+- GitHub peut retarder un cron, et désactive les workflows planifiés d'un dépôt resté 60 jours sans activité
+  (relancer alors un passage depuis l'onglet Actions).
