@@ -6,6 +6,7 @@ import { StatCard } from '@/components/ui/Card';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrImportDialog } from '@/components/import/OcrImportDialog';
+import { TxtImportDialog } from '@/components/import/TxtImportDialog';
 import { EcoleForm, emptyForm, type EcoleFormData } from '@/components/ecoles/EcoleForm';
 import { EcoleFiche } from '@/components/ecoles/EcoleFiche';
 import { NiveauScolaireSelector } from '@/components/ecoles/NiveauScolaireSelector';
@@ -57,6 +58,7 @@ export default function EcolesPage() {
   const [formError, setFormError] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [showOcr, setShowOcr] = useState(false);
+  const [showTxtImport, setShowTxtImport] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [initialFormData, setInitialFormData] = useState<Partial<EcoleFormData> | null>(null);
 
@@ -174,6 +176,9 @@ export default function EcolesPage() {
           <div className="mb-4 flex flex-wrap justify-end gap-2">
             <button onClick={() => setShowImport(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
               ⬆ Importer (Excel/CSV)
+            </button>
+            <button onClick={() => setShowTxtImport(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
+              📄 Importer (TXT)
             </button>
             <button onClick={() => setShowOcr(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
               📸 Importer (OCR)
@@ -377,6 +382,13 @@ export default function EcolesPage() {
           columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
           onImported={loadData}
           onClose={() => setShowOcr(false)}
+        />
+      )}
+
+      {showTxtImport && (
+        <TxtImportDialog
+          onImported={loadData}
+          onClose={() => setShowTxtImport(false)}
         />
       )}
     </ModulePage>

@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/Icon';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { EcoleDetailPanel } from '@/components/admin-smd/EcoleDetailPanel';
+import { TxtImportDialog } from '@/components/import/TxtImportDialog';
 import { INSTITUTION_MAP } from '@/lib/institutions';
 import { PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
 import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
@@ -74,6 +75,7 @@ export function EcolesManagement() {
   const [confirmAction, setConfirmAction] = useState<{ action: string; ecole: Ecole } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showTxtImport, setShowTxtImport] = useState(false);
 
   const pageSize = 15;
 
@@ -169,6 +171,15 @@ export function EcolesManagement() {
             <p className="mt-0.5 text-xs text-slate-500">Supervision des établissements scolaires — Admin School Manager RDC</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowTxtImport(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-6 2a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H7z" />
+              </svg>
+              <span>Importer</span>
+            </button>
             <button
               onClick={() => setShowSearch((s) => !s)}
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
@@ -400,6 +411,14 @@ export function EcolesManagement() {
           danger={actionLabels[confirmAction.action]?.danger}
           onConfirm={handleAction}
           onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {/* ── Importation TXT ── */}
+      {showTxtImport && (
+        <TxtImportDialog
+          onImported={handleRefresh}
+          onClose={() => setShowTxtImport(false)}
         />
       )}
     </div>
