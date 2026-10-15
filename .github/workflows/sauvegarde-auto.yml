@@ -1,0 +1,85 @@
+# Sauvegarde automatique de la branche de travail vers « main ».
+#
+# Toutes les 15 minutes, ce workflow reporte dans « main » les commits déjà poussés sur la
+# branche de travail (github-backup-codespace par défaut) : avance rapide quand c'est possible,
+# fusion classique en cas de divergence, et arrêt sans rien pousser en cas de conflit.
+#
+# À savoir :
+# - Un workflow ne voit que ce qui est déjà poussé sur GitHub. Des fichiers modifiés mais non
+#   commités dans un codespace ne peuvent pas être récupérés par ce job : il faut un
+#   `git commit` + `git push` dans le codespace pour qu'ils arrivent ici.
+# - Le déclencheur `schedule` ne s'exécute que si ce fichier est présent sur la branche par
+#   défaut (main) du dépôt.
+# - GitHub peut retarder un cron en cas de forte charge, et désactive les workflows planifiés
+#   d'un dépôt resté 60 jours sans activité (relancer alors un passage depuis l'onglet Actions).
+# - Le jeton par défaut ne contourne pas une protection de branche : si « main » exige une pull
+#   request, le push échoue et le journal du job le dit.
+name: Sauvegarde automatique vers main
+
+on:
+  schedule:
+    # Toutes les 15 minutes (heure UTC).
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: "Branche de travail à reporter dans main"
+        required: false
+        default: github-backup-codespace
+
+env:
+  SOURCE_BRANCH: ${{ github.event.inputs.source_branch || 'github-backup-codespace' }}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sauvegarde-auto-main
+  cancel-in-progress: false
+
+jobs:
+  sauvegarde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Identifier l'auteur des sauvegardes
+        run: |
+          git config user.name "sauvegarde-auto"
+          git config user.email "sauvegarde-auto@users.noreply.github.com"
+
+      - name: Reporter les modifications dans main
+        run: |
+          set -euo pipefail
+          git fetch --all --prune
+
+          if ! git rev-parse --verify --quiet "origin/$SOURCE_BRANCH" >/dev/null; then
+            echo "::warning::Branche « $SOURCE_BRANCH » absente : rien à sauvegarder."
+            exit 0
+          fi
+
+          A_REPORTER=$(git rev-list --count "origin/main..origin/$SOURCE_BRANCH")
+          if [ "$A_REPORTER" -eq 0 ]; then
+            echo "main est déjà à jour avec « $SOURCE_BRANCH »."
+            exit 0
+          fi
+          echo "$A_REPORTER commit(s) à reporter depuis « $SOURCE_BRANCH »."
+
+          if git merge --ff-only "origin/$SOURCE_BRANCH"; then
+            echo "Avance rapide appliquée."
+          else
+            echo "main et « $SOURCE_BRANCH » ont divergé : fusion classique."
+            if ! git merge --no-edit "origin/$SOURCE_BRANCH"; then
+              git merge --abort || true
+              echo "::error::Conflit entre main et « $SOURCE_BRANCH » : sauvegarde interrompue, rien n'a été poussé."
+              exit 1
+            fi
+          fi
+
+          git push origin HEAD:main
+          echo "Sauvegarde terminée : main pointe sur $(git rev-parse --short HEAD)."
