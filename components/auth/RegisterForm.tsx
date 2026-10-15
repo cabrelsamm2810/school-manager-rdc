@@ -15,10 +15,10 @@ import {
   rolesNeedingDinacope,
   educationProvincesByAdminFromSousDivisions,
   sousDivisionsByEducationProvince,
-  ecoleTypes,
   type RoleOption,
 } from '@/lib/meta-data';
 import { ProfilePhotoUpload } from '@/components/auth/ProfilePhotoUpload';
+import { SchoolSelector } from '@/components/auth/SchoolSelector';
 
 const STEP_LABELS = ['Institution', 'Structure', 'Fonction', 'Informations', 'Compte', 'Vérification'];
 
@@ -35,12 +35,6 @@ type FormState = {
   provinceAdministrative: string;
   provinceEducationnelle: string;
   coordSousProvinciale: string;
-  ecoleNom: string;
-  ecoleCommune: string;
-  ecoleAdresse: string;
-  ecoleTelephone: string;
-  ecoleEmail: string;
-  ecoleType: string;
   nom: string;
   postNom: string;
   prenom: string;
@@ -51,14 +45,14 @@ type FormState = {
   password: string;
   confirmPassword: string;
   institutionName: string;
+  ecoleId: string;
 };
 
 const emptyForm: FormState = {
   typeInstitution: '', role: '', bureauAffectation: '', fonction: '', grade: '', dinacope: '',
   provinceAdministrative: '', provinceEducationnelle: '', coordSousProvinciale: '',
-  ecoleNom: '', ecoleCommune: '', ecoleAdresse: '', ecoleTelephone: '', ecoleEmail: '', ecoleType: '',
   nom: '', postNom: '', prenom: '', sexe: '', telephone: '', profilePhotoUrl: '',
-  email: '', password: '', confirmPassword: '', institutionName: '',
+  email: '', password: '', confirmPassword: '', institutionName: '', ecoleId: '',
 };
 
 const ROLES_NEEDING_LOCATION = new Set([
@@ -246,12 +240,8 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
           return 'Veuillez sélectionner une province éducationnelle.';
         if (ROLES_NEEDING_EDUC_PROVINCE.has(form.role) && !form.coordSousProvinciale)
           return 'Veuillez sélectionner une coordination sous-provinciale.';
-        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution === 'EC_ERC') {
-          if (!form.ecoleNom.trim()) return 'Le nom de l’école est obligatoire.';
-          if (!form.dinacope.trim()) return 'Le numéro DINACOPE de l’école est obligatoire.';
-        }
-        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution !== 'EC_ERC' && !form.institutionName.trim())
-          return 'Le nom de l’institution est obligatoire.';
+        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && !form.ecoleId)
+          return 'Veuillez sélectionner votre école dans la liste.';
         return '';
       case 4:
         if (!form.email.trim()) return 'L’email est obligatoire.';
@@ -282,7 +272,8 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
           nom: form.nom, postNom: form.postNom, prenom: form.prenom, sexe: form.sexe,
           email: form.email, telephone: form.telephone, password: form.password,
           role: form.role, typeInstitution: form.typeInstitution,
-          institutionName: form.ecoleNom || form.institutionName,
+          institutionName: form.institutionName,
+          ecoleId: form.ecoleId || undefined,
           provinceAdministrative: form.provinceAdministrative,
           provinceEducationnelle: form.provinceEducationnelle,
           bureauAffectation: form.bureauAffectation, fonction: form.fonction,
@@ -346,8 +337,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   const isLastStep = step === 5;
   const needsLocation = ROLES_NEEDING_LOCATION.has(form.role);
   const needsEducProvince = ROLES_NEEDING_EDUC_PROVINCE.has(form.role);
-  const needsSchoolForm = ROLES_NEEDING_SCHOOL_FORM.has(form.role) && isEcErc;
-  const needsSimpleSchool = ROLES_NEEDING_SCHOOL_FORM.has(form.role) && !isEcErc;
+
 
   if (success) {
     return (
@@ -610,63 +600,35 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
               </div>
             )}
 
-            {/* School form for École EC-ERC */}
-            {needsSchoolForm && (
+            {/* School selector for DIRECTION_ECOLE */}
+            {ROLES_NEEDING_SCHOOL_FORM.has(form.role) && (
               <div className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50/30 p-4">
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-1 rounded-full bg-blue-500" />
-                  <p className="text-sm font-semibold text-slate-700">École EC-ERC</p>
+                  <p className="text-sm font-semibold text-slate-700">Votre école</p>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className={labelClass}>Nom de l’école *</label>
-                    <input className={inputClass} value={form.ecoleNom} onChange={(e) => updateField('ecoleNom', e.target.value)} placeholder="Nom de l'école" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>DINACOPE *</label>
-                    <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Commune</label>
-                    <input className={inputClass} value={form.ecoleCommune} onChange={(e) => updateField('ecoleCommune', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Type d’école</label>
-                    <select className={inputClass} value={form.ecoleType} onChange={(e) => updateField('ecoleType', e.target.value)}>
-                      <option value="">— Sélectionner —</option>
-                      {ecoleTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className={labelClass}>Adresse</label>
-                    <input className={inputClass} value={form.ecoleAdresse} onChange={(e) => updateField('ecoleAdresse', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Téléphone (école)</label>
-                    <input type="tel" className={inputClass} value={form.ecoleTelephone} onChange={(e) => updateField('ecoleTelephone', e.target.value)} placeholder="+243 ..." />
-                  </div>
-                  <div>
-                    <label className={labelClass}>E-mail (école)</label>
-                    <input type="email" className={inputClass} value={form.ecoleEmail} onChange={(e) => updateField('ecoleEmail', e.target.value)} />
-                  </div>
-                </div>
+                <SchoolSelector
+                  institution={form.typeInstitution}
+                  province={form.provinceAdministrative || undefined}
+                  value={form.ecoleId}
+                  onChange={(id, nom) => { updateField('ecoleId', id); updateField('institutionName', nom); }}
+                  required
+                  label="Sélectionner votre école"
+                />
               </div>
             )}
 
-            {/* Simple school name for non-EC-ERC DIRECTION_ECOLE */}
-            {needsSimpleSchool && (
-              <div>
-                <label className={labelClass}>Nom de l’institution / école *</label>
-                <input className={inputClass} value={form.institutionName} onChange={(e) => updateField('institutionName', e.target.value)} placeholder="Nom de l'institution" />
-              </div>
-            )}
 
-            {/* School name for ENSEIGNANT/ELEVE/PARENT */}
+
+            {/* School selector for ENSEIGNANT/ELEVE/PARENT */}
             {(form.role === 'ENSEIGNANT' || form.role === 'ELEVE' || form.role === 'PARENT') && (
-              <div>
-                <label className={labelClass}>Nom de l’institution / école</label>
-                <input className={inputClass} value={form.institutionName} onChange={(e) => updateField('institutionName', e.target.value)} placeholder="Nom de l'institution (optionnel)" />
-              </div>
+              <SchoolSelector
+                institution={form.typeInstitution}
+                province={form.provinceAdministrative || undefined}
+                value={form.ecoleId}
+                onChange={(id, nom) => { updateField('ecoleId', id); updateField('institutionName', nom); }}
+                label="Sélectionner votre école (optionnel)"
+              />
             )}
           </div>
         )}
@@ -725,8 +687,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                 {form.provinceAdministrative && <SummaryRow label="Province" value={form.provinceAdministrative} onEdit={() => goToStep(3)} />}
                 {form.provinceEducationnelle && <SummaryRow label="Province éduc." value={form.provinceEducationnelle} onEdit={() => goToStep(3)} />}
                 {form.coordSousProvinciale && <SummaryRow label="Coord. sous-prov." value={form.coordSousProvinciale} onEdit={() => goToStep(3)} />}
-                {(form.ecoleNom || form.institutionName) && <SummaryRow label="École" value={form.ecoleNom || form.institutionName} onEdit={() => goToStep(3)} />}
-                {form.ecoleType && <SummaryRow label="Type école" value={form.ecoleType} onEdit={() => goToStep(3)} />}
+                {form.institutionName && <SummaryRow label="École" value={form.institutionName} onEdit={() => goToStep(3)} />}
                 <SummaryRow label="Nom complet" value={`${form.nom} ${form.postNom} ${form.prenom}`.trim()} onEdit={() => goToStep(3)} />
                 {form.sexe && <SummaryRow label="Sexe" value={form.sexe === 'M' ? 'Masculin' : 'Féminin'} onEdit={() => goToStep(3)} />}
                 {form.telephone && <SummaryRow label="Téléphone" value={form.telephone} onEdit={() => goToStep(3)} />}
