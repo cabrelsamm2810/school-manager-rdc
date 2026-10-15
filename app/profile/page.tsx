@@ -24,7 +24,7 @@ type Profile = {
 };
 
 const INSTITUTION_LABELS: Record<string, string> = {
-  'EC-ERC': 'EC-ERC',
+  'EC_ERC': 'EC-ERC',
   'PUBLIQUE': 'École publique',
   'CATHOLIQUE': 'École catholique (ECCATH)',
   'ISLAMIQUE': 'École islamique',

@@ -78,14 +78,14 @@ function isStepNeeded(step: number, role: string): boolean {
 /* ── Display helpers (presentation only — no logic change) ── */
 
 const INSTITUTION_SHORT: Record<string, string> = {
-  'EC-ERC': 'EC-ERC',
+  'EC_ERC': 'EC-ERC',
   'PUBLIQUE': 'École publique',
   'CATHOLIQUE': 'École catholique',
   'ISLAMIQUE': 'École islamique',
   'INDEPENDANTE': 'École indépendante',
 };
 const INSTITUTION_DESC: Record<string, string> = {
-  'EC-ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
+  'EC_ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
   'PUBLIQUE': 'École public',
   'CATHOLIQUE': 'Conventionné catholique',
   'ISLAMIQUE': 'École islamique',
@@ -112,7 +112,7 @@ function CheckBadge() {
 }
 
 function InstitutionIcon({ type, selected }: { type: string; selected: boolean }) {
-  if (type === 'EC-ERC') return (<img src="/illustrations/ec-erc-logo.jpg" alt="EC-ERC" className="h-14 w-14 rounded-lg object-contain" />);
+  if (type === 'EC_ERC') return (<img src="/illustrations/ec-erc-logo.jpg" alt="EC-ERC" className="h-14 w-14 rounded-lg object-contain" />);
   if (type === 'CATHOLIQUE') return (<img src="/illustrations/eccath-logo.jpg" alt="ECCATH" className="h-14 w-14 rounded-lg object-contain" />);
   const bg = selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500';
   let path: ReactNode = null;
@@ -246,11 +246,11 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
           return 'Veuillez sélectionner une province éducationnelle.';
         if (ROLES_NEEDING_EDUC_PROVINCE.has(form.role) && !form.coordSousProvinciale)
           return 'Veuillez sélectionner une coordination sous-provinciale.';
-        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution === 'EC-ERC') {
+        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution === 'EC_ERC') {
           if (!form.ecoleNom.trim()) return 'Le nom de l’école est obligatoire.';
           if (!form.dinacope.trim()) return 'Le numéro DINACOPE de l’école est obligatoire.';
         }
-        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution !== 'EC-ERC' && !form.institutionName.trim())
+        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution !== 'EC_ERC' && !form.institutionName.trim())
           return 'Le nom de l’institution est obligatoire.';
         return '';
       case 4:
@@ -317,7 +317,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
     setForm((cur) => ({ ...cur, bureauAffectation: value, fonction: '', grade: '' }));
   }
 
-  const isEcErc = form.typeInstitution === 'EC-ERC';
+  const isEcErc = form.typeInstitution === 'EC_ERC';
   const COORDINATION_ROLES = new Set([
     'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE',
   ]);

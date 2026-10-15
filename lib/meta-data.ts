@@ -40,7 +40,7 @@ export const defaultRoleOptions: RoleOption[] = [
 /* ── Données d'inscription ── */
 
 export const registrationInstitutionTypes = [
-  { value: 'EC-ERC', label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo' },
+  { value: 'EC_ERC', label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo' },
   { value: 'INDEPENDANTE', label: 'Indépendante' },
   { value: 'CATHOLIQUE', label: 'Catholique' },
   { value: 'PUBLIQUE', label: 'Publique' },
