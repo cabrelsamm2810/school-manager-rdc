@@ -239,7 +239,7 @@ export function OcrImportDialog({ endpoint, moduleName, columns, onImported, onC
         <div className="flex items-center justify-between border-b border-slate-100 p-5">
           <div>
             <h2 className="text-lg font-bold text-slate-900">OCR — {moduleName}</h2>
-            <p className="text-xs text-slate-500">Importez depuis une photo ou un scan de document</p>
+            <p className="text-xs text-slate-500">Prenez une photo d'un document, l'OCR extrait les données</p>
           </div>
           <button onClick={handleClose} className="text-slate-400 hover:text-slate-600">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -5,7 +5,7 @@ import { ModulePage } from '@/components/ModulePage';
 import { StatCard } from '@/components/ui/Card';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { ImportDialog } from '@/components/import/ImportDialog';
-import { OcrImportDialog } from '@/components/import/OcrImportDialog';
+import { OcrEcolesImportDialog } from '@/components/import/OcrEcolesImportDialog';
 import { TxtImportDialog } from '@/components/import/TxtImportDialog';
 import { EcoleForm, emptyForm, type EcoleFormData } from '@/components/ecoles/EcoleForm';
 import { EcoleFiche } from '@/components/ecoles/EcoleFiche';
@@ -376,10 +376,7 @@ export default function EcolesPage() {
       )}
 
       {showOcr && (
-        <OcrImportDialog
-          endpoint="/api/import/ecoles"
-          moduleName="Écoles"
-          columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
+        <OcrEcolesImportDialog
           onImported={loadData}
           onClose={() => setShowOcr(false)}
         />
