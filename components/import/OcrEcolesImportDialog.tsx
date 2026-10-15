@@ -3,20 +3,12 @@
 import { useRef, useState } from 'react';
 import type { Worker } from 'tesseract.js';
 import {
-  TXT_COLUMNS,
-  normalizeInstitution,
   type ParsedSchoolRow,
   type PreviewRow,
   MAX_IMPORT_LINES,
 } from '@/lib/txt-import-parser';
-
-type BatchResult = {
-  imported: number;
-  ignored: number;
-  rejected: number;
-  total: number;
-  details: { row: number; nom: string; action: 'imported' | 'ignored' | 'rejected'; message: string }[];
-};
+import { SchoolPreviewTable } from '@/components/import/SchoolPreviewTable';
+import { SchoolPreviewStats, SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
 
 type OcrEcolesImportDialogProps = {
   onImported: () => void;
@@ -275,7 +267,6 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setDelimiter(newDelim);
     const parsed = parseOcrText(rawText, newDelim);
     setParseWarnings(parsed.warnings);
-    // Re-vérifier les doublons avec les nouvelles lignes parsées
     if (parsed.rows.length > 0) {
       checkDuplicates(parsed.rows);
     } else {
@@ -368,10 +359,6 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     if (workerRef.current) workerRef.current.terminate();
     onClose();
   }
-
-  const okCount = previewRows.filter((r) => r.status === 'ok').length;
-  const warningCount = previewRows.filter((r) => r.status === 'warning').length;
-  const errorCount = previewRows.filter((r) => r.status === 'error').length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3" onClick={handleClose}>
@@ -517,37 +504,10 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 ))}
               </div>
 
-              {/* Stats */}
               {previewRows.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {previewRows.length} école(s)
-                  </span>
-                  <span className="rounded-lg bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-                    {okCount} OK
-                  </span>
-                  {warningCount > 0 && (
-                    <span className="rounded-lg bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                      {warningCount} doublon(s)
-                    </span>
-                  )}
-                  {errorCount > 0 && (
-                    <span className="rounded-lg bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
-                      {errorCount} erreur(s)
-                    </span>
-                  )}
-                </div>
+                <SchoolPreviewStats rows={previewRows} />
               )}
-
-              {/* Parse warnings */}
-              {parseWarnings.length > 0 && (
-                <div className="rounded-xl bg-amber-50 px-3 py-2">
-                  <p className="text-xs font-semibold text-amber-800 mb-1">Avertissements :</p>
-                  <ul className="space-y-0.5 text-xs text-amber-700">
-                    {parseWarnings.slice(0, 5).map((w, i) => <li key={i}>• {w}</li>)}
-                  </ul>
-                </div>
-              )}
+              <SchoolParseWarnings warnings={parseWarnings} />
 
               {/* Loading indicator */}
               {loading && (
@@ -557,179 +517,12 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 </div>
               )}
 
-              {/* Editable table — mobile cards */}
-              <div className="space-y-2 lg:hidden">
-                {previewRows.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center">
-                    <p className="text-xs text-slate-400">Aucune ligne détectée. Ajustez le séparateur ou éditez le texte.</p>
-                  </div>
-                ) : (
-                  previewRows.map((row, ri) => (
-                    <div
-                      key={ri}
-                      className={`rounded-xl border p-3 ${
-                        row.status === 'error' ? 'border-red-200 bg-red-50' :
-                        row.status === 'warning' ? 'border-amber-200 bg-amber-50' :
-                        'border-slate-200 bg-white'
-                      }`}
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-400">#{ri + 1}</span>
-                        <button
-                          onClick={() => deleteRow(ri)}
-                          className="text-slate-300 hover:text-red-500"
-                          title="Supprimer"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                      {row.messages.length > 0 && (
-                        <div className="mb-2 space-y-0.5">
-                          {row.messages.map((msg, mi) => (
-                            <p key={mi} className={`text-xs ${
-                              row.status === 'error' ? 'text-red-600' :
-                              row.status === 'warning' ? 'text-amber-600' : 'text-slate-500'
-                            }`}>⚠ {msg}</p>
-                          ))}
-                        </div>
-                      )}
-                      <div className="space-y-1.5">
-                        <input
-                          type="text"
-                          value={row.nom}
-                          onChange={(e) => updateCell(ri, 'nom', e.target.value)}
-                          placeholder="Nom de l'école *"
-                          className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-100"
-                        />
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <input
-                            type="text"
-                            value={row.institution}
-                            onChange={(e) => updateCell(ri, 'institution', e.target.value)}
-                            placeholder="Convention"
-                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={row.provinceEducationnelle}
-                            onChange={(e) => updateCell(ri, 'provinceEducationnelle', e.target.value)}
-                            placeholder="Province éduc."
-                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={row.commune}
-                            onChange={(e) => updateCell(ri, 'commune', e.target.value)}
-                            placeholder="Sous-division"
-                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={row.adresse}
-                            onChange={(e) => updateCell(ri, 'adresse', e.target.value)}
-                            placeholder="Adresse"
-                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={row.telephone}
-                            onChange={(e) => updateCell(ri, 'telephone', e.target.value)}
-                            placeholder="Téléphone"
-                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={row.type}
-                            onChange={(e) => updateCell(ri, 'type', e.target.value)}
-                            placeholder="Type"
-                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-blue-400 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Editable table — desktop */}
-              <div className="hidden overflow-x-auto rounded-xl border border-slate-200 lg:block">
-                {previewRows.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400">
-                    Aucune ligne détectée. Ajustez le séparateur ou éditez le texte.
-                  </div>
-                ) : (
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-slate-50">
-                        <th className="px-2 py-2 text-left font-medium text-slate-400">#</th>
-                        {TXT_COLUMNS.map((col) => (
-                          <th key={col.key} className="px-2 py-2 text-left font-medium text-slate-600">
-                            {col.label}{col.required && <span className="text-red-400"> *</span>}
-                          </th>
-                        ))}
-                        <th className="px-2 py-2"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((row, ri) => (
-                        <tr
-                          key={ri}
-                          className={`border-t border-slate-100 ${
-                            row.status === 'error' ? 'bg-red-50' :
-                            row.status === 'warning' ? 'bg-amber-50' : ''
-                          }`}
-                        >
-                          <td className="px-2 py-1 text-slate-400 align-top">{ri + 1}</td>
-                          {TXT_COLUMNS.map((col) => (
-                            <td key={col.key} className="px-1 py-1">
-                              <input
-                                type="text"
-                                value={row[col.key]}
-                                onChange={(e) => updateCell(ri, col.key, e.target.value)}
-                                className={`w-full min-w-[70px] rounded border border-transparent px-1.5 py-1 text-slate-700 hover:border-slate-200 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-100 ${
-                                  col.key === 'nom' ? 'font-medium' : ''
-                                }`}
-                              />
-                              {col.key === 'nom' && row.messages.length > 0 && (
-                                <div className="mt-0.5 space-y-0.5">
-                                  {row.messages.map((msg, mi) => (
-                                    <p key={mi} className={`text-[10px] ${
-                                      row.status === 'error' ? 'text-red-500' :
-                                      row.status === 'warning' ? 'text-amber-600' : 'text-slate-400'
-                                    }`}>⚠ {msg}</p>
-                                  ))}
-                                </div>
-                              )}
-                            </td>
-                          ))}
-                          <td className="px-2 py-1 align-top">
-                            <button
-                              onClick={() => deleteRow(ri)}
-                              className="text-slate-300 hover:text-red-500"
-                              title="Supprimer la ligne"
-                            >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-
-              {previewRows.length > 0 && (
-                <button
-                  onClick={addRow}
-                  className="text-xs font-medium text-blue-600 hover:underline"
-                >
-                  + Ajouter une ligne
-                </button>
-              )}
+              <SchoolPreviewTable
+                rows={previewRows}
+                onUpdateCell={updateCell}
+                onDeleteRow={deleteRow}
+                onAddRow={addRow}
+              />
 
               {error && (
                 <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
@@ -739,55 +532,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
           {/* Phase: Result */}
           {phase === 'result' && result && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-green-50 px-3 py-3 text-center">
-                  <p className="text-2xl font-bold text-green-700">{result.imported}</p>
-                  <p className="text-xs text-green-600">Enregistrées</p>
-                </div>
-                <div className="rounded-xl bg-amber-50 px-3 py-3 text-center">
-                  <p className="text-2xl font-bold text-amber-700">{result.ignored}</p>
-                  <p className="text-xs text-amber-600">Ignorées (doublons)</p>
-                </div>
-                <div className="rounded-xl bg-red-50 px-3 py-3 text-center">
-                  <p className="text-2xl font-bold text-red-700">{result.rejected}</p>
-                  <p className="text-xs text-red-600">Rejetées</p>
-                </div>
-              </div>
-
-              {result.details.length > 0 && (
-                <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200">
-                  <table className="w-full text-xs">
-                    <thead className="bg-slate-50 text-slate-500">
-                      <tr>
-                        <th className="px-2 py-2 text-left">Ligne</th>
-                        <th className="px-2 py-2 text-left">École</th>
-                        <th className="px-2 py-2 text-left">Statut</th>
-                        <th className="px-2 py-2 text-left">Message</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {result.details.map((d, i) => (
-                        <tr key={i}>
-                          <td className="px-2 py-1.5 text-slate-400">{d.row}</td>
-                          <td className="px-2 py-1.5 font-medium text-slate-700">{d.nom}</td>
-                          <td className="px-2 py-1.5">
-                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                              d.action === 'imported' ? 'bg-green-100 text-green-700' :
-                              d.action === 'ignored' ? 'bg-amber-100 text-amber-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
-                              {d.action === 'imported' ? 'Enregistrée' : d.action === 'ignored' ? 'Ignorée' : 'Rejetée'}
-                            </span>
-                          </td>
-                          <td className="px-2 py-1.5 text-slate-500">{d.message}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <SchoolImportResult result={result} />
           )}
         </div>
 
