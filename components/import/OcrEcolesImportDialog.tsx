@@ -18,6 +18,11 @@ type OcrEcolesImportDialogProps = {
 
 type Phase = 'upload' | 'processing' | 'review-table' | 'result';
 
+type FileQuality = { score: number; blurry: boolean; assessing: boolean };
+
+/** Seuil de variance du Laplacien en dessous duquel une image est considérée floue. */
+const BLUR_THRESHOLD = 100;
+
 const PHASE_STEP: Record<Phase, number> = {
   upload: 0,
   processing: 1,
@@ -142,6 +147,74 @@ function extractSchoolNames(text: string): { rows: ParsedSchoolRow[]; warnings: 
 }
 
 /**
+ * Évalue la netteté d'une image via la variance du Laplacien.
+ * Une variance faible indique une image floue.
+ */
+async function assessImageQuality(file: File): Promise<{ score: number; blurry: boolean }> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    // Sous-échantillonner pour la performance (max 256px)
+    const maxDim = 256;
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(3, Math.round(bitmap.width * scale));
+    const h = Math.max(3, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return { score: 0, blurry: false };
+    ctx.drawImage(bitmap, 0, 0, w, h);
+
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const gray = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      const r = imageData.data[i * 4];
+      const g = imageData.data[i * 4 + 1];
+      const b = imageData.data[i * 4 + 2];
+      gray[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+    }
+
+    // Noyau de Laplacien : [0,1,0; 1,-4,1; 0,1,0]
+    const laplacian = new Float32Array(w * h);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const idx = y * w + x;
+        laplacian[idx] =
+          gray[idx - w] + gray[idx + w] +
+          gray[idx - 1] + gray[idx + 1] -
+          4 * gray[idx];
+      }
+    }
+
+    // Calcul de la variance
+    let mean = 0;
+    let count = 0;
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        mean += laplacian[y * w + x];
+        count++;
+      }
+    }
+    mean /= count;
+
+    let variance = 0;
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const v = laplacian[y * w + x] - mean;
+        variance += v * v;
+      }
+    }
+    variance /= count;
+
+    const score = Math.round(variance);
+    return { score, blurry: score < BLUR_THRESHOLD };
+  } catch {
+    return { score: 0, blurry: false };
+  }
+}
+
+/**
  * Prétraite une image pour l'OCR : ne réduit que les très grandes images (max 3000px).
  * Retourne un Blob PNG sans perte pour préserver la netteté du texte.
  */
@@ -171,6 +244,7 @@ async function preprocessImage(file: File): Promise<Blob> {
 export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  const filesRef = useRef<HTMLInputElement>(null);
   const workerRef = useRef<Worker | null>(null);
 
   const [phase, setPhase] = useState<Phase>('upload');
@@ -183,6 +257,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BatchResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [fileQuality, setFileQuality] = useState<FileQuality[]>([]);
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -200,12 +275,25 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
       valid.push(f);
     }
     if (valid.length > 0) {
+      const startIdx = files.length;
       setFiles((prev) => [...prev, ...valid]);
+      setFileQuality((prev) => [...prev, ...valid.map(() => ({ score: 0, blurry: false, assessing: true }))]);
+      // Évaluer la netteté de chaque nouvelle image
+      valid.forEach((f, i) => {
+        assessImageQuality(f).then((q) => {
+          setFileQuality((prev) => {
+            const next = [...prev];
+            next[startIdx + i] = { ...q, assessing: false };
+            return next;
+          });
+        });
+      });
     }
   }
 
   function removeFile(idx: number) {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
+    setFileQuality((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function runOcr() {
@@ -343,6 +431,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setResult(null);
     setProgress(0);
     setProgressLabel('');
+    setFileQuality([]);
   }
 
   function handleClose() {
@@ -389,6 +478,15 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 className="hidden"
                 onChange={(e) => handleFiles(e.target.files)}
               />
+              {/* Input fichiers (sélecteur de fichiers système, plusieurs images) */}
+              <input
+                ref={filesRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
 
               {files.length > 0 ? (
                 <>
@@ -405,40 +503,65 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                       dragOver ? 'border-violet-500 bg-violet-50' : 'border-slate-200'
                     }`}
                   >
-                    {files.map((f, idx) => (
-                      <div key={idx} className="relative">
-                        <img
-                          src={URL.createObjectURL(f)}
-                          alt={f.name}
-                          className="h-24 w-24 rounded-lg object-cover"
-                        />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow"
-                        >
-                          ✕
-                        </button>
-                        <p className="mt-1 max-w-[6rem] truncate text-[10px] text-slate-500">{f.name}</p>
-                      </div>
-                    ))}
+                    {files.map((f, idx) => {
+                      const q = fileQuality[idx];
+                      return (
+                        <div key={idx} className="relative">
+                          <img
+                            src={URL.createObjectURL(f)}
+                            alt={f.name}
+                            className={`h-24 w-24 rounded-lg object-cover ${q?.blurry ? 'ring-2 ring-amber-400' : ''}`}
+                          />
+                          {/* Badge de qualité */}
+                          {q?.assessing && (
+                            <span className="absolute bottom-1 left-1 rounded bg-slate-700/80 px-1 py-0.5 text-[8px] text-white">
+                              …
+                            </span>
+                          )}
+                          {!q?.assessing && q?.blurry && (
+                            <span className="absolute bottom-1 left-1 rounded bg-amber-500 px-1 py-0.5 text-[8px] font-medium text-white">
+                              ⚠ Flou
+                            </span>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow"
+                          >
+                            ✕
+                          </button>
+                          <p className="mt-1 max-w-[6rem] truncate text-[10px] text-slate-500">{f.name}</p>
+                        </div>
+                      );
+                    })}
                   </div>
 
+                  {/* Alerte si images floues détectées */}
+                  {fileQuality.some((q) => !q.assessing && q.blurry) && (
+                    <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                      <span className="text-base">⚠</span>
+                      <span>
+                        {fileQuality.filter((q) => !q.assessing && q.blurry).length} image(s) semblent floues.
+                        L'OCR peut être moins précis — essayez de reprendre les photos avec plus de netteté.
+                      </span>
+                    </div>
+                  )}
+
                   {/* Boutons compacts quand images déjà sélectionnées */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => inputRef.current?.click()}
-                      className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-medium transition hover:opacity-80"
+                      className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-2 py-3 text-xs font-medium transition hover:opacity-80"
                       style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      Prendre une photo
+                      Photo
                     </button>
                     <button
                       onClick={() => galleryRef.current?.click()}
-                      className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-medium transition hover:opacity-80"
+                      className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-2 py-3 text-xs font-medium transition hover:opacity-80"
                       style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -446,7 +569,17 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
                       </svg>
-                      Ajouter des photos
+                      Galerie
+                    </button>
+                    <button
+                      onClick={() => filesRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-2 py-3 text-xs font-medium transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-7l-2-2H6a2 2 0 00-2 2z" />
+                      </svg>
+                      Fichiers
                     </button>
                   </div>
                 </>
@@ -492,7 +625,17 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
                       </svg>
-                      Importer plusieurs photos
+                      Importer depuis la galerie
+                    </button>
+                    <button
+                      onClick={() => filesRef.current?.click()}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-semibold transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-7l-2-2H6a2 2 0 00-2 2z" />
+                      </svg>
+                      Importer des fichiers
                     </button>
                   </div>
 
