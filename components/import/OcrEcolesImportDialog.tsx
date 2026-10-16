@@ -783,30 +783,51 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 <p className="mt-1 text-center text-xs text-slate-500">{progress}%</p>
               </div>
               {/* Progression par fichier */}
-              {files.length > 1 && (
-                <div className="mt-5 w-full max-w-sm space-y-2">
-                  {files.map((f, i) => {
-                    const fp = fileProgress[i];
-                    return (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 shrink-0">
-                          {fp?.status === 'done' ? (
-                            <span className="block h-2.5 w-2.5 rounded-full bg-green-500" />
-                          ) : fp?.status === 'processing' ? (
-                            <span className="block h-2.5 w-2.5 animate-pulse rounded-full" style={{ backgroundColor: '#5E58A3' }} />
-                          ) : (
-                            <span className="block h-2.5 w-2.5 rounded-full border border-slate-300" />
-                          )}
-                        </span>
-                        <span className="flex-1 truncate text-[11px] text-slate-500">{f.name}</span>
-                        <span className="w-8 text-right text-[11px] font-medium text-slate-600">
-                          {fp?.status === 'done' ? '✓' : fp?.status === 'processing' ? `${fp.progress}%` : '—'}
-                        </span>
+              <div className="mt-5 w-full max-w-sm space-y-2.5">
+                {files.map((f, i) => {
+                  const fp = fileProgress[i];
+                  const isDone = fp?.status === 'done';
+                  const isProcessing = fp?.status === 'processing';
+                  return (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2.5 rounded-lg border p-2 transition ${
+                        isProcessing ? 'border-violet-300 bg-violet-50' : isDone ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50'
+                      }`}
+                    >
+                      {/* Vignette */}
+                      <img
+                        src={URL.createObjectURL(f)}
+                        alt={f.name}
+                        className={`h-9 w-9 shrink-0 rounded object-cover ${isDone ? 'opacity-60' : ''}`}
+                      />
+                      {/* Nom + barre */}
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="truncate text-[11px] font-medium text-slate-600">{f.name}</span>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: isDone ? '100%' : `${fp?.progress ?? 0}%`,
+                              backgroundColor: isDone ? '#22c55e' : '#5E58A3',
+                            }}
+                          />
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      {/* Statut */}
+                      <span className="w-10 shrink-0 text-right text-[11px] font-semibold">
+                        {isDone ? (
+                          <span className="text-green-600">✓</span>
+                        ) : isProcessing ? (
+                          <span style={{ color: '#5E58A3' }}>{fp?.progress ?? 0}%</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
