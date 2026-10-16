@@ -36,13 +36,27 @@ const SCHOOL_KEYWORDS = [
   'professionnel', 'maternelle', 'primaire', 'secondaire', 'fondamental',
 ];
 
-/** Patterns de bruit à exclure (numéros de page, dates seules, etc.). */
+/** Mots-clés d'en-têtes administratifs à exclure (insensible aux accents/casse). */
+const HEADER_KEYWORDS = [
+  'republique', 'ministere', 'gouvernement', 'secretariat', 'direction',
+  'inspection', 'coordination', 'sous-province', 'province de',
+  'division provinciale', 'liste des ecoles', 'liste des etablissements',
+  'annuaire', 'catalogue', 'table des matieres', 'sommaire',
+  'democratique du congo', 'kinshasa, le', 'fait a', 'arrete a',
+];
+
+/** Patterns de bruit à exclure (numéros de page, dates seules, lignes de séparation, etc.). */
 const NOISE_PATTERNS = [
-  /^page\s+\d/i,
+  /^page\s+\d+/i,
+  /^page\s+\d+\s*\/\s*\d+$/i,
   /^\d+\s*\/\s*\d+$/,
   /^\d{1,3}$/,
-  /^[#*•\-_=]{2,}$/,
+  /^[#*•\-_=~]{2,}$/,
   /^(date|signature|cachet|nom|prenom|post[- ]?nom)\s*[:.]?$/i,
+  /^(n[°o]?\s*)?[:.]?\s*\d{4,}$/i,
+  /^\[?\d{1,2}\s*[\).\-]\s*$/,
+  /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s*[:.]?$/i,
+  /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/,
 ];
 
 function normalizeText(s: string): string {
@@ -54,8 +68,19 @@ function isNoiseLine(line: string): boolean {
   const trimmed = line.trim();
   if (trimmed.length < 3) return true;
   if (NOISE_PATTERNS.some((p) => p.test(trimmed))) return true;
+  // Ligne composée uniquement de chiffres et ponctuation
   if (/^[\d\s\-.,;:|/()]+$/.test(trimmed)) return true;
+  // En-têtes administratifs (République, Ministère, etc.)
+  const norm = normalizeText(trimmed);
+  if (HEADER_KEYWORDS.some((kw) => norm.includes(kw))) return true;
+  // Ligne en MAJUSCULES de plus de 40 caractères = probablement un en-tête/bandeau
+  if (trimmed.length > 40 && trimmed === trimmed.toUpperCase() && !/[a-zà-ÿ]/.test(trimmed)) return true;
   return false;
+}
+
+/** Nettoie une ligne en supprimant la numérotation de début (ex: "1. École…" → "École…"). */
+function cleanLinePrefix(line: string): string {
+  return line.replace(/^\[?\s*\d{1,3}\s*[\).\-:]\s*/, '').trim();
 }
 
 /** Vérifie si un texte ressemble à un nom d'école. */
@@ -63,9 +88,13 @@ function looksLikeSchoolName(text: string): boolean {
   const norm = normalizeText(text);
   if (norm.length < 3) return false;
   if (!/[a-zà-ÿ]/i.test(text)) return false;
+  // Doit contenir au moins un mot de 3+ lettres
+  if (!/[a-zà-ÿ]{3,}/i.test(text)) return false;
+  // Doit contenir un mot-clé d'école OU avoir une structure plausible (initiale + mots)
   if (SCHOOL_KEYWORDS.some((kw) => norm.includes(kw))) return true;
-  if (norm.length >= 5 && /[a-zà-ÿ]{3,}/i.test(text)) return true;
-  return false;
+  // Repli strict : au moins 2 mots alphabétiques de 3+ lettres (ex: "Bon Berger", "Saint Joseph")
+  const words = norm.split(/\s+/).filter((w) => w.length >= 3 && /[a-zà-ÿ]{3,}/i.test(w));
+  return words.length >= 2;
 }
 
 /**
@@ -95,7 +124,8 @@ function extractSchoolNames(text: string): { rows: ParsedSchoolRow[]; warnings: 
   const seen = new Set<string>();
 
   for (const line of cappedLines) {
-    const nom = line.trim();
+    // Nettoyer la numérotation de début (ex: "1. École…" → "École…")
+    const nom = cleanLinePrefix(line);
     if (!nom || !looksLikeSchoolName(nom)) continue;
     // Déduplication basique (même nom normalisé)
     const key = normalizeText(nom);
