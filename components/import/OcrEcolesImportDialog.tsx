@@ -174,6 +174,7 @@ function parseOcrText(text: string, delim: string): { rows: ParsedSchoolRow[]; w
 
 export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const workerRef = useRef<Worker | null>(null);
 
   const [phase, setPhase] = useState<Phase>('upload');
@@ -395,6 +396,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 </ul>
               </div>
 
+              {/* Zone de dépôt / aperçu */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
@@ -403,16 +405,24 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                   setDragOver(false);
                   handleFile(e.dataTransfer.files[0] ?? null);
                 }}
-                onClick={() => inputRef.current?.click()}
-                className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition ${
-                  dragOver ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-slate-400'
+                className={`rounded-2xl border-2 border-dashed p-8 text-center transition ${
+                  dragOver ? 'border-blue-500 bg-blue-50' : 'border-slate-300'
                 }`}
               >
+                {/* Input caméra (capture forcée) */}
                 <input
                   ref={inputRef}
                   type="file"
                   accept="image/*"
                   capture="environment"
+                  className="hidden"
+                  onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                />
+                {/* Input galerie (sans capture) */}
+                <input
+                  ref={galleryRef}
+                  type="file"
+                  accept="image/*"
                   className="hidden"
                   onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
                 />
@@ -424,7 +434,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                       className="max-h-40 rounded-lg object-contain"
                     />
                     <p className="text-sm font-medium text-slate-900">{file.name}</p>
-                    <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} Ko — Cliquez pour changer</p>
+                    <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} Ko</p>
                   </div>
                 ) : (
                   <div>
@@ -432,10 +442,35 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <p className="text-sm font-medium text-slate-600">Prenez une photo ou sélectionnez une image</p>
+                    <p className="text-sm font-medium text-slate-600">Prenez une photo ou choisissez une image</p>
                     <p className="mt-1 text-xs text-slate-400">JPG, PNG — scan ou photo de document</p>
                   </div>
                 )}
+              </div>
+
+              {/* Boutons de sélection */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => inputRef.current?.click()}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-700"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Prendre une photo
+                </button>
+                <button
+                  onClick={() => galleryRef.current?.click()}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 17l4.5-4.5L12 17l3-3 6 6" />
+                  </svg>
+                  Galerie
+                </button>
               </div>
 
               {error && (
