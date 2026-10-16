@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { canTransition } from '@/lib/institutions';
+import { checkEcoleConfigured } from '@/lib/ecole-config';
 import { logAudit, getClientIP } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,16 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json(
       { error: 'Vous ne pouvez envoyer le dossier que de votre propre école.' },
       { status: 403 },
+    );
+  }
+
+  // L'école doit être bien configurée (tous les champs essentiels remplis)
+  const configCheck = checkEcoleConfigured(existing);
+  if (!configCheck.isConfigured) {
+    const missingLabels = configCheck.missingFields.map((f) => f.label).join(', ');
+    return NextResponse.json(
+      { error: `L'école n'est pas complètement configurée. Champs manquants : ${missingLabels}.` },
+      { status: 400 },
     );
   }
 

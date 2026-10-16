@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { INSTITUTION_MAP, DOCUMENT_TYPES } from '@/lib/institutions';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { useSessionUser } from '@/lib/use-session-user';
 import { DocumentAuditTrail } from '@/components/ecoles/DocumentAuditTrail';
 import type { DocumentAudit } from '@/components/ecoles/DocumentAuditTrail';
+import { checkEcoleConfigured } from '@/lib/ecole-config';
 
 /** Rôles autorisés à téléverser/supprimer des documents (école uniquement). */
 const SCHOOL_ROLES = ['DIRECTION_ECOLE', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'];
@@ -162,6 +163,10 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
 
   const inst = INSTITUTION_MAP[ecole.institution];
 
+  // Vérifier que l'école est bien configurée avant l'envoi du dossier
+  const configCheck = useMemo(() => checkEcoleConfigured(ecole), [ecole]);
+  const isConfigured = configCheck.isConfigured;
+
   return (
     <div className="space-y-5">
       {/* En-tête */}
@@ -286,14 +291,24 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
                 {sendResult.message}
               </div>
             )}
+            {!isConfigured && (
+              <div className="mb-3 rounded-xl bg-amber-50 px-4 py-3 text-sm">
+                <p className="font-medium text-amber-700">⚠️ Configuration incomplète</p>
+                <p className="mt-1 text-amber-600">Champs manquants : {configCheck.missingFields.map((f) => f.label).join(', ')}.</p>
+                <p className="mt-1 text-xs text-amber-500">Complétez la fiche de l'école avant d'envoyer le dossier.</p>
+              </div>
+            )}
             <button
               onClick={handleSendDocuments}
-              disabled={sending || ecole.documents.length === 0}
+              disabled={sending || ecole.documents.length === 0 || !isConfigured}
               className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 sm:w-auto"
             >
               {sending ? 'Envoi en cours…' : '📤 Envoyer le dossier à la coordination'}
             </button>
-            {ecole.documents.length === 0 && (
+            {!isConfigured && (
+              <p className="mt-2 text-xs text-amber-600">L'école doit être complètement configurée avant l'envoi.</p>
+            )}
+            {isConfigured && ecole.documents.length === 0 && (
               <p className="mt-2 text-xs text-amber-600">Veuillez ajouter au moins un document avant d'envoyer le dossier.</p>
             )}
           </div>
