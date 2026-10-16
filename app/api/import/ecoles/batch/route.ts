@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
   }
 
   const rows = body.rows as ParsedSchoolRow[];
+  const targetCoordSousProvincialeId: string | null = body.coordSousProvincialeId ?? null;
   if (rows.length === 0) {
     return NextResponse.json({ error: 'Aucune ligne à enregistrer.' }, { status: 400 });
   }
@@ -257,7 +258,7 @@ export async function POST(request: NextRequest) {
             statut: 'Actif',
             statutValidation: 'Brouillon',
             structureRattachementType: structureCompetente,
-            coordSousProvincialeId: scope === 'sousProvincial' ? user.coordSousProvincialeId : null,
+            coordSousProvincialeId: targetCoordSousProvincialeId ?? (scope === 'sousProvincial' ? user.coordSousProvincialeId : null),
           },
         });
 

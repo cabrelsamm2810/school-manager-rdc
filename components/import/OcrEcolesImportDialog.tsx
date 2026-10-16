@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import type { Worker } from 'tesseract.js';
 import {
   type ParsedSchoolRow,
@@ -12,7 +12,19 @@ import { SchoolNamesPreview } from '@/components/import/SchoolNamesPreview';
 import { SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
 import { OcrWorkflowStepper } from '@/components/import/OcrWorkflowStepper';
 import { analyzeImage, type ImageAnalysis } from '@/lib/image-analysis';
-import { INSTITUTIONS, type InstitutionConfig } from '@/lib/institutions';
+import { INSTITUTIONS } from '@/lib/institutions';
+
+type InstitutionInfo = {
+  code: string;
+  label: string;
+  description: string;
+};
+
+type CoordStructures = {
+  coordNationales: { id: string; province: string; institution: string; coordonnateur: string }[];
+  coordProvinciales: { id: string; province: string; institution: string }[];
+  coordSousProvinciales: { id: string; nom: string; province: string; institution: string; coordProvinciale?: { id: string; province: string } }[];
+};
 
 type OcrEcolesImportDialogProps = {
   onImported: () => void;
@@ -276,6 +288,10 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   const currentFileIdx = useRef(0);
   const [selectedInstitution, setSelectedInstitution] = useState<string>('');
   const [institutionSearch, setInstitutionSearch] = useState('');
+  const [dbInstitutions, setDbInstitutions] = useState<InstitutionInfo[]>([]);
+  const [coordStructures, setCoordStructures] = useState<CoordStructures | null>(null);
+  const [structuresLoading, setStructuresLoading] = useState(false);
+  const [selectedCoordSousProv, setSelectedCoordSousProv] = useState<string>('');
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -443,6 +459,54 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
   function goToInstitutionSelect() {
     setPhase('select-institution');
+    loadInstitutions();
+  }
+
+  async function loadInstitutions() {
+    try {
+      // Récupérer la session utilisateur pour pré-sélectionner son institution
+      const [sessRes, instRes] = await Promise.all([
+        fetch('/api/auth/session'),
+        fetch('/api/institutions'),
+      ]);
+      const sessData = await sessRes.json();
+      const instData = await instRes.json();
+
+      if (instData.institutions) {
+        setDbInstitutions(instData.institutions);
+      }
+      // Pré-sélectionner l'institution de l'utilisateur
+      if (sessData.authenticated && sessData.user?.typeInstitution) {
+        setSelectedInstitution(sessData.user.typeInstitution);
+        loadStructures(sessData.user.typeInstitution);
+      }
+    } catch {
+      // Repli sur la liste statique
+      setDbInstitutions(INSTITUTIONS.map((i) => ({ code: i.code, label: i.label, description: i.description })));
+    }
+  }
+
+  async function loadStructures(institutionCode: string) {
+    setStructuresLoading(true);
+    setSelectedCoordSousProv('');
+    try {
+      const res = await fetch(`/api/institutions?institution=${institutionCode}`);
+      const data = await res.json();
+      if (data.structures) {
+        setCoordStructures(data.structures);
+      } else {
+        setCoordStructures(null);
+      }
+    } catch {
+      setCoordStructures(null);
+    } finally {
+      setStructuresLoading(false);
+    }
+  }
+
+  function handleSelectInstitution(code: string) {
+    setSelectedInstitution(code);
+    loadStructures(code);
   }
 
   async function handleSave() {
@@ -456,10 +520,12 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
         if (selectedInstitution) row.institution = selectedInstitution;
         return row;
       });
+      // Inclure la coordination sous-provinciale sélectionnée si présente
+      const extraBody = selectedCoordSousProv ? { coordSousProvincialeId: selectedCoordSousProv } : {};
       const res = await fetch('/api/import/ecoles/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: cleanRows }),
+        body: JSON.stringify({ rows: cleanRows, ...extraBody }),
       });
       const data = await res.json();
 
@@ -490,6 +556,9 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setFileProgress([]);
     setSelectedInstitution('');
     setInstitutionSearch('');
+    setDbInstitutions([]);
+    setCoordStructures(null);
+    setSelectedCoordSousProv('');
   }
 
   function handleClose() {
@@ -857,9 +926,9 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 />
               </div>
 
-              {/* Liste des institutions */}
+              {/* Liste des institutions depuis la base de données */}
               <div className="space-y-2">
-                {INSTITUTIONS
+                {(dbInstitutions.length > 0 ? dbInstitutions : INSTITUTIONS.map((i) => ({ code: i.code, label: i.label, description: i.description })))
                   .filter((inst) => {
                     if (!institutionSearch) return true;
                     const q = institutionSearch.toLowerCase();
@@ -867,18 +936,19 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                   })
                   .map((inst) => {
                     const isSelected = selectedInstitution === inst.code;
+                    const staticInst = INSTITUTIONS.find((i) => i.code === inst.code);
                     return (
                       <button
                         key={inst.code}
-                        onClick={() => setSelectedInstitution(inst.code)}
+                        onClick={() => handleSelectInstitution(inst.code)}
                         className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
                           isSelected
                             ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20'
                             : 'border-slate-200 bg-white hover:border-slate-300'
                         }`}
                       >
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${inst.bgColor}`}>
-                          <svg className={`h-5 w-5 ${inst.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${staticInst?.bgColor || 'bg-slate-100'}`}>
+                          <svg className={`h-5 w-5 ${staticInst?.color || 'text-slate-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" />
                           </svg>
                         </div>
@@ -899,6 +969,61 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                     );
                   })}
               </div>
+
+              {/* Structures de coordination depuis la base de données */}
+              {selectedInstitution && (
+                <div className="space-y-3 border-t border-slate-100 pt-3">
+                  <p className="text-xs font-semibold text-slate-700">Structure de rattachement (base de données)</p>
+
+                  {structuresLoading && (
+                    <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-brand-600" />
+                      <span className="text-xs text-slate-500">Chargement des structures…</span>
+                    </div>
+                  )}
+
+                  {!structuresLoading && coordStructures && (
+                    <>
+                      {/* Coordination nationale */}
+                      {coordStructures.coordNationales.length > 0 && (
+                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-[11px] font-medium text-slate-500">Coordination nationale</p>
+                          {coordStructures.coordNationales.map((cn) => (
+                            <p key={cn.id} className="text-xs text-slate-700">
+                              {cn.province} {cn.coordonnateur && `· ${cn.coordonnateur}`}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Coordination sous-provinciale — sélectionnable */}
+                      {coordStructures.coordSousProvinciales.length > 0 ? (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-medium text-slate-500">Coordination sous-provinciale cible</label>
+                          <select
+                            value={selectedCoordSousProv}
+                            onChange={(e) => setSelectedCoordSousProv(e.target.value)}
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+                          >
+                            <option value="">— Non rattachée —</option>
+                            {coordStructures.coordSousProvinciales.map((csp) => (
+                              <option key={csp.id} value={csp.id}>
+                                {csp.nom} {csp.province ? `· ${csp.province}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400">Aucune structure de coordination enregistrée pour cette institution.</p>
+                      )}
+                    </>
+                  )}
+
+                  {!structuresLoading && !coordStructures && selectedInstitution && (
+                    <p className="text-xs text-slate-400">Aucune structure de coordination trouvée.</p>
+                  )}
+                </div>
+              )}
 
               {error && (
                 <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
