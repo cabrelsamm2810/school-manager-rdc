@@ -26,7 +26,7 @@ const PHASE_STEP: Record<Phase, number> = {
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
-const OCR_MAX_WIDTH = 1000; // Redimensionner les grandes images pour accélérer l'OCR
+const OCR_MAX_WIDTH = 1600; // Redimensionner les très grandes images pour accélérer l'OCR
 
 /** Mots-clés typiques dans les noms d'écoles (insensible aux accents/casse). */
 const SCHOOL_KEYWORDS = [
@@ -156,13 +156,15 @@ async function preprocessImage(file: File): Promise<Blob> {
   canvas.height = h;
   const ctx = canvas.getContext('2d');
   if (!ctx) return file;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(bitmap, 0, 0, w, h);
 
   return new Promise((resolve) => {
     canvas.toBlob(
       (blob) => resolve(blob ?? file),
       'image/jpeg',
-      0.85,
+      0.92,
     );
   });
 }
