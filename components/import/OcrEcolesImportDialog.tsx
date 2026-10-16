@@ -50,6 +50,23 @@ const HEADER_KEYWORDS = [
   'democratique du congo', 'kinshasa, le', 'fait a', 'arrete a',
 ];
 
+/** Patterns pour détecter un numéro de téléphone (format RDC). */
+const PHONE_REGEX = /(?:\+243\s?|0)[89]\d{2}[\s.\-]?\d{3}[\s.\-]?\d{3}/;
+
+/** Mots-clés d'adresse (insensible aux accents/casse). */
+const ADDRESS_KEYWORDS = [
+  'avenue', 'av ', 'av.', 'rue', 'boulevard', 'bd ', 'bd.', 'quartier',
+  'q. ', 'q,', 'commune', 'n°', 'no ', 'numero', 'num ', 'lot ', 'parcelle',
+  'crossing', 'marche', 'marché', 'pres de', 'près de', 'face a', 'face à',
+];
+
+/** Mots-clés de chef d'établissement (insensible aux accents/casse). */
+const DIRECTOR_KEYWORDS = [
+  'directeur', 'directrice', 'chef d', 'chef de', 'responsable',
+  'principal', 'recteur', 'regisseur', 'régisseur', 'fondateur',
+  'dir. ', 'dir.', 'cd ', 'cd.',
+];
+
 /** Patterns de bruit à exclure (numéros de page, dates seules, lignes de séparation, etc.). */
 const NOISE_PATTERNS = [
   /^page\s+\d+/i,
@@ -102,11 +119,39 @@ function looksLikeSchoolName(text: string): boolean {
   return words.length >= 2;
 }
 
+/** Extrait un numéro de téléphone d'une ligne, ou null si absent. */
+function extractPhone(line: string): string | null {
+  const m = line.match(PHONE_REGEX);
+  return m ? m[0].replace(/\s+/g, ' ').trim() : null;
+}
+
+/** Extrait une adresse d'une ligne, ou null si la ligne n'en contient pas. */
+function extractAddress(line: string): string | null {
+  const norm = normalizeText(line);
+  if (!ADDRESS_KEYWORDS.some((kw) => norm.includes(kw))) return null;
+  // Nettoyer les préfixes d'étiquette (ex: "Adresse: Av. ..." → "Av. ...")
+  const cleaned = line.replace(/^(adresse|addr|localisation)\s*[:.]?\s*/i, '').trim();
+  return cleaned.length >= 5 ? cleaned : null;
+}
+
+/** Extrait le nom du chef d'établissement d'une ligne, ou null si absent. */
+function extractDirector(line: string): string | null {
+  const norm = normalizeText(line);
+  if (!DIRECTOR_KEYWORDS.some((kw) => norm.includes(kw))) return null;
+  // Extraire la partie après le mot-clé et un séparateur (: , = -)
+  const match = line.match(/(?:directeur|directrice|chef\s+d['e]\w*|responsable|principal|recteur|r[ée]gisseur|fondateur|dir\.?|cd\.?)\s*[:\-,\=]?\s*(.+)/i);
+  if (!match) return null;
+  const name = match[1].trim();
+  // Garder uniquement si ça ressemble à un nom (au moins 2 lettres, pas trop long)
+  if (name.length < 3 || name.length > 80) return null;
+  return name;
+}
+
 /**
- * Extraction rapide des noms d'écoles depuis le texte OCR.
- * Filtre le bruit et ne garde que les lignes qui ressemblent à des noms d'écoles.
+ * Extraction des données d'écoles depuis le texte OCR.
+ * Détecte le nom, l'adresse, le téléphone et le chef d'établissement.
  */
-function extractSchoolNames(text: string): { rows: ParsedSchoolRow[]; warnings: string[] } {
+function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: string[] } {
   const warnings: string[] = [];
   const allLines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
 
@@ -128,18 +173,44 @@ function extractSchoolNames(text: string): { rows: ParsedSchoolRow[]; warnings: 
   const rows: ParsedSchoolRow[] = [];
   const seen = new Set<string>();
 
-  for (const line of cappedLines) {
-    // Nettoyer la numérotation de début (ex: "1. École…" → "École…")
+  for (let i = 0; i < cappedLines.length; i++) {
+    const line = cappedLines[i];
     const nom = cleanLinePrefix(line);
     if (!nom || !looksLikeSchoolName(nom)) continue;
-    // Déduplication basique (même nom normalisé)
     const key = normalizeText(nom);
     if (seen.has(key)) continue;
     seen.add(key);
+
+    // Chercher adresse, téléphone et chef dans les lignes suivantes (max 5 lignes)
+    let adresse = '';
+    let telephone = '';
+    let chefEcole = '';
+
+    for (let j = i + 1; j < Math.min(i + 6, cappedLines.length); j++) {
+      const next = cappedLines[j];
+      // Si la ligne suivante est déjà un nom d'école, arrêter
+      const nextNom = cleanLinePrefix(next);
+      if (looksLikeSchoolName(nextNom) && !extractPhone(next) && !extractAddress(next) && !extractDirector(next)) {
+        break;
+      }
+      if (!telephone) {
+        const phone = extractPhone(next);
+        if (phone) { telephone = phone; continue; }
+      }
+      if (!adresse) {
+        const addr = extractAddress(next);
+        if (addr) { adresse = addr; continue; }
+      }
+      if (!chefEcole) {
+        const dir = extractDirector(next);
+        if (dir) { chefEcole = dir; continue; }
+      }
+    }
+
     rows.push({
       nom, type: '', institution: '', dinacope: '', province: '',
-      provinceEducationnelle: '', ville: '', commune: '', adresse: '',
-      telephone: '', email: '', chefEcole: '', effectif: '',
+      provinceEducationnelle: '', ville: '', commune: '', adresse,
+      telephone, email: '', chefEcole, effectif: '',
     });
   }
 
@@ -335,8 +406,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
         return;
       }
 
-      // Extraction rapide des noms d'écoles uniquement
-      const parsed = extractSchoolNames(combinedText);
+      // Extraction des données d'écoles (nom, adresse, téléphone, chef d'établissement)
+      const parsed = extractSchoolData(combinedText);
       setParseWarnings(parsed.warnings);
 
       if (parsed.rows.length === 0) {
@@ -375,9 +446,9 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     }
   }
 
-  function updateName(rowIdx: number, value: string) {
+  function updateField(rowIdx: number, field: keyof ParsedSchoolRow, value: string) {
     setPreviewRows((prev) =>
-      prev.map((r, i) => (i === rowIdx ? { ...r, nom: value } : r)),
+      prev.map((r, i) => (i === rowIdx ? { ...r, [field]: value } : r)),
     );
   }
 
@@ -598,7 +669,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                     </div>
                     <h3 className="mt-4 text-base font-bold text-slate-900">Photographier une liste d'écoles</h3>
                     <p className="mt-1 max-w-xs text-center text-sm text-slate-500">
-                      Prenez une photo d'un document contenant les noms d'écoles. L'IA détectera automatiquement les noms.
+                      Prenez une photo d'un document contenant les écoles. L'IA détectera le nom, l'adresse, le téléphone et le chef d'établissement.
                     </p>
                   </div>
 
@@ -692,7 +763,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
               <SchoolNamesPreview
                 rows={previewRows}
-                onUpdateName={updateName}
+                onUpdateField={updateField}
                 onDeleteRow={deleteRow}
                 onAddRow={addRow}
               />

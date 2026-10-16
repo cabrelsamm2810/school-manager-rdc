@@ -1,10 +1,10 @@
 'use client';
 
-import type { PreviewRow } from '@/lib/txt-import-parser';
+import type { ParsedSchoolRow, PreviewRow } from '@/lib/txt-import-parser';
 
 type SchoolNamesPreviewProps = {
   rows: PreviewRow[];
-  onUpdateName: (rowIdx: number, value: string) => void;
+  onUpdateField: (rowIdx: number, field: keyof ParsedSchoolRow, value: string) => void;
   onDeleteRow: (rowIdx: number) => void;
   onAddRow: () => void;
 };
@@ -21,7 +21,23 @@ const TrashIcon = () => (
   </svg>
 );
 
-export function SchoolNamesPreview({ rows, onUpdateName, onDeleteRow, onAddRow }: SchoolNamesPreviewProps) {
+const FIELD_ICONS: Record<string, string> = {
+  nom: '🏫',
+  adresse: '📍',
+  telephone: '📞',
+  chefEcole: '👤',
+};
+
+const FIELD_PLACEHOLDERS: Record<string, string> = {
+  nom: "Nom de l'école",
+  adresse: 'Adresse',
+  telephone: 'Téléphone',
+  chefEcole: "Chef d'établissement",
+};
+
+const EXTRA_FIELDS: (keyof ParsedSchoolRow)[] = ['adresse', 'telephone', 'chefEcole'];
+
+export function SchoolNamesPreview({ rows, onUpdateField, onDeleteRow, onAddRow }: SchoolNamesPreviewProps) {
   return (
     <div className="space-y-2">
       {rows.length === 0 ? (
@@ -30,29 +46,51 @@ export function SchoolNamesPreview({ rows, onUpdateName, onDeleteRow, onAddRow }
         </div>
       ) : (
         rows.map((row, ri) => (
-          <div key={ri} className={`flex items-center gap-2 rounded-xl border p-2.5 ${rowBorder(row.status)}`}>
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-500">
-              {ri + 1}
-            </span>
-            <input
-              type="text"
-              value={row.nom}
-              onChange={(e) => onUpdateName(ri, e.target.value)}
-              placeholder="Nom de l'école"
-              className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-100"
-              style={{ borderColor: row.status === 'error' ? '#fca5a5' : row.status === 'warning' ? '#fcd34d' : undefined }}
-            />
-            {row.messages.length > 0 && (
-              <span className="text-xs text-amber-500" title={row.messages.join(', ')}>⚠</span>
-            )}
-            <button onClick={() => onDeleteRow(ri)} className="shrink-0 text-slate-300 hover:text-red-500" title="Supprimer">
-              <TrashIcon />
-            </button>
+          <div key={ri} className={`rounded-xl border p-2.5 ${rowBorder(row.status)}`}>
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-500">
+                {ri + 1}
+              </span>
+              {/* Nom — champ principal */}
+              <div className="flex flex-1 items-center gap-1.5">
+                <span className="text-sm">{FIELD_ICONS.nom}</span>
+                <input
+                  type="text"
+                  value={row.nom}
+                  onChange={(e) => onUpdateField(ri, 'nom', e.target.value)}
+                  placeholder={FIELD_PLACEHOLDERS.nom}
+                  className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-100"
+                  style={{ borderColor: row.status === 'error' ? '#fca5a5' : row.status === 'warning' ? '#fcd34d' : undefined }}
+                />
+              </div>
+              {row.messages.length > 0 && (
+                <span className="text-xs text-amber-500" title={row.messages.join(', ')}>⚠</span>
+              )}
+              <button onClick={() => onDeleteRow(ri)} className="shrink-0 text-slate-300 hover:text-red-500" title="Supprimer">
+                <TrashIcon />
+              </button>
+            </div>
+
+            {/* Champs secondaires — adresse, téléphone, chef d'établissement */}
+            <div className="mt-1.5 space-y-1.5 pl-8">
+              {EXTRA_FIELDS.map((field) => (
+                <div key={field} className="flex items-center gap-1.5">
+                  <span className="text-xs opacity-60">{FIELD_ICONS[field]}</span>
+                  <input
+                    type="text"
+                    value={row[field]}
+                    onChange={(e) => onUpdateField(ri, field, e.target.value)}
+                    placeholder={FIELD_PLACEHOLDERS[field]}
+                    className="flex-1 rounded-lg border border-slate-100 bg-slate-50/50 px-2.5 py-1 text-xs text-slate-600 focus:border-violet-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-violet-100"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         ))
       )}
       {rows.length > 0 && (
-        <button onClick={onAddRow} className="text-xs font-medium text-violet-600 hover:underline" style={{ color: '#5E58A3' }}>
+        <button onClick={onAddRow} className="text-xs font-medium hover:underline" style={{ color: '#5E58A3' }}>
           + Ajouter une école
         </button>
       )}
