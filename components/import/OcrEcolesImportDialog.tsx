@@ -15,7 +15,7 @@ type OcrEcolesImportDialogProps = {
   onClose: () => void;
 };
 
-type Phase = 'upload' | 'processing' | 'review' | 'result';
+type Phase = 'upload' | 'processing' | 'review-text' | 'review-table' | 'result';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 
@@ -255,29 +255,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
       const parsed = parseOcrText(combinedText, delimiter);
       setParseWarnings(parsed.warnings);
 
-      if (parsed.rows.length === 0) {
-        setError('Aucune ligne valide détectée. Ajustez le séparateur ou éditez le texte.');
-        setPhase('review');
-        return;
-      }
-
-      // Appeler l'API de preview pour la détection de doublons
-      setLoading(true);
-      const res = await fetch('/api/import/ecoles/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: parsed.rows }),
-      });
-      const data2 = await res.json();
-      setLoading(false);
-
-      if (!res.ok) {
-        setError(data2.error ?? 'Erreur lors de la vérification.');
-        setPreviewRows(parsed.rows.map((r, i) => ({ ...r, rowIndex: i, status: 'ok' as const, messages: [] })));
-      } else {
-        setPreviewRows(data2.rows);
-      }
-      setPhase('review');
+      setPhase('review-text');
     } catch {
       setError("Échec de la reconnaissance de texte. Réessayez avec des images plus nettes.");
       setPhase('upload');
@@ -293,6 +271,18 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     } else {
       setPreviewRows([]);
     }
+  }
+
+  async function goToTablePreview() {
+    const parsed = parseOcrText(rawText, delimiter);
+    setParseWarnings(parsed.warnings);
+    setError('');
+    if (parsed.rows.length === 0) {
+      setError('Aucune ligne valide détectée. Ajustez le séparateur ou éditez le texte.');
+      return;
+    }
+    await checkDuplicates(parsed.rows);
+    setPhase('review-table');
   }
 
   async function checkDuplicates(rows: ParsedSchoolRow[]) {
@@ -530,13 +520,17 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
             </div>
           )}
 
-          {/* Phase: Review */}
-          {phase === 'review' && (
+          {/* Phase: Review-text (étape 1 — correction du texte OCR) */}
+          {phase === 'review-text' && (
             <div className="space-y-3">
-              {/* Texte OCR éditable */}
+              <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">1</span>
+                <span className="font-medium">Étape 1/2 — Corrigez le texte extrait par l'OCR</span>
+              </div>
+
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">
-                  Texte extrait (modifiable — corrigez si nécessaire) :
+                  Texte extrait (modifiable — corrigez les erreurs de reconnaissance) :
                 </label>
                 <textarea
                   value={rawText}
@@ -544,13 +538,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                     setRawText(e.target.value);
                     const parsed = parseOcrText(e.target.value, delimiter);
                     setParseWarnings(parsed.warnings);
-                    if (parsed.rows.length > 0) {
-                      checkDuplicates(parsed.rows);
-                    } else {
-                      setPreviewRows([]);
-                    }
                   }}
-                  className="h-28 w-full resize-y rounded-xl border border-slate-200 p-3 font-mono text-xs text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-100"
+                  className="h-40 w-full resize-y rounded-xl border border-slate-200 p-3 font-mono text-xs text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-100"
                   placeholder="Texte OCR…"
                 />
               </div>
@@ -571,6 +560,36 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                     {d.label}
                   </button>
                 ))}
+              </div>
+
+              <SchoolParseWarnings warnings={parseWarnings} />
+
+              {/* Aperçu rapide du nombre de lignes détectées */}
+              {(() => {
+                const parsed = parseOcrText(rawText, delimiter);
+                return parsed.rows.length > 0 ? (
+                  <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                    ✓ {parsed.rows.length} école(s) détectée(s) avec ce séparateur
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">
+                    ✕ Aucune ligne valide — ajustez le séparateur ou corrigez le texte
+                  </div>
+                );
+              })()}
+
+              {error && (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+              )}
+            </div>
+          )}
+
+          {/* Phase: Review-table (étape 2 — validation des écoles avant enregistrement) */}
+          {phase === 'review-table' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">2</span>
+                <span className="font-medium">Étape 2/2 — Vérifiez et corrigez les écoles avant l'enregistrement définitif</span>
               </div>
 
               {previewRows.length > 0 && (
@@ -626,13 +645,30 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
             </button>
           )}
 
-          {phase === 'review' && (
+          {phase === 'review-text' && (
             <>
               <button
                 onClick={reset}
                 className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
               >
                 ← Nouvelle image
+              </button>
+              <button
+                onClick={goToTablePreview}
+                className="btn-primary flex-1 px-4 py-2.5 text-sm"
+              >
+                Continuer →
+              </button>
+            </>
+          )}
+
+          {phase === 'review-table' && (
+            <>
+              <button
+                onClick={() => setPhase('review-text')}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                ← Modifier le texte
               </button>
               <button
                 onClick={handleSave}
@@ -642,7 +678,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 {loading ? (
                   <><span className="btn-spinner" /> Enregistrement…</>
                 ) : (
-                  `Enregistrer ${previewRows.length} école(s)`
+                  `✓ Enregistrer ${previewRows.length} école(s)`
                 )}
               </button>
             </>
