@@ -22,6 +22,8 @@ export type ConversationListItemProps = {
   unreadCount?: number;
   isActive: boolean;
   onSelect: (id: string, kind: 'conversation' | 'group') => void;
+  /** Callback d'appel vidéo rapide (conversations privées uniquement). */
+  onQuickCall?: (id: string) => void;
 };
 
 const PREVIEW_ICONS: Record<Exclude<ChatPreviewKind, 'text'>, JSX.Element> = {
@@ -85,17 +87,20 @@ export const ConversationListItem = memo(function ConversationListItem({
   timeLabel,
   unreadCount = 0,
   isActive,
-  onSelect
+  onSelect,
+  onQuickCall
 }: ConversationListItemProps) {
   const unread = unreadCount > 0;
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(id, kind)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(id, kind); } }}
       aria-current={isActive ? 'true' : undefined}
       className={clsx(
-        'sc-item relative flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[#60a5fa] focus-visible:outline-offset-2',
+        'sc-item relative flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[#60a5fa] focus-visible:outline-offset-2 cursor-pointer',
         isActive ? 'bg-[#1e4a78]' : 'bg-[#132f4c] hover:bg-[#17395d] active:bg-[#1e4a78]'
       )}
       style={{
@@ -146,6 +151,20 @@ export const ConversationListItem = memo(function ConversationListItem({
           )}
         </span>
       </span>
-    </button>
+
+      {kind === 'conversation' && onQuickCall && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onQuickCall(id); }}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1e3a8a]/60 text-[#60a5fa] transition hover:bg-[#2563eb] hover:text-white active:scale-90"
+          aria-label={`Appel vidéo avec ${name}`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+            <polygon points="23 7 16 12 23 17 23 7" />
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+          </svg>
+        </button>
+      )}
+    </div>
   );
 });

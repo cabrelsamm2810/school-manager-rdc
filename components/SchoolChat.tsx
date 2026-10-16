@@ -242,6 +242,23 @@ export function SchoolChat() {
     [activeConversation]
   );
 
+  // Appel vidéo rapide depuis la liste des conversations (sans ouvrir le fil)
+  const quickCall = useCallback(
+    (convId: string) => {
+      const conv = conversations.find((c) => c.id === convId);
+      if (!conv?.otherUser) return;
+      setActiveCall({
+        isCaller: true,
+        callType: 'video',
+        otherUserName: conv.otherUser.displayName,
+        otherUserPhoto: conv.otherUser.profilePhotoUrl,
+        otherUserId: conv.otherUser.id,
+        conversationId: conv.id,
+      });
+    },
+    [conversations]
+  );
+
   // Polling des appels entrants
   useEffect(() => {
     if (!currentUser) return;
@@ -734,6 +751,7 @@ export function SchoolChat() {
                   unreadCount={conv.unreadCount}
                   isActive={item.id === activeConversationId && activeChatType === 'conversation'}
                   onSelect={handleSelectChat}
+                  onQuickCall={quickCall}
                 />
               );
             })}
