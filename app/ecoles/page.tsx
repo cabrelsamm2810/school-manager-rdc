@@ -213,27 +213,27 @@ export default function EcolesPage() {
               </div>
 
               {/* ── Boutons d'action ── */}
-              <div className="mb-4 flex flex-wrap gap-2">
+              <div className="mb-4 grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setShowOcr(true)}
-                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  <Icon name="photo" className="h-4 w-4" />
-                  Importer photo
+                  <Icon name="photo" className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Importer photo</span>
                 </button>
                 <button
                   onClick={() => setShowTxtImport(true)}
-                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  <Icon name="plus" className="h-4 w-4" />
-                  Ajouter plusieurs
+                  <Icon name="plus" className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Ajouter plusieurs</span>
                 </button>
                 <button
                   onClick={startCreate}
-                  className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 px-2 py-2.5 text-xs font-medium text-white transition hover:bg-brand-700"
                 >
-                  <Icon name="plus" className="h-4 w-4" />
-                  Nouvelle école
+                  <Icon name="plus" className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Nouvelle école</span>
                 </button>
               </div>
 
