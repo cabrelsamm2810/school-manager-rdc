@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { getRoleDestination } from '@/lib/role-destination';
 
@@ -28,6 +29,10 @@ export function LoginForm() {
       const result = await response.json();
 
       if (!response.ok) {
+        if (result.needsValidation) {
+          router.push(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+          return;
+        }
         setError(result.error ?? 'Identifiants incorrects.');
         return;
       }
@@ -153,6 +158,13 @@ export function LoginForm() {
           <span>Se connecter</span>
         )}
       </button>
+
+      <Link
+        href={`/verify${email.trim() ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : ''}`}
+        className="login-link block text-center"
+      >
+        Activer mon compte
+      </Link>
     </form>
   );
 }

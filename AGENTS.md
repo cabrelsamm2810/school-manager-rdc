@@ -214,6 +214,26 @@ Full flow: register at `/register` (the account starts inactive and a 6-digit co
 activate with `POST /api/auth/verify` → log in at `/login` (sets the session cookie) →
 `GET /api/auth/session` → `GET /api/users/me`.
 
+### Activation par email
+
+- `/verify` accepte aussi une ouverture sans paramètre : l’email d’inscription est saisissable. Le lien
+  « Activer mon compte » existe sur la connexion et après inscription. La connexion d’un compte en attente
+  n’oriente vers le code qu’après vérification du mot de passe ; elle ne crée aucune session.
+- Le renvoi **réutilise le code en attente** : remplacer le code avant un envoi SMTP rendait les emails
+  retardés inutilisables, y compris après un échec d’envoi. Aucun code ni hash ne doit être retourné au client.
+- La validation synchronise `isActive=true`, `userStatus=ACTIF` et efface `validationCode`. Les comptes
+  `SUSPENDU`/`DESACTIVE` ne sont jamais réactivés par ce parcours. Les adresses sont normalisées à l’entrée
+  et recherchées sans tenir compte de la casse, y compris pour les comptes historiques.
+- `verificationEmailSent=false` signale un compte créé mais un email non envoyé : garder ce compte et
+  proposer le renvoi, sans afficher une fausse confirmation d’envoi.
+- Tests ciblés : `npm test -- tests/activation.test.ts` (SMTP et Prisma simulés). Pour tester le parcours
+  complet sans email extérieur, utiliser un récepteur SMTP local temporaire ; supprimer uniquement les
+  comptes créés pour ce test par leur identifiant, puis restaurer la configuration SMTP habituelle.
+- Vérification navigateur : utiliser les liens réels de Next pour changer de page. Le helper de navigation
+  de la prévisualisation peut changer l’URL sans rendre la page sur cette version de Next ; une URL changée
+  n’est donc pas une preuve de navigation. Entrer directement sur `/login` avant le test évite aussi la
+  redirection différée de `StartupGate`.
+
 ## Accès restreint par rôle exact
 
 Quatre espaces sont propres à un rôle et ne doivent pas s'ouvrir aux rôles supérieurs (SUPER_ADMIN compris) :

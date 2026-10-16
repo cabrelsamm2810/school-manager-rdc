@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   registrationInstitutionTypes,
   allRegistrationRoleOptions,
@@ -177,13 +177,13 @@ const EyeIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24
 const EyeOffIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243L9.88 9.88" /></svg>);
 
 export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) => void }) {
-  const router = useRouter();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -251,7 +251,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         return '';
       case 4:
         if (!form.email.trim()) return 'L’email est obligatoire.';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'L’email est invalide.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'L’email est invalide.';
         if (form.password.length < 8) return 'Le mot de passe doit faire au moins 8 caractères.';
         if (form.password !== form.confirmPassword) return 'Les mots de passe ne correspondent pas.';
         return '';
@@ -290,6 +290,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
       });
       const result = await response.json();
       if (!response.ok) { setError(result.error ?? 'Impossible de créer le compte.'); return; }
+      setVerificationEmailSent(result.verificationEmailSent !== false);
       setSuccess(true);
     } catch {
       setError('Impossible de joindre le serveur.');
@@ -355,19 +356,20 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         </div>
         <div>
           <p className="text-xl font-bold text-slate-900">Votre compte a été créé avec succès.</p>
-          <p className="mt-2 text-sm text-slate-500">
-            Un code de validation a été envoyé à <span className="font-medium text-blue-600">{form.email}</span>.
-            Vérifiez votre email pour activer votre compte.
+          <p className="mt-2 break-words text-sm text-slate-600">
+            {verificationEmailSent ? 'Un code de validation a été envoyé à ' : 'Votre compte est enregistré, mais le code n’a pas pu être envoyé à '}
+            <span className="font-medium text-blue-600">{form.email.trim().toLowerCase()}</span>.
+            {verificationEmailSent ? ' Saisissez ce code pour activer votre compte.' : ' Ouvrez l’activation pour renvoyer le code.'}
           </p>
-          <p className="mt-1 text-xs text-slate-400">💡 Vérifiez également votre dossier spam ou courriers indésirables.</p>
+          <p className="mt-1 text-xs text-slate-500">Vérifiez également votre dossier spam ou courriers indésirables.</p>
         </div>
-        <button
-          onClick={() => router.push(`/verify?email=${encodeURIComponent(form.email)}`)}
+        <Link
+          href={`/verify?email=${encodeURIComponent(form.email.trim().toLowerCase())}`}
           className="btn-primary w-full px-6 py-3.5 text-sm sm:w-auto sm:min-w-[280px]"
           style={{ borderRadius: '9999px' }}
         >
-          Accéder à mon espace →
-        </button>
+          Activer mon compte →
+        </Link>
       </div>
     );
   }

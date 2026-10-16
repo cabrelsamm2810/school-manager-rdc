@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const result = await loginUser(body);
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: 401 });
+      return NextResponse.json({ error: result.error, needsValidation: result.needsValidation ?? false }, { status: 401 });
     }
 
     const response = NextResponse.json({

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { randomInt } from 'crypto';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
@@ -12,8 +13,8 @@ import type { User } from '@prisma/client';
  * devient « possibly undefined » et `next build` échoue).
  */
 type AccountResult =
-  | { ok: true; user: User; needsValidation?: boolean }
-  | { ok: false; error: string };
+  | { ok: true; user: User; needsValidation?: boolean; verificationEmailSent?: boolean }
+  | { ok: false; error: string; needsValidation?: boolean };
 
 const validRoles = [
   'ELEVE',
@@ -36,7 +37,7 @@ const registerSchema = z.object({
   postNom: z.string().trim().optional().or(z.literal('')),
   prenom: z.string().trim().min(2, 'Le pr\u00e9nom est obligatoire.'),
   sexe: z.enum(['M', 'F']).optional().or(z.literal('')),
-  email: z.string().trim().email('L\u2019email est invalide.'),
+  email: z.string().trim().toLowerCase().email('L\u2019email est invalide.'),
   telephone: z.string().trim().optional().or(z.literal('')),
   password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caract\u00e8res.'),
   role: z.enum(validRoles).default('ELEVE'),
@@ -55,7 +56,7 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().trim().email('L\u2019email est invalide.'),
+  email: z.string().trim().toLowerCase().email('L\u2019email est invalide.'),
   password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caract\u00e8res.')
 });
 
@@ -66,11 +67,11 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
   }
 
   const data = parsed.data;
-  const existing = await prisma.user.findUnique({ where: { email: data.email } });
+  const existing = await prisma.user.findFirst({ where: { email: { equals: data.email, mode: 'insensitive' } } });
   if (existing) return { ok: false, error: 'Un compte existe d\u00e9j\u00e0 avec cet email.' };
 
   // Générer un code de validation à 6 chiffres
-  const validationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const validationCode = randomInt(100000, 1000000).toString();
 
   const passwordHash = await hashPassword(data.password);
 
@@ -114,10 +115,10 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
     await sendValidationCode(data.email, validationCode, data.prenom);
   } catch {
     // On garde le compte créé : l'utilisateur pourra renvoyer le code depuis /verify
-    return { ok: true, user, needsValidation: true };
+    return { ok: true, user, needsValidation: true, verificationEmailSent: false };
   }
 
-  return { ok: true, user, needsValidation: true };
+  return { ok: true, user, needsValidation: true, verificationEmailSent: true };
 }
 
 export async function loginUser(payload: unknown): Promise<AccountResult> {
@@ -126,16 +127,19 @@ export async function loginUser(payload: unknown): Promise<AccountResult> {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Identifiants invalides.' };
   }
 
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  const user = await prisma.user.findFirst({ where: { email: { equals: parsed.data.email, mode: 'insensitive' } } });
   if (!user || !user.passwordHash) {
     return { ok: false, error: 'Identifiants incorrects.' };
-  }
-  if (!user.isActive) {
-    return { ok: false, error: 'Votre compte n\u2019est pas encore validé. Vérifiez votre email pour le code de validation.' };
   }
 
   const valid = await verifyPassword(parsed.data.password, user.passwordHash);
   if (!valid) return { ok: false, error: 'Identifiants incorrects.' };
+  if (!user.isActive) {
+    if (user.userStatus !== 'EN_ATTENTE') {
+      return { ok: false, error: 'Ce compte est suspendu ou désactivé. Contactez l’administration.' };
+    }
+    return { ok: false, needsValidation: true, error: 'Votre compte n’est pas encore validé. Saisissez votre code de validation.' };
+  }
   return { ok: true, user };
 }
 

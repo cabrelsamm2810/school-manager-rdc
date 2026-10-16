@@ -23,13 +23,13 @@ export async function sendValidationCode(email: string, code: string, nom: strin
         <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">Bonjour ${nom},</p>
         <p style="color: #334155; font-size: 15px; margin: 0 0 20px;">Voici votre code de validation :</p>
         <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #2563eb; background: white; border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 0 auto 20px; display: inline-block;">${code}</div>
-        <p style="color: #64748b; font-size: 13px; margin: 0;">Ce code expire à la fin de votre session. Ne le partagez avec personne.</p>
+        <p style="color: #64748b; font-size: 13px; margin: 0;">Utilisez ce code pour activer votre compte. Ne le partagez avec personne.</p>
       </div>
       <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">Si vous n'avez pas créé de compte, ignorez cet email.</p>
     </div>
   `;
 
-  const text = `School Manager RDC — Validation de votre compte\n\nBonjour ${nom},\n\nVoici votre code de validation : ${code}\n\nCe code expire à la fin de votre session. Ne le partagez avec personne.\n\nSi vous n'avez pas créé de compte, ignorez cet email.`;
+  const text = `School Manager RDC — Validation de votre compte\n\nBonjour ${nom},\n\nVoici votre code de validation : ${code}\n\nUtilisez ce code pour activer votre compte. Ne le partagez avec personne.\n\nSi vous n'avez pas créé de compte, ignorez cet email.`;
 
   try {
     await transporter.sendMail({

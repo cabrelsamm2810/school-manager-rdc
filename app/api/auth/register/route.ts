@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loginUser, registerUser } from '@/lib/account-service';
+import { registerUser } from '@/lib/account-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { passwordHash, validationCode, ...safeUser } = result.user;
-    return NextResponse.json({ ok: true, user: safeUser }, { status: 201 });
+    return NextResponse.json({ ok: true, user: safeUser, verificationEmailSent: result.verificationEmailSent }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Une erreur est survenue lors de l\u2019inscription.' }, { status: 500 });
   }
