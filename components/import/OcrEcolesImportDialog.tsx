@@ -9,6 +9,7 @@ import {
 } from '@/lib/txt-import-parser';
 import { SchoolPreviewTable } from '@/components/import/SchoolPreviewTable';
 import { SchoolPreviewStats, SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
+import { OcrWorkflowStepper } from '@/components/import/OcrWorkflowStepper';
 
 type OcrEcolesImportDialogProps = {
   onImported: () => void;
@@ -16,6 +17,14 @@ type OcrEcolesImportDialogProps = {
 };
 
 type Phase = 'upload' | 'processing' | 'review-text' | 'review-table' | 'result';
+
+const PHASE_STEP: Record<Phase, number> = {
+  upload: 0,
+  processing: 1,
+  'review-text': 2,
+  'review-table': 3,
+  result: 4,
+};
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
 
@@ -435,10 +444,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 p-4 sm:p-5">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Importer des écoles — Photo (OCR)</h2>
-            <p className="text-xs text-slate-500">Prenez une photo d'un document, l'OCR extrait les données automatiquement</p>
-          </div>
+          <h2 className="text-lg font-bold text-slate-900">Importer les écoles depuis une photo</h2>
           <button onClick={handleClose} className="text-slate-400 hover:text-slate-600">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -450,51 +456,41 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
           {/* Phase: Upload */}
           {phase === 'upload' && (
-            <div className="space-y-4">
-              <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">
-                <p className="font-semibold mb-1">📸 Comment ça marche</p>
-                <ul className="space-y-0.5 text-xs text-blue-700">
-                  <li>• Prenez une photo ou sélectionnez plusieurs images d'une liste d'écoles (registre, document imprimé)</li>
-                  <li>• L'OCR (reconnaissance de texte) extrait les données de toutes les images automatiquement</li>
-                  <li>• Vérifiez et corrigez les données extraites avant l'enregistrement</li>
-                  <li>• La détection de doublons s'effectue automatiquement</li>
-                  <li>• Maximum {MAX_IMPORT_LINES} écoles par import, {MAX_FILE_SIZE / 1024 / 1024} Mo par image</li>
-                </ul>
-              </div>
+            <div className="space-y-5">
+              {/* Input caméra (capture forcée) */}
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              {/* Input galerie (sans capture, plusieurs images) */}
+              <input
+                ref={galleryRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
 
-              {/* Zone de dépôt / aperçu */}
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  handleFiles(e.dataTransfer.files);
-                }}
-                className={`rounded-2xl border-2 border-dashed p-6 text-center transition ${
-                  dragOver ? 'border-blue-500 bg-blue-50' : 'border-slate-300'
-                }`}
-              >
-                {/* Input caméra (capture forcée, une seule photo) */}
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => handleFiles(e.target.files)}
-                />
-                {/* Input galerie (sans capture, plusieurs images) */}
-                <input
-                  ref={galleryRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => handleFiles(e.target.files)}
-                />
-                {files.length > 0 ? (
-                  <div className="flex flex-wrap justify-center gap-3">
+              {files.length > 0 ? (
+                <>
+                  {/* Aperçu des images sélectionnées */}
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+                      handleFiles(e.dataTransfer.files);
+                    }}
+                    className={`flex flex-wrap justify-center gap-3 rounded-2xl border-2 border-dashed p-4 transition ${
+                      dragOver ? 'border-violet-500 bg-violet-50' : 'border-slate-200'
+                    }`}
+                  >
                     {files.map((f, idx) => (
                       <div key={idx} className="relative">
                         <img
@@ -512,42 +508,85 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div>
-                    <svg className="mx-auto mb-2 h-10 w-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <p className="text-sm font-medium text-slate-600">Prenez une photo ou choisissez des images</p>
-                    <p className="mt-1 text-xs text-slate-400">JPG, PNG — une ou plusieurs images</p>
-                  </div>
-                )}
-              </div>
 
-              {/* Boutons de sélection */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => inputRef.current?.click()}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-700"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Prendre une photo
-                </button>
-                <button
-                  onClick={() => galleryRef.current?.click()}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 17l4.5-4.5L12 17l3-3 6 6" />
-                  </svg>
-                  Galerie
-                </button>
-              </div>
+                  {/* Boutons compacts quand images déjà sélectionnées */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => inputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-medium transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Prendre une photo
+                    </button>
+                    <button
+                      onClick={() => galleryRef.current?.click()}
+                      className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-medium transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
+                      </svg>
+                      Choisir une photo
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Illustration centrale */}
+                  <div className="flex flex-col items-center pt-4">
+                    <div
+                      className="flex h-20 w-20 items-center justify-center rounded-full"
+                      style={{ backgroundColor: '#E0E7FF' }}
+                    >
+                      <svg className="h-10 w-10" fill="none" stroke="#5E58A3" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="mt-4 text-base font-bold text-slate-900">Photographier une liste d'écoles</h3>
+                    <p className="mt-1 max-w-xs text-center text-sm text-slate-500">
+                      Prenez une photo d'un document contenant les noms d'écoles. L'IA détectera automatiquement les noms.
+                    </p>
+                  </div>
+
+                  {/* Boutons d'action en pointillés verticaux */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => inputRef.current?.click()}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-semibold transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Prendre une photo
+                    </button>
+                    <button
+                      onClick={() => galleryRef.current?.click()}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-semibold transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
+                      </svg>
+                      Choisir une photo
+                    </button>
+                  </div>
+
+                  <p className="text-center text-xs text-slate-400">
+                    JPG, PNG — une ou plusieurs images · max {MAX_FILE_SIZE / 1024 / 1024} Mo · {MAX_IMPORT_LINES} écoles max
+                  </p>
+                </>
+              )}
 
               {error && (
                 <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
@@ -677,6 +716,11 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
           {phase === 'result' && result && (
             <SchoolImportResult result={result} />
           )}
+        </div>
+
+        {/* Stepper */}
+        <div className="border-t border-slate-100 px-4 py-3 sm:px-5">
+          <OcrWorkflowStepper currentStep={PHASE_STEP[phase]} />
         </div>
 
         {/* Footer */}
