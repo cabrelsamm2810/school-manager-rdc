@@ -23,6 +23,11 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Écoles', href: '/ecoles', icon: 'school' },
     { label: 'Notifs', href: '/notifications', icon: 'bell' }
   ],
+  ADMIN_SCHOOL_MANAGER_RDC: [
+    { label: 'Établissements', href: '/admin-smd/ecoles', icon: 'school' },
+    { label: 'En attente', href: '/admin-smd/ecoles-en-attente', icon: 'clock' },
+    { label: 'Utilisateurs', href: '/admin/users', icon: 'people' }
+  ],
   COORDINATION_NATIONALE: [
     { label: 'Provinces', href: '/provinces', icon: 'globe' },
     { label: 'Coordination', href: '/coordination-nationale', icon: 'flag' },
@@ -48,6 +53,16 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Institutions', href: '/ecoles', icon: 'school' },
     { label: 'Élèves', href: '/eleves', icon: 'users' }
   ],
+  CHEF_ADMINISTRATION: [
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
+    { label: 'Élèves', href: '/eleves', icon: 'users' },
+    { label: 'Notifs', href: '/notifications', icon: 'bell' }
+  ],
+  PROMOTEUR: [
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
+    { label: 'Élèves', href: '/eleves', icon: 'users' },
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' }
+  ],
   DIRECTION_ECOLE: [
     { label: 'Élèves', href: '/eleves', icon: 'users' },
     { label: 'Classes', href: '/classes-rdc', icon: 'school' },
@@ -58,6 +73,15 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Rappels', href: '/rappels-cotes', icon: 'bell' },
     { label: 'Chat', href: '/schoolchat', icon: 'chat' }
   ],
+  SECRETAIRE: [
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' },
+    { label: 'Notifs', href: '/notifications', icon: 'bell' }
+  ],
+  COMPTABLE: [
+    { label: 'Paiements', href: '/paiements', icon: 'card' },
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' },
+    { label: 'Notifs', href: '/notifications', icon: 'bell' }
+  ],
   PARENT: [
     { label: 'Notifs', href: '/notifications', icon: 'bell' },
     { label: 'Chat', href: '/schoolchat', icon: 'chat' },
@@ -67,6 +91,10 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Notifs', href: '/notifications', icon: 'bell' },
     { label: 'Chat', href: '/schoolchat', icon: 'chat' },
     { label: 'Bulletins', href: '/verifier-bulletin', icon: 'notebook' }
+  ],
+  VISITEUR: [
+    { label: 'Notifs', href: '/notifications', icon: 'bell' },
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' }
   ]
 };
 
