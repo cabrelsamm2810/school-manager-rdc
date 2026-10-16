@@ -322,10 +322,10 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
                 className={inputClass} placeholder="Ex. Institut Tuendelee" />
             </div>
             <div>
-              <label className={labelClass} htmlFor="etab-dinacope">DINACOPE{requiredMark}</label>
-              <input id="etab-dinacope" type="text" required value={form.dinacope}
+              <label className={labelClass} htmlFor="etab-dinacope">DINACOPE</label>
+              <input id="etab-dinacope" type="text" value={form.dinacope}
                 onChange={(e) => update('dinacope', e.target.value)}
-                className={inputClass} placeholder="Numéro DINACOPE" />
+                className={inputClass} placeholder="Numéro DINACOPE (optionnel)" />
             </div>
             <div>
               <label className={labelClass} htmlFor="etab-type">Type d'école{requiredMark}</label>
