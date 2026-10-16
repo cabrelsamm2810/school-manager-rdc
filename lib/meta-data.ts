@@ -34,6 +34,7 @@ export const defaultRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
   { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
+  { value: 'CHEF_ADMINISTRATION', label: 'Chef d\u2019administration' },
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
 ];
 
@@ -50,6 +51,7 @@ export const registrationInstitutionTypes = [
 export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
+  { value: 'CHEF_ADMINISTRATION', label: 'Chef d\u2019administration' },
   { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
   { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
@@ -97,6 +99,7 @@ export const provincialBureaux = [
 export const fonctionsByRole: Record<string, string[]> = {
   COORDINATION_NATIONALE: ['Coordonnateur national', 'Coordonnateur national adjoint'],
   COORDINATION_PROVINCIALE: ['Coordinateur provincial', 'Coordinateur provincial adjoint', 'Chef d\u2019administration'],
+  CHEF_ADMINISTRATION: ['Chef d\u2019administration', 'Chef de bureau', 'Agent administratif principal', 'Agent administratif', 'Secrétaire administratif'],
   AGENT_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur sous-provincial', 'Coordonnateur sous-provincial adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
@@ -113,6 +116,7 @@ export const fonctionsByRole: Record<string, string[]> = {
 export const gradesByRole: Record<string, string[]> = {
   COORDINATION_NATIONALE: ['Coordonnateur principal', 'Coordonnateur', 'Coordonnateur adjoint'],
   COORDINATION_PROVINCIALE: ['Coordinateur principal', 'Coordinateur', 'Coordinateur adjoint', 'Chef d\u2019administration'],
+  CHEF_ADMINISTRATION: ['Chef d\u2019administration', 'Principal', 'Adjoint', 'Agent principal', 'Agent'],
   AGENT_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur principal', 'Coordonnateur', 'Coordonnateur adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
@@ -154,6 +158,7 @@ export const gradesByBureau: Record<string, string[]> = {
 /** Rôles nécessitant l'étape d'affectation (province, sous-province, bureau). */
 export const rolesNeedingAffectation = new Set([
   'COORDINATION_PROVINCIALE',
+  'CHEF_ADMINISTRATION',
   'AGENT_PROVINCIAL',
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
@@ -169,6 +174,7 @@ export const rolesNeedingAffectation = new Set([
 /** Rôles nécessitant l'étape fonction et grade. */
 export const rolesNeedingFonctionGrade = new Set([
   'COORDINATION_PROVINCIALE',
+  'CHEF_ADMINISTRATION',
   'AGENT_PROVINCIAL',
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',
@@ -183,6 +189,7 @@ export const rolesNeedingFonctionGrade = new Set([
 export const rolesNeedingDinacope = new Set([
   'COORDINATION_NATIONALE',
   'COORDINATION_PROVINCIALE',
+  'CHEF_ADMINISTRATION',
   'AGENT_PROVINCIAL',
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_SOUS_PROVINCIAL',

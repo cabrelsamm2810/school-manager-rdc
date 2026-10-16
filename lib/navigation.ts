@@ -111,6 +111,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Coord. provinciale', href: '/coordination-provinciale', icon: 'region', roles: ['COORDINATION_PROVINCIALE'] },
       { label: 'Coord. sous-provinciale', href: '/coordination-sous-provinciale', icon: 'district', roles: ['COORDINATION_SOUS_PROVINCIALE'] },
       { label: 'Tableau de bord', href: '/agent-provincial', icon: 'home', roles: ['AGENT_PROVINCIAL'] },
+      { label: 'Tableau de bord', href: '/dashboard', icon: 'home', roles: ['CHEF_ADMINISTRATION'] },
     ]
   },
   {
