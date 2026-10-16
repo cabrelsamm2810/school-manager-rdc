@@ -96,7 +96,7 @@ export const provincialBureaux = [
 /** Fonctions par rôle. */
 export const fonctionsByRole: Record<string, string[]> = {
   COORDINATION_NATIONALE: ['Coordonnateur national', 'Coordonnateur national adjoint'],
-  COORDINATION_PROVINCIALE: ['Coordonnateur provincial', 'Coordonnateur provincial adjoint'],
+  COORDINATION_PROVINCIALE: ['Coordinateur provincial', 'Coordinateur provincial adjoint', 'Chef d\u2019administration'],
   AGENT_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur sous-provincial', 'Coordonnateur sous-provincial adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
@@ -112,7 +112,7 @@ export const fonctionsByRole: Record<string, string[]> = {
 /** Grades par rôle. */
 export const gradesByRole: Record<string, string[]> = {
   COORDINATION_NATIONALE: ['Coordonnateur principal', 'Coordonnateur', 'Coordonnateur adjoint'],
-  COORDINATION_PROVINCIALE: ['Coordonnateur principal', 'Coordonnateur', 'Coordonnateur adjoint'],
+  COORDINATION_PROVINCIALE: ['Coordinateur principal', 'Coordinateur', 'Coordinateur adjoint', 'Chef d\u2019administration'],
   AGENT_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
   COORDINATION_SOUS_PROVINCIALE: ['Coordonnateur principal', 'Coordonnateur', 'Coordonnateur adjoint'],
   AGENT_SOUS_PROVINCIAL: ['Chef de bureau', 'Agent principal', 'Agent'],
@@ -127,7 +127,7 @@ export const gradesByRole: Record<string, string[]> = {
 
 /** Fonctions par bureau (pour la coordination provinciale). */
 export const fonctionsByBureau: Record<string, string[]> = {
-  'Bureau d\u2019administration': ['Chef de bureau', 'Agent administratif principal', 'Agent administratif', 'Secrétaire administratif'],
+  'Bureau d\u2019administration': ['Chef d\u2019administration', 'Chef de bureau', 'Agent administratif principal', 'Agent administratif', 'Secrétaire administratif'],
   'Bureau de la formation': ['Coordinateur de formation', 'Formateur principal', 'Formateur', 'Animateur'],
   'Bureau de gestion': ['Gestionnaire principal', 'Gestionnaire', 'Comptable', 'Agent de gestion'],
   'Bureau de planification': ['Planificateur principal', 'Planificateur', 'Analyste', 'Agent de planification'],
@@ -140,7 +140,7 @@ export const fonctionsByBureau: Record<string, string[]> = {
 
 /** Grades par bureau. */
 export const gradesByBureau: Record<string, string[]> = {
-  'Bureau d\u2019administration': ['Principal', 'Adjoint', 'Agent principal', 'Agent'],
+  'Bureau d\u2019administration': ['Chef d\u2019administration', 'Principal', 'Adjoint', 'Agent principal', 'Agent'],
   'Bureau de la formation': ['Principal', 'Adjoint', 'Formateur principal', 'Formateur'],
   'Bureau de gestion': ['Principal', 'Adjoint', 'Gestionnaire principal', 'Gestionnaire'],
   'Bureau de planification': ['Principal', 'Adjoint', 'Planificateur principal', 'Planificateur'],
