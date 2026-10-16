@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ModulePage } from '@/components/ModulePage';
-import { StatCard } from '@/components/ui/Card';
+import { useEffect, useState, useCallback } from 'react';
+import { AppShell } from '@/components/AppShell';
+import { Icon } from '@/components/ui/Icon';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { OcrEcolesImportDialog } from '@/components/import/OcrEcolesImportDialog';
@@ -40,6 +40,7 @@ type Ecole = {
 };
 
 type View = 'list' | 'form' | 'fiche';
+type TabView = 'liste' | 'carte';
 
 export default function EcolesPage() {
   const [ecoles, setEcoles] = useState<Ecole[]>([]);
@@ -52,6 +53,8 @@ export default function EcolesPage() {
   const [institutionFilter, setInstitutionFilter] = useState('');
   const [statutFilter, setStatutFilter] = useState('');
   const [view, setView] = useState<View>('list');
+  const [tabView, setTabView] = useState<TabView>('liste');
+  const [showFilters, setShowFilters] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [ficheId, setFicheId] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -61,6 +64,7 @@ export default function EcolesPage() {
   const [showTxtImport, setShowTxtImport] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [initialFormData, setInitialFormData] = useState<Partial<EcoleFormData> | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   async function loadData() {
     setLoading(true);
@@ -161,233 +165,386 @@ export default function EcolesPage() {
     }
   }
 
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
   return (
-    <ModulePage icon="school" eyebrow="Gestion scolaire" title="Gestion des écoles" description="Enregistrement, validation et suivi des écoles par institution.">
-      {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Écoles" value={String(ecoles.length)} hint="Total recensés" />
-        <StatCard label="Validés" value={String(ecoles.filter((e) => e.statutValidation === 'Validée').length)} />
-        <StatCard label="En attente" value={String(ecoles.filter((e) => e.statutValidation === 'En attente de vérification' || e.statutValidation === 'En cours de vérification').length)} />
-        <StatCard label="Effectif total" value={ecoles.reduce((s, e) => s + e.effectif, 0).toLocaleString('fr-FR')} />
-      </div>
-
-      {view === 'list' && (
-        <>
-          <div className="mb-4 flex flex-wrap justify-end gap-2">
-            <button onClick={() => setShowImport(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
-              ⬆ Importer (Excel/CSV)
-            </button>
-            <button onClick={() => setShowTxtImport(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
-              📄 Importer (TXT)
-            </button>
-            <button onClick={() => setShowOcr(true)} className="btn-secondary-light px-4 py-2.5 text-sm">
-              📸 Importer (OCR)
-            </button>
-            <button onClick={startCreate} className="btn-primary px-4 py-2.5 text-sm">
-              + Enregistrer une école
-            </button>
-          </div>
-
-          {/* Filtres */}
-          <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher (nom, DINACOPE, ID)…"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
-            <select value={institutionFilter} onChange={(e) => setInstitutionFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
-              <option value="">Toutes institutions</option>
-              {INSTITUTIONS.map((i) => <option key={i.code} value={i.code}>{i.label}</option>)}
-            </select>
-            <NiveauScolaireSelector value={typeFilter} onChange={setTypeFilter} />
-            <select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
-              <option value="">Tous les statuts</option>
-              {VALIDATION_STATUTS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <select value={provinceFilter}
-              onChange={(e) => { setProvinceFilter(e.target.value); setProvinceEducFilter(''); }}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500">
-              <option value="">Toutes les provinces</option>
-              {PROVINCE_NAMES.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-            <select value={provinceEducFilter}
-              onChange={(e) => { setProvinceEducFilter(e.target.value); setCommuneFilter(''); }}
-              disabled={!provinceFilter}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 disabled:opacity-40">
-              <option value="">Toutes les provinces éduc.</option>
-              {(PROVINCES_EDUC_BY_ADMIN[provinceFilter] ?? []).map((pe) => (
-                <option key={pe.nom} value={pe.nom}>{pe.nom}</option>
-              ))}
-            </select>
-            <select value={communeFilter} onChange={(e) => setCommuneFilter(e.target.value)}
-              disabled={!provinceEducFilter}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 disabled:opacity-40">
-              <option value="">Toutes les communes</option>
-              {getCommunesForProvinceEduc(provinceEducFilter).map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-
-          {loading ? (
-            <p className="py-8 text-center text-sm text-slate-500">Chargement…</p>
-          ) : ecoles.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-              <p className="text-sm text-slate-500">Aucune école enregistrée pour le moment.</p>
-            </div>
-          ) : (
+    <AppShell>
+      <div className="p-4 pb-24 md:p-6">
+        <div className="mx-auto max-w-6xl">
+          {view === 'list' && (
             <>
-              {/* Desktop table */}
-              <div className="hidden overflow-hidden rounded-2xl border border-slate-200 md:block">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-4 py-3">École</th>
-                      <th className="px-4 py-3">Institution</th>
-                      <th className="px-4 py-3">Province</th>
-                      <th className="px-4 py-3">Structure</th>
-                      <th className="px-4 py-3">Statut</th>
-                      <th className="px-4 py-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {ecoles.map((et) => {
-                      const inst = INSTITUTION_MAP[et.institution];
-                      return (
-                        <tr key={et.id} className="cursor-pointer hover:bg-slate-50" onClick={() => showFiche(et.id)}>
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-slate-900">{et.nom}</p>
-                            <p className="text-xs text-slate-400">{et.identifiantSM || '—'} · {et.dinacope || 'DINACOPE —'}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${inst?.bgColor || 'bg-slate-100'} ${inst?.color || 'text-slate-600'}`}>
-                              {inst?.label || et.institution}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">{et.province || '—'}</td>
-                          <td className="px-4 py-3 text-slate-600">
-                            {et.coordSousProvinciale?.nom || et.ecErc?.nom || <span className="text-red-500">Non liée</span>}
-                          </td>
-                          <td className="px-4 py-3"><StatutBadge statut={et.statutValidation} /></td>
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-end gap-1">
-                              <button onClick={() => startEdit(et)}
-                                className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-50">
-                                Modifier
-                              </button>
-                              <button onClick={() => handleDelete(et.id)} disabled={deletingId === et.id}
-                                className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50">
-                                {deletingId === et.id ? '…' : 'Supprimer'}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              {/* ── Titre + compteur ── */}
+              <div className="mb-4">
+                <h1 className="text-xl font-bold text-slate-900 md:text-2xl">Écoles</h1>
+                <p className="mt-0.5 text-sm text-slate-500">
+                  {loading ? 'Chargement…' : `${ecoles.length} école(s)`}
+                </p>
               </div>
 
-              {/* Mobile cards */}
-              <div className="space-y-3 md:hidden">
-                {ecoles.map((et) => {
-                  const inst = INSTITUTION_MAP[et.institution];
-                  return (
-                    <div key={et.id} className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4" onClick={() => showFiche(et.id)}>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold text-slate-900">{et.nom}</p>
-                          <p className="mt-0.5 text-xs text-slate-400">{et.identifiantSM || '—'}</p>
-                        </div>
-                        <StatutBadge statut={et.statutValidation} />
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${inst?.bgColor || 'bg-slate-100'} ${inst?.color || 'text-slate-600'}`}>
-                          {inst?.label || et.institution}
-                        </span>
-                        <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{et.type || '—'}</span>
-                        <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{et.province || '—'}</span>
-                      </div>
-                      <p className="mt-1.5 text-xs text-slate-500">
-                        {et.coordSousProvinciale?.nom || et.ecErc?.nom
-                          ? `🏫 ${et.coordSousProvinciale?.nom || et.ecErc?.nom}`
-                          : <span className="text-red-500">Non liée à une structure</span>}
-                      </p>
-                      <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => startEdit(et)}
-                          className="flex-1 rounded-lg border border-blue-200 px-3 py-2 text-xs font-medium text-blue-600 transition hover:bg-blue-50">
-                          Modifier
-                        </button>
-                        <button onClick={() => handleDelete(et.id)} disabled={deletingId === et.id}
-                          className="flex-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50">
-                          {deletingId === et.id ? '…' : 'Supprimer'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* ── Onglets Liste / Carte ── */}
+              <div className="mb-4 inline-flex rounded-xl bg-slate-100 p-1">
+                <button
+                  onClick={() => setTabView('liste')}
+                  className={`rounded-lg px-5 py-2 text-sm font-medium transition ${
+                    tabView === 'liste'
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Liste
+                </button>
+                <button
+                  onClick={() => setTabView('carte')}
+                  className={`rounded-lg px-5 py-2 text-sm font-medium transition ${
+                    tabView === 'carte'
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Carte
+                </button>
               </div>
+
+              {/* ── Boutons d'action ── */}
+              <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setShowOcr(true)}
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  <Icon name="photo" className="h-4 w-4" />
+                  Importer photo
+                </button>
+                <button
+                  onClick={() => setShowTxtImport(true)}
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  <Icon name="plus" className="h-4 w-4" />
+                  Ajouter plusieurs
+                </button>
+                <button
+                  onClick={startCreate}
+                  className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700"
+                >
+                  <Icon name="plus" className="h-4 w-4" />
+                  Nouvelle école
+                </button>
+              </div>
+
+              {tabView === 'liste' ? (
+                <>
+                  {/* ── Carte Filtres ── */}
+                  <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+                    <button
+                      onClick={() => setShowFilters((s) => !s)}
+                      className="flex w-full items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon name="filter" className="h-4 w-4 text-slate-500" />
+                        <span className="text-sm font-semibold text-slate-700">Filtres</span>
+                      </div>
+                      <Icon name="chevron-down" className={`h-4 w-4 text-slate-400 transition ${showFilters ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showFilters && (
+                      <div className="mt-3 space-y-3">
+                        {/* Recherche */}
+                        <div className="relative">
+                          <Icon name="search" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Rechercher une école par nom, code ou…"
+                            className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                          />
+                        </div>
+
+                        {/* Filtres grille */}
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">Province administrative</label>
+                            <select
+                              value={provinceFilter}
+                              onChange={(e) => { setProvinceFilter(e.target.value); setProvinceEducFilter(''); }}
+                              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+                            >
+                              <option value="">Toutes les provinces</option>
+                              {PROVINCE_NAMES.map((p) => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">Province éducationnelle</label>
+                            <select
+                              value={provinceEducFilter}
+                              onChange={(e) => { setProvinceEducFilter(e.target.value); setCommuneFilter(''); }}
+                              disabled={!provinceFilter}
+                              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 disabled:opacity-40"
+                            >
+                              <option value="">Toutes les provinces éduc.</option>
+                              {(PROVINCES_EDUC_BY_ADMIN[provinceFilter] ?? []).map((pe) => (
+                                <option key={pe.nom} value={pe.nom}>{pe.nom}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">Commune</label>
+                            <select
+                              value={communeFilter}
+                              onChange={(e) => setCommuneFilter(e.target.value)}
+                              disabled={!provinceEducFilter}
+                              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 disabled:opacity-40"
+                            >
+                              <option value="">Toutes les communes</option>
+                              {getCommunesForProvinceEduc(provinceEducFilter).map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">Institution</label>
+                            <select
+                              value={institutionFilter}
+                              onChange={(e) => setInstitutionFilter(e.target.value)}
+                              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+                            >
+                              <option value="">Toutes institutions</option>
+                              {INSTITUTIONS.map((i) => <option key={i.code} value={i.code}>{i.label.split('—')[0].trim()}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">Niveau</label>
+                            <NiveauScolaireSelector value={typeFilter} onChange={setTypeFilter} />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">Statut</label>
+                            <select
+                              value={statutFilter}
+                              onChange={(e) => setStatutFilter(e.target.value)}
+                              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+                            >
+                              <option value="">Tous les statuts</option>
+                              {VALIDATION_STATUTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                        </div>
+
+                        {(typeFilter || statutFilter || provinceFilter || provinceEducFilter || communeFilter || institutionFilter) && (
+                          <button
+                            onClick={() => { setTypeFilter(''); setStatutFilter(''); setProvinceFilter(''); setProvinceEducFilter(''); setCommuneFilter(''); setInstitutionFilter(''); }}
+                            className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                          >
+                            ✕ Réinitialiser les filtres
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Liste des écoles ── */}
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-brand-600" />
+                    </div>
+                  ) : ecoles.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+                      <p className="text-sm text-slate-500">Aucune école enregistrée pour le moment.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Desktop table */}
+                      <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft md:block">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                            <tr>
+                              <th className="px-4 py-3">École</th>
+                              <th className="px-4 py-3">Institution</th>
+                              <th className="px-4 py-3">Province</th>
+                              <th className="px-4 py-3">Structure</th>
+                              <th className="px-4 py-3">Statut</th>
+                              <th className="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {ecoles.map((et) => {
+                              const inst = INSTITUTION_MAP[et.institution];
+                              return (
+                                <tr key={et.id} className="cursor-pointer hover:bg-slate-50" onClick={() => showFiche(et.id)}>
+                                  <td className="px-4 py-3">
+                                    <p className="font-medium text-slate-900">{et.nom}</p>
+                                    <p className="text-xs text-slate-400">{et.identifiantSM || '—'} · {et.dinacope || 'DINACOPE —'}</p>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${inst?.bgColor || 'bg-slate-100'} ${inst?.color || 'text-slate-600'}`}>
+                                      {inst?.label?.split('—')[0]?.trim() || et.institution}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-slate-600">{et.province || '—'}</td>
+                                  <td className="px-4 py-3 text-slate-600">
+                                    {et.coordSousProvinciale?.nom || et.ecErc?.nom || <span className="text-red-500">Non liée</span>}
+                                  </td>
+                                  <td className="px-4 py-3"><StatutBadge statut={et.statutValidation} /></td>
+                                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex justify-end gap-1">
+                                      <button onClick={() => showFiche(et.id)} className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-50">Profil</button>
+                                      <button onClick={() => startEdit(et)} className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-50">Modifier</button>
+                                      <button onClick={() => handleDelete(et.id)} disabled={deletingId === et.id} className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50">
+                                        {deletingId === et.id ? '…' : 'Désactiver'}
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile cards — design du modèle */}
+                      <div className="space-y-3 md:hidden">
+                        {ecoles.map((et) => {
+                          const inst = INSTITUTION_MAP[et.institution];
+                          const isSelected = selectedIds.has(et.id);
+                          return (
+                            <div
+                              key={et.id}
+                              className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-soft"
+                            >
+                              {/* Top row: checkbox + logo + content + badge */}
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleSelect(et.id)}
+                                  className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                                />
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white">
+                                  <Icon name="school" className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0 flex-1" onClick={() => showFiche(et.id)}>
+                                  <p className="truncate font-semibold text-slate-900">{et.nom}</p>
+                                  <p className="truncate text-xs text-slate-500">
+                                    {inst?.label?.split('—')[0]?.trim() || et.institution} · {et.dinacope || '—'} · {et.province || 'RDC'}
+                                  </p>
+                                </div>
+                                {et.statut === 'Actif' && (
+                                  <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Action row */}
+                              <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
+                                <button
+                                  onClick={() => showFiche(et.id)}
+                                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                                >
+                                  <Icon name="document" className="h-3.5 w-3.5" />
+                                  Profil
+                                </button>
+                                <button
+                                  onClick={() => startEdit(et)}
+                                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                                >
+                                  <Icon name="edit" className="h-3.5 w-3.5" />
+                                  Modifier
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(et.id)}
+                                  disabled={deletingId === et.id}
+                                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                  <Icon name="settings" className="h-3.5 w-3.5" />
+                                  {deletingId === et.id ? '…' : 'Désactiver'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                /* ── Vue Carte (placeholder) ── */
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                    <Icon name="map" className="h-7 w-7" />
+                  </div>
+                  <p className="text-lg font-semibold text-slate-700">Vue carte</p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    La carte interactive sera disponible prochainément.
+                  </p>
+                </div>
+              )}
             </>
           )}
-        </>
-      )}
 
-      {view === 'form' && (
-        <div className="rounded-2xl bg-white p-5 shadow-soft md:p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">
-              {editingId ? 'Modifier l\'école' : 'Enregistrer une nouvelle école'}
-            </h2>
-            <button onClick={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
-              className="text-sm text-slate-500 transition hover:text-slate-700">
-              ← Retour à la liste
-            </button>
-          </div>
-          <EcoleForm
-            initialData={initialFormData}
-            onSubmit={handleSubmit}
-            onCancel={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
-            submitLabel={editingId ? 'Modifier l\'école' : 'Enregistrer l\'école'}
-            loading={formLoading}
-            error={formError}
-          />
+          {view === 'form' && (
+            <div className="rounded-2xl bg-white p-5 shadow-soft md:p-6">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-900">
+                  {editingId ? 'Modifier l\'école' : 'Enregistrer une nouvelle école'}
+                </h2>
+                <button onClick={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
+                  className="text-sm text-slate-500 transition hover:text-slate-700">
+                  ← Retour à la liste
+                </button>
+              </div>
+              <EcoleForm
+                initialData={initialFormData}
+                onSubmit={handleSubmit}
+                onCancel={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
+                submitLabel={editingId ? 'Modifier l\'école' : 'Enregistrer l\'école'}
+                loading={formLoading}
+                error={formError}
+              />
+            </div>
+          )}
+
+          {view === 'fiche' && ficheId && (
+            <EcoleFiche
+              id={ficheId}
+              onEdit={() => {
+                const et = ecoles.find((e) => e.id === ficheId);
+                if (et) startEdit(et);
+              }}
+              onClose={() => { setView('list'); setFicheId(null); }}
+            />
+          )}
+
+          {showImport && (
+            <ImportDialog
+              endpoint="/api/import/ecoles"
+              moduleName="Écoles"
+              columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
+              onImported={loadData}
+              onClose={() => setShowImport(false)}
+            />
+          )}
+
+          {showOcr && (
+            <OcrEcolesImportDialog
+              onImported={loadData}
+              onClose={() => setShowOcr(false)}
+            />
+          )}
+
+          {showTxtImport && (
+            <TxtImportDialog
+              onImported={loadData}
+              onClose={() => setShowTxtImport(false)}
+            />
+          )}
         </div>
-      )}
-
-      {view === 'fiche' && ficheId && (
-        <EcoleFiche
-          id={ficheId}
-          onEdit={() => {
-            const et = ecoles.find((e) => e.id === ficheId);
-            if (et) startEdit(et);
-          }}
-          onClose={() => { setView('list'); setFicheId(null); }}
-        />
-      )}
-
-      {showImport && (
-        <ImportDialog
-          endpoint="/api/import/ecoles"
-          moduleName="Écoles"
-          columns={['nom', 'type', 'province', 'ville', 'adresse', 'telephone', 'email', 'effectif', 'statut']}
-          onImported={loadData}
-          onClose={() => setShowImport(false)}
-        />
-      )}
-
-      {showOcr && (
-        <OcrEcolesImportDialog
-          onImported={loadData}
-          onClose={() => setShowOcr(false)}
-        />
-      )}
-
-      {showTxtImport && (
-        <TxtImportDialog
-          onImported={loadData}
-          onClose={() => setShowTxtImport(false)}
-        />
-      )}
-    </ModulePage>
+      </div>
+    </AppShell>
   );
 }
