@@ -26,7 +26,7 @@ const PHASE_STEP: Record<Phase, number> = {
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
-const OCR_MAX_WIDTH = 1600; // Redimensionner les très grandes images pour accélérer l'OCR
+const OCR_MAX_WIDTH = 3000; // Préserver la netteté — ne réduire que les très grandes images
 
 /** Mots-clés typiques dans les noms d'écoles (insensible aux accents/casse). */
 const SCHOOL_KEYWORDS = [
@@ -142,8 +142,8 @@ function extractSchoolNames(text: string): { rows: ParsedSchoolRow[]; warnings: 
 }
 
 /**
- * Prétraite une image pour accélérer l'OCR : redimensionne à max 1000px de large.
- * Retourne un Blob JPEG optimisé.
+ * Prétraite une image pour l'OCR : ne réduit que les très grandes images (max 3000px).
+ * Retourne un Blob PNG sans perte pour préserver la netteté du texte.
  */
 async function preprocessImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
@@ -163,8 +163,7 @@ async function preprocessImage(file: File): Promise<Blob> {
   return new Promise((resolve) => {
     canvas.toBlob(
       (blob) => resolve(blob ?? file),
-      'image/jpeg',
-      0.92,
+      'image/png',
     );
   });
 }
