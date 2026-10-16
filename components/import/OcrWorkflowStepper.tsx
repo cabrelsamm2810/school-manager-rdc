@@ -1,11 +1,12 @@
 'use client';
 
-type StepIcon = 'camera' | 'search' | 'clipboard' | 'check';
+type StepIcon = 'camera' | 'search' | 'clipboard' | 'building' | 'check';
 
 const STEPS: { label: string; icon: StepIcon }[] = [
   { label: 'Photo', icon: 'camera' },
   { label: 'Analyse', icon: 'search' },
   { label: 'Vérification', icon: 'clipboard' },
+  { label: 'Institution', icon: 'building' },
   { label: 'Création', icon: 'check' },
 ];
 
@@ -44,6 +45,12 @@ function StepSvg({ name, color, strokeWidth }: { name: StepIcon; color: string; 
         <svg viewBox="0 0 24 24" className="h-4 w-4" {...common}>
           <circle cx="12" cy="12" r="9" />
           <path d="M8 12l3 3l5-5" />
+        </svg>
+      );
+    case 'building':
+      return (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" {...common}>
+          <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" />
         </svg>
       );
   }

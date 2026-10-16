@@ -12,13 +12,14 @@ import { SchoolNamesPreview } from '@/components/import/SchoolNamesPreview';
 import { SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
 import { OcrWorkflowStepper } from '@/components/import/OcrWorkflowStepper';
 import { analyzeImage, type ImageAnalysis } from '@/lib/image-analysis';
+import { INSTITUTIONS, type InstitutionConfig } from '@/lib/institutions';
 
 type OcrEcolesImportDialogProps = {
   onImported: () => void;
   onClose: () => void;
 };
 
-type Phase = 'upload' | 'processing' | 'review-table' | 'result';
+type Phase = 'upload' | 'processing' | 'review-table' | 'select-institution' | 'result';
 
 type FileQuality = ImageAnalysis & { assessing: boolean };
 type FileProgress = { status: 'pending' | 'processing' | 'done'; progress: number };
@@ -27,7 +28,8 @@ const PHASE_STEP: Record<Phase, number> = {
   upload: 0,
   processing: 1,
   'review-table': 2,
-  result: 3,
+  'select-institution': 3,
+  result: 4,
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
@@ -272,6 +274,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   const [fileQuality, setFileQuality] = useState<FileQuality[]>([]);
   const [fileProgress, setFileProgress] = useState<FileProgress[]>([]);
   const currentFileIdx = useRef(0);
+  const [selectedInstitution, setSelectedInstitution] = useState<string>('');
+  const [institutionSearch, setInstitutionSearch] = useState('');
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -437,13 +441,21 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setPreviewRows((prev) => [...prev, { ...empty, rowIndex: prev.length, status: 'ok', messages: [] }]);
   }
 
+  function goToInstitutionSelect() {
+    setPhase('select-institution');
+  }
+
   async function handleSave() {
     setLoading(true);
     setError('');
     setResult(null);
 
     try {
-      const cleanRows = previewRows.map(({ rowIndex, status, messages, duplicateId, duplicateNom, ...rest }) => rest);
+      const cleanRows = previewRows.map(({ rowIndex, status, messages, duplicateId, duplicateNom, ...rest }) => {
+        const row = { ...rest };
+        if (selectedInstitution) row.institution = selectedInstitution;
+        return row;
+      });
       const res = await fetch('/api/import/ecoles/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -476,6 +488,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setProgressLabel('');
     setFileQuality([]);
     setFileProgress([]);
+    setSelectedInstitution('');
+    setInstitutionSearch('');
   }
 
   function handleClose() {
@@ -821,6 +835,77 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
             </div>
           )}
 
+          {/* Phase: Select institution */}
+          {phase === 'select-institution' && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-600">Sélectionner l'institution à laquelle rattacher les écoles</p>
+                <p className="mt-0.5 text-xs text-slate-400">{previewRows.length} école(s) à rattacher</p>
+              </div>
+
+              {/* Recherche */}
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                </svg>
+                <input
+                  type="text"
+                  value={institutionSearch}
+                  onChange={(e) => setInstitutionSearch(e.target.value)}
+                  placeholder="Rechercher une institution..."
+                  className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+
+              {/* Liste des institutions */}
+              <div className="space-y-2">
+                {INSTITUTIONS
+                  .filter((inst) => {
+                    if (!institutionSearch) return true;
+                    const q = institutionSearch.toLowerCase();
+                    return inst.label.toLowerCase().includes(q) || inst.code.toLowerCase().includes(q);
+                  })
+                  .map((inst) => {
+                    const isSelected = selectedInstitution === inst.code;
+                    return (
+                      <button
+                        key={inst.code}
+                        onClick={() => setSelectedInstitution(inst.code)}
+                        className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                          isSelected
+                            ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${inst.bgColor}`}>
+                          <svg className={`h-5 w-5 ${inst.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {inst.label.split('—')[0].trim()}
+                          </p>
+                          <p className="truncate text-xs text-slate-500">
+                            {inst.code} · {inst.description}
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <svg className="h-5 w-5 shrink-0 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {error && (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+              )}
+            </div>
+          )}
+
           {/* Phase: Result */}
           {phase === 'result' && result && (
             <SchoolImportResult result={result} />
@@ -862,14 +947,32 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 ← Nouvelle photo
               </button>
               <button
+                onClick={goToInstitutionSelect}
+                disabled={previewRows.length === 0}
+                className="btn-primary flex-1 px-4 py-2.5 text-sm"
+              >
+                Continuer →
+              </button>
+            </>
+          )}
+
+          {phase === 'select-institution' && (
+            <>
+              <button
+                onClick={() => setPhase('review-table')}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                ← Modifier
+              </button>
+              <button
                 onClick={handleSave}
-                disabled={previewRows.length === 0 || loading}
-                className={`btn-primary flex-1 px-4 py-2.5 text-sm ${loading ? 'btn-loading' : ''}`}
+                disabled={!selectedInstitution || loading}
+                className={`btn-primary flex-1 px-4 py-2.5 text-sm disabled:opacity-50 ${loading ? 'btn-loading' : ''}`}
               >
                 {loading ? (
                   <><span className="btn-spinner" /> Enregistrement…</>
                 ) : (
-                  `✓ Enregistrer ${previewRows.length} école(s)`
+                  'Continuer →'
                 )}
               </button>
             </>
