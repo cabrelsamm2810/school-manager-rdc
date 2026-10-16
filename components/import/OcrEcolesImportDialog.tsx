@@ -445,7 +445,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
                       </svg>
-                      Choisir une photo
+                      Ajouter des photos
                     </button>
                   </div>
                 </>
@@ -491,12 +491,15 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
                       </svg>
-                      Choisir une photo
+                      Importer plusieurs photos
                     </button>
                   </div>
 
                   <p className="text-center text-xs text-slate-400">
                     JPG, PNG — une ou plusieurs images · max {MAX_FILE_SIZE / 1024 / 1024} Mo · {MAX_IMPORT_LINES} écoles max
+                  </p>
+                  <p className="text-center text-xs font-medium" style={{ color: '#5E58A3' }}>
+                    💡 Astuce : maintenez la touche pour sélectionner plusieurs photos à la fois
                   </p>
                 </>
               )}
