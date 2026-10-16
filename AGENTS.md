@@ -35,6 +35,14 @@ credentials. Nothing external is required to boot.
 
 ## Sharp edges
 
+- **A completed setup job is not a failed application service.** `migrate` is expected to exit 0 without a
+  healthcheck; `web` and `postgres` must remain running and healthy. The preview validator has repeatedly
+  misclassified that successful exit as a failure. After confirming `migrate` is stopped with exit 0 and
+  `OOMKilled=false`, preserving its logs, and checking both live services, its completed container can be
+  cleaned up with `docker compose -f docker-compose.base44.yml rm -f migrate` (no volume removal). This does
+  not restart either live service or change data; the next `up` recreates the setup job normally. Do not hide
+  a nonzero exit, add a dummy keep-alive, weaken healthchecks, or remove the successful-completion dependency.
+
 - **Prisma needs OpenSSL.** `node:22-bookworm-slim` lacks it and Prisma fails with an empty "Schema engine error".
   Both app services use `node:22-bookworm` (full Debian) — do not switch them to `-slim`.
 - **Only `migrate` installs dependencies.** It owns `npm install` against the bind-mounted `node_modules`, and
