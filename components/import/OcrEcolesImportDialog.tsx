@@ -99,16 +99,68 @@ function parseLine(line: string, regex: RegExp): string[] {
     .filter((s) => s.length > 0);
 }
 
+/** Mots-clés typiques dans les noms d'écoles (insensible aux accents/casse). */
+const SCHOOL_KEYWORDS = [
+  'ecole', 'institut', 'complex', 'college', 'lycee', 'centre', 'groupe',
+  'etablissement', 'academie', 'universite', 'faculte', 'section', 'annexe',
+  'programme', 'project', 'scolaire', 'polytechnique', 'technique',
+  'professionnel', 'maternelle', 'primaire', 'secondaire', 'fondamental',
+];
+
+/** Patterns de bruit à exclure (numéros de page, dates seules, etc.). */
+const NOISE_PATTERNS = [
+  /^page\s+\d/i,
+  /^\d+\s*\/\s*\d+$/,
+  /^\d{1,3}$/,
+  /^[#*•\-_=]{2,}$/,
+  /^(date|signature|cachet|nom|prenom|post[- ]?nom)\s*[:.]?$/i,
+];
+
+function normalizeText(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Vérifie si une ligne est du bruit OCR (pas une donnée d'école). */
+function isNoiseLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.length < 3) return true;
+  if (NOISE_PATTERNS.some((p) => p.test(trimmed))) return true;
+  // Ligne uniquement constituée de chiffres et ponctuation
+  if (/^[\d\s\-.,;:|/()]+$/.test(trimmed)) return true;
+  return false;
+}
+
+/** Vérifie si un texte ressemble à un nom d'école. */
+function looksLikeSchoolName(text: string): boolean {
+  const norm = normalizeText(text);
+  if (norm.length < 3) return false;
+  // Doit contenir au moins des lettres
+  if (!/[a-zà-ÿ]/i.test(text)) return false;
+  // Contient un mot-clé d'école
+  if (SCHOOL_KEYWORDS.some((kw) => norm.includes(kw))) return true;
+  // Ou est suffisamment long avec des lettres (nom propre probable)
+  if (norm.length >= 5 && /[a-zà-ÿ]{3,}/i.test(text)) return true;
+  return false;
+}
+
 /**
  * Parse le texte OCR extrait en lignes d'écoles structurées.
+ * Filtre le bruit OCR et ne garde que les lignes qui ressemblent à des données d'écoles.
  * Détecte l'en-tête et mappe les colonnes vers les champs ParsedSchoolRow.
  */
 function parseOcrText(text: string, delim: string): { rows: ParsedSchoolRow[]; warnings: string[] } {
   const warnings: string[] = [];
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+  const allLines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+
+  if (allLines.length === 0) {
+    return { rows: [], warnings: ['Aucun texte détecté.'] };
+  }
+
+  // ── Filtrer le bruit OCR ──
+  const lines = allLines.filter((l) => !isNoiseLine(l));
 
   if (lines.length === 0) {
-    return { rows: [], warnings: ['Aucun texte détecté.'] };
+    return { rows: [], warnings: ['Aucune ligne valide détectée après filtrage du bruit OCR.'] };
   }
 
   if (lines.length > MAX_IMPORT_LINES) {
@@ -152,11 +204,14 @@ function parseOcrText(text: string, delim: string): { rows: ParsedSchoolRow[]; w
         const field = colMap[idx];
         if (field) (row[field] as string) = val;
       });
-      rows.push(row);
+      // Ne garder que les lignes avec un nom d'école valide
+      if (row.nom.trim() && looksLikeSchoolName(row.nom)) {
+        rows.push(row);
+      }
     } else {
-      // Sans en-tête : le premier champ est le nom, les autres sont ignorés
+      // Sans en-tête : ne garder que les lignes qui ressemblent à un nom d'école
       const nom = fields[0]?.trim() || '';
-      if (nom) {
+      if (nom && looksLikeSchoolName(nom)) {
         rows.push({ ...createEmptyRow(), nom });
       }
     }
