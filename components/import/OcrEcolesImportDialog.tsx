@@ -11,6 +11,7 @@ import {
 import { SchoolNamesPreview } from '@/components/import/SchoolNamesPreview';
 import { SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
 import { OcrWorkflowStepper } from '@/components/import/OcrWorkflowStepper';
+import { analyzeImage, type ImageAnalysis } from '@/lib/image-analysis';
 
 type OcrEcolesImportDialogProps = {
   onImported: () => void;
@@ -19,11 +20,8 @@ type OcrEcolesImportDialogProps = {
 
 type Phase = 'upload' | 'processing' | 'review-table' | 'result';
 
-type FileQuality = { score: number; blurry: boolean; assessing: boolean };
+type FileQuality = ImageAnalysis & { assessing: boolean };
 type FileProgress = { status: 'pending' | 'processing' | 'done'; progress: number };
-
-/** Seuil de variance du Laplacien en dessous duquel une image est considérée floue. */
-const BLUR_THRESHOLD = 100;
 
 const PHASE_STEP: Record<Phase, number> = {
   upload: 0,
@@ -229,74 +227,6 @@ function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: s
 }
 
 /**
- * Évalue la netteté d'une image via la variance du Laplacien.
- * Une variance faible indique une image floue.
- */
-async function assessImageQuality(file: File): Promise<{ score: number; blurry: boolean }> {
-  try {
-    const bitmap = await createImageBitmap(file);
-    // Sous-échantillonner pour la performance (max 256px)
-    const maxDim = 256;
-    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
-    const w = Math.max(3, Math.round(bitmap.width * scale));
-    const h = Math.max(3, Math.round(bitmap.height * scale));
-
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return { score: 0, blurry: false };
-    ctx.drawImage(bitmap, 0, 0, w, h);
-
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const gray = new Float32Array(w * h);
-    for (let i = 0; i < w * h; i++) {
-      const r = imageData.data[i * 4];
-      const g = imageData.data[i * 4 + 1];
-      const b = imageData.data[i * 4 + 2];
-      gray[i] = 0.299 * r + 0.587 * g + 0.114 * b;
-    }
-
-    // Noyau de Laplacien : [0,1,0; 1,-4,1; 0,1,0]
-    const laplacian = new Float32Array(w * h);
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const idx = y * w + x;
-        laplacian[idx] =
-          gray[idx - w] + gray[idx + w] +
-          gray[idx - 1] + gray[idx + 1] -
-          4 * gray[idx];
-      }
-    }
-
-    // Calcul de la variance
-    let mean = 0;
-    let count = 0;
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        mean += laplacian[y * w + x];
-        count++;
-      }
-    }
-    mean /= count;
-
-    let variance = 0;
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const v = laplacian[y * w + x] - mean;
-        variance += v * v;
-      }
-    }
-    variance /= count;
-
-    const score = Math.round(variance);
-    return { score, blurry: score < BLUR_THRESHOLD };
-  } catch {
-    return { score: 0, blurry: false };
-  }
-}
-
-/**
  * Prétraite une image pour l'OCR : ne réduit que les très grandes images (max 3000px).
  * Retourne un Blob PNG sans perte pour préserver la netteté du texte.
  */
@@ -361,13 +291,17 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     if (valid.length > 0) {
       const startIdx = files.length;
       setFiles((prev) => [...prev, ...valid]);
-      setFileQuality((prev) => [...prev, ...valid.map(() => ({ score: 0, blurry: false, assessing: true }))]);
-      // Évaluer la netteté de chaque nouvelle image
+      setFileQuality((prev) => [...prev, ...valid.map((): FileQuality => ({
+        sharpness: 0, blurry: false, brightness: 128, tooDark: false, tooBright: false,
+        contrast: 0, lowContrast: false, isDocument: true, textDensity: 0,
+        overall: 'acceptable', issues: [], assessing: true,
+      }))]);
+      // Analyser chaque nouvelle image (netteté, luminosité, contraste, type de document)
       valid.forEach((f, i) => {
-        assessImageQuality(f).then((q) => {
+        analyzeImage(f).then((a) => {
           setFileQuality((prev) => {
             const next = [...prev];
-            next[startIdx + i] = { ...q, assessing: false };
+            next[startIdx + i] = { ...a, assessing: false };
             return next;
           });
         });
@@ -615,22 +549,39 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                   >
                     {files.map((f, idx) => {
                       const q = fileQuality[idx];
+                      const ringClass = !q?.assessing
+                        ? q.overall === 'good' ? 'ring-2 ring-green-400'
+                          : q.overall === 'acceptable' ? 'ring-2 ring-amber-400'
+                          : 'ring-2 ring-red-400'
+                        : '';
                       return (
                         <div key={idx} className="relative">
                           <img
                             src={URL.createObjectURL(f)}
                             alt={f.name}
-                            className={`h-24 w-24 rounded-lg object-cover ${q?.blurry ? 'ring-2 ring-amber-400' : ''}`}
+                            className={`h-24 w-24 rounded-lg object-cover ${ringClass}`}
                           />
-                          {/* Badge de qualité */}
-                          {q?.assessing && (
+                          {/* Badge de qualité globale */}
+                          {q?.assessing ? (
                             <span className="absolute bottom-1 left-1 rounded bg-slate-700/80 px-1 py-0.5 text-[8px] text-white">
                               …
                             </span>
+                          ) : (
+                            <span
+                              className={`absolute bottom-1 left-1 rounded px-1 py-0.5 text-[8px] font-medium text-white ${
+                                q.overall === 'good' ? 'bg-green-500'
+                                  : q.overall === 'acceptable' ? 'bg-amber-500'
+                                  : 'bg-red-500'
+                              }`}
+                              title={q.issues.join(', ') || 'Bonne qualité'}
+                            >
+                              {q.overall === 'good' ? '✓' : q.overall === 'acceptable' ? '⚠' : '✕'}
+                            </span>
                           )}
-                          {!q?.assessing && q?.blurry && (
-                            <span className="absolute bottom-1 left-1 rounded bg-amber-500 px-1 py-0.5 text-[8px] font-medium text-white">
-                              ⚠ Flou
+                          {/* Badge type de document */}
+                          {!q?.assessing && q.isDocument && (
+                            <span className="absolute right-1 top-1 rounded bg-blue-500/80 px-1 py-0.5 text-[7px] text-white" title="Document détecté">
+                              📄
                             </span>
                           )}
                           <button
@@ -645,14 +596,24 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                     })}
                   </div>
 
-                  {/* Alerte si images floues détectées */}
-                  {fileQuality.some((q) => !q.assessing && q.blurry) && (
-                    <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                      <span className="text-base">⚠</span>
-                      <span>
-                        {fileQuality.filter((q) => !q.assessing && q.blurry).length} image(s) semblent floues.
-                        L'OCR peut être moins précis — essayez de reprendre les photos avec plus de netteté.
-                      </span>
+                  {/* Alerte si problèmes de qualité détectés */}
+                  {fileQuality.some((q) => !q.assessing && q.overall !== 'good') && (
+                    <div className="rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+                      <p className="mb-1 flex items-center gap-1.5 font-medium">
+                        <span className="text-base">⚠</span>
+                        Problèmes de qualité détectés sur {fileQuality.filter((q) => !q.assessing && q.overall !== 'good').length} image(s) :
+                      </p>
+                      <div className="flex flex-wrap gap-1 pl-6">
+                        {fileQuality
+                          .map((q, i) => ({ q, i }))
+                          .filter(({ q }) => !q.assessing && q.issues.length > 0)
+                          .flatMap(({ q, i }) => q.issues.map((issue) => (
+                            <span key={`${i}-${issue}`} className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px]">
+                              #{i + 1}: {issue}
+                            </span>
+                          )))
+                        }
+                      </div>
                     </div>
                   )}
 
