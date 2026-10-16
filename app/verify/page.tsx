@@ -92,6 +92,7 @@ function VerifyForm() {
                 Un code de validation à 6 chiffres a été envoyé à :
               </p>
               <p className="mt-1 font-semibold text-blue-700">{email}</p>
+              <p className="mt-2 text-xs text-slate-500">💡 Vérifiez également votre dossier spam ou courriers indésirables.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>

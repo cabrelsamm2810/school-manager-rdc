@@ -29,15 +29,19 @@ export async function sendValidationCode(email: string, code: string, nom: strin
     </div>
   `;
 
+  const text = `School Manager RDC — Validation de votre compte\n\nBonjour ${nom},\n\nVoici votre code de validation : ${code}\n\nCe code expire à la fin de votre session. Ne le partagez avec personne.\n\nSi vous n'avez pas créé de compte, ignorez cet email.`;
+
   try {
     await transporter.sendMail({
       from,
       to: email,
+      replyTo: from,
       subject: 'School Manager RDC — Code de validation',
       html,
+      text,
     });
   } catch (error) {
-    console.error('Erreur envoi email:', error);
+    console.error('Erreur envoi email de validation:', error instanceof Error ? error.message : error);
     throw new Error("Impossible d'envoyer l'email de validation.");
   }
 }

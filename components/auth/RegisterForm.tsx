@@ -359,6 +359,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
             Un code de validation a été envoyé à <span className="font-medium text-blue-600">{form.email}</span>.
             Vérifiez votre email pour activer votre compte.
           </p>
+          <p className="mt-1 text-xs text-slate-400">💡 Vérifiez également votre dossier spam ou courriers indésirables.</p>
         </div>
         <button
           onClick={() => router.push(`/verify?email=${encodeURIComponent(form.email)}`)}
