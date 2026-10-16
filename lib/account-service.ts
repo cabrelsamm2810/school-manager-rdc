@@ -113,9 +113,8 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
   try {
     await sendValidationCode(data.email, validationCode, data.prenom);
   } catch {
-    // Si l'envoi échoue, on supprime le compte pour permettre une nouvelle tentative
-    await prisma.user.delete({ where: { id: user.id } });
-    return { ok: false, error: "Impossible d'envoyer l'email de validation. Vérifiez votre adresse email et réessayez." };
+    // On garde le compte créé : l'utilisateur pourra renvoyer le code depuis /verify
+    return { ok: true, user, needsValidation: true };
   }
 
   return { ok: true, user, needsValidation: true };
