@@ -179,7 +179,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
   const [phase, setPhase] = useState<Phase>('upload');
   const [progress, setProgress] = useState(0);
-  const [file, setFile] = useState<File | null>(null);
+  const [progressLabel, setProgressLabel] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [rawText, setRawText] = useState('');
   const [delimiter, setDelimiter] = useState('auto');
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
@@ -189,24 +190,35 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   const [result, setResult] = useState<BatchResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  function handleFile(f: File | null) {
-    if (!f) return;
+  function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
     setError('');
-    if (!f.type.startsWith('image/')) {
-      setError('Veuillez sélectionner une image (JPG, PNG).');
-      return;
+    const valid: File[] = [];
+    for (const f of Array.from(fileList)) {
+      if (!f.type.startsWith('image/')) {
+        setError(`${f.name} : type non supporté (JPG, PNG uniquement).`);
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        setError(`${f.name} : trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mo).`);
+        continue;
+      }
+      valid.push(f);
     }
-    if (f.size > MAX_FILE_SIZE) {
-      setError(`Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mo).`);
-      return;
+    if (valid.length > 0) {
+      setFiles((prev) => [...prev, ...valid]);
     }
-    setFile(f);
+  }
+
+  function removeFile(idx: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function runOcr() {
-    if (!file) return;
+    if (files.length === 0) return;
     setPhase('processing');
     setProgress(0);
+    setProgressLabel('');
     setError('');
 
     try {
@@ -220,19 +232,27 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
       });
       workerRef.current = worker;
 
-      const { data } = await worker.recognize(file);
+      const allText: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        setProgressLabel(`Image ${i + 1} / ${files.length}`);
+        setProgress(0);
+        const { data } = await worker.recognize(files[i]);
+        const text = data.text.trim();
+        if (text) allText.push(text);
+      }
+
       await worker.terminate();
       workerRef.current = null;
 
-      const text = data.text.trim();
-      if (!text) {
-        setError("Aucun texte détecté dans l'image. Réessayez avec une image plus nette.");
+      const combinedText = allText.join('\n\n');
+      if (!combinedText) {
+        setError("Aucun texte détecté dans les images. Réessayez avec des images plus nettes.");
         setPhase('upload');
         return;
       }
 
-      setRawText(text);
-      const parsed = parseOcrText(text, delimiter);
+      setRawText(combinedText);
+      const parsed = parseOcrText(combinedText, delimiter);
       setParseWarnings(parsed.warnings);
 
       if (parsed.rows.length === 0) {
@@ -259,7 +279,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
       }
       setPhase('review');
     } catch {
-      setError("Échec de la reconnaissance de texte. Réessayez avec une image plus nette.");
+      setError("Échec de la reconnaissance de texte. Réessayez avec des images plus nettes.");
       setPhase('upload');
     }
   }
@@ -346,13 +366,14 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
   function reset() {
     setPhase('upload');
-    setFile(null);
+    setFiles([]);
     setRawText('');
     setPreviewRows([]);
     setParseWarnings([]);
     setError('');
     setResult(null);
     setProgress(0);
+    setProgressLabel('');
     setDelimiter('auto');
   }
 
@@ -388,8 +409,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
               <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">
                 <p className="font-semibold mb-1">📸 Comment ça marche</p>
                 <ul className="space-y-0.5 text-xs text-blue-700">
-                  <li>• Prenez une photo claire d'une liste d'écoles (registre, document imprimé)</li>
-                  <li>• L'OCR (reconnaissance de texte) extrait les données automatiquement</li>
+                  <li>• Prenez une photo ou sélectionnez plusieurs images d'une liste d'écoles (registre, document imprimé)</li>
+                  <li>• L'OCR (reconnaissance de texte) extrait les données de toutes les images automatiquement</li>
                   <li>• Vérifiez et corrigez les données extraites avant l'enregistrement</li>
                   <li>• La détection de doublons s'effectue automatiquement</li>
                   <li>• Maximum {MAX_IMPORT_LINES} écoles par import, {MAX_FILE_SIZE / 1024 / 1024} Mo par image</li>
@@ -403,38 +424,48 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 onDrop={(e) => {
                   e.preventDefault();
                   setDragOver(false);
-                  handleFile(e.dataTransfer.files[0] ?? null);
+                  handleFiles(e.dataTransfer.files);
                 }}
-                className={`rounded-2xl border-2 border-dashed p-8 text-center transition ${
+                className={`rounded-2xl border-2 border-dashed p-6 text-center transition ${
                   dragOver ? 'border-blue-500 bg-blue-50' : 'border-slate-300'
                 }`}
               >
-                {/* Input caméra (capture forcée) */}
+                {/* Input caméra (capture forcée, une seule photo) */}
                 <input
                   ref={inputRef}
                   type="file"
                   accept="image/*"
                   capture="environment"
                   className="hidden"
-                  onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => handleFiles(e.target.files)}
                 />
-                {/* Input galerie (sans capture) */}
+                {/* Input galerie (sans capture, plusieurs images) */}
                 <input
                   ref={galleryRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   className="hidden"
-                  onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => handleFiles(e.target.files)}
                 />
-                {file ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt="aperçu"
-                      className="max-h-40 rounded-lg object-contain"
-                    />
-                    <p className="text-sm font-medium text-slate-900">{file.name}</p>
-                    <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} Ko</p>
+                {files.length > 0 ? (
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {files.map((f, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={URL.createObjectURL(f)}
+                          alt={f.name}
+                          className="h-24 w-24 rounded-lg object-cover"
+                        />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow"
+                        >
+                          ✕
+                        </button>
+                        <p className="mt-1 max-w-[6rem] truncate text-[10px] text-slate-500">{f.name}</p>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div>
@@ -442,8 +473,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <p className="text-sm font-medium text-slate-600">Prenez une photo ou choisissez une image</p>
-                    <p className="mt-1 text-xs text-slate-400">JPG, PNG — scan ou photo de document</p>
+                    <p className="text-sm font-medium text-slate-600">Prenez une photo ou choisissez des images</p>
+                    <p className="mt-1 text-xs text-slate-400">JPG, PNG — une ou plusieurs images</p>
                   </div>
                 )}
               </div>
@@ -484,6 +515,9 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
             <div className="flex flex-col items-center justify-center py-16">
               <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
               <p className="text-sm font-medium text-slate-700">Reconnaissance de texte en cours…</p>
+              {progressLabel && (
+                <p className="mt-1 text-xs text-slate-500">{progressLabel}</p>
+              )}
               <div className="mt-4 w-full max-w-xs">
                 <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                   <div
@@ -582,13 +616,13 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
             </button>
           )}
 
-          {phase === 'upload' && file && (
+          {phase === 'upload' && files.length > 0 && (
             <button
               onClick={runOcr}
-              disabled={!file}
+              disabled={files.length === 0}
               className="btn-primary flex-1 px-4 py-2.5 text-sm disabled:opacity-50"
             >
-              🔍 Lancer l'OCR
+              🔍 Lancer l'OCR ({files.length} image{files.length > 1 ? 's' : ''})
             </button>
           )}
 
