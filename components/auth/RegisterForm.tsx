@@ -219,8 +219,6 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         if (!form.role) return 'Veuillez sélectionner un niveau.';
         return '';
       case 2:
-        if (rolesNeedingDinacope.has(form.role) && !form.dinacope.trim())
-          return 'Le numéro DINACOPE est obligatoire pour ce profil.';
         if (form.role === 'COORDINATION_PROVINCIALE') {
           if (!form.bureauAffectation) return 'Veuillez sélectionner un bureau d’affectation.';
           if (!form.fonction) return 'Veuillez sélectionner une fonction.';
@@ -470,8 +468,8 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
 
             {rolesNeedingDinacope.has(form.role) && (
               <div>
-                <label className={labelClass}>Numéro DINACOPE *</label>
-                <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE" />
+                <label className={labelClass}>Numéro DINACOPE</label>
+                <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE (optionnel)" />
               </div>
             )}
 
