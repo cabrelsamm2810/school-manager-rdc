@@ -1,6 +1,23 @@
 'use client';
 
-import type { ParsedSchoolRow, PreviewRow } from '@/lib/txt-import-parser';
+import type { ParsedSchoolRow, PreviewRow, FieldConfidence } from '@/lib/txt-import-parser';
+
+const CONFIDENCE_STYLES: Record<NonNullable<FieldConfidence>, { dot: string; label: string }> = {
+  high: { dot: 'bg-green-400', label: 'Fiable' },
+  medium: { dot: 'bg-amber-400', label: 'Moyen' },
+  low: { dot: 'bg-red-400', label: 'Faible' },
+};
+
+function ConfidenceDot({ confidence }: { confidence?: FieldConfidence }) {
+  if (!confidence) return null;
+  const style = CONFIDENCE_STYLES[confidence];
+  return (
+    <span
+      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`}
+      title={`Confiance: ${style.label}`}
+    />
+  );
+}
 
 type SchoolNamesPreviewProps = {
   rows: PreviewRow[];
@@ -62,6 +79,7 @@ export function SchoolNamesPreview({ rows, onUpdateField, onDeleteRow, onAddRow 
                   className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-100"
                   style={{ borderColor: row.status === 'error' ? '#fca5a5' : row.status === 'warning' ? '#fcd34d' : undefined }}
                 />
+                <ConfidenceDot confidence={row.fieldConfidence?.nom} />
               </div>
               {row.messages.length > 0 && (
                 <span className="text-xs text-amber-500" title={row.messages.join(', ')}>⚠</span>
@@ -83,6 +101,7 @@ export function SchoolNamesPreview({ rows, onUpdateField, onDeleteRow, onAddRow 
                     placeholder={FIELD_PLACEHOLDERS[field]}
                     className="flex-1 rounded-lg border border-slate-100 bg-slate-50/50 px-2.5 py-1 text-xs text-slate-600 focus:border-violet-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-violet-100"
                   />
+                  <ConfidenceDot confidence={row.fieldConfidence?.[field]} />
                 </div>
               ))}
             </div>
@@ -90,9 +109,17 @@ export function SchoolNamesPreview({ rows, onUpdateField, onDeleteRow, onAddRow 
         ))
       )}
       {rows.length > 0 && (
-        <button onClick={onAddRow} className="text-xs font-medium hover:underline" style={{ color: '#5E58A3' }}>
-          + Ajouter une école
-        </button>
+        <>
+          {/* Légende des points de confiance */}
+          <div className="flex items-center gap-3 pt-1 text-[10px] text-slate-400">
+            <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-green-400" /> Fiable</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" /> Moyen</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-red-400" /> Faible</span>
+          </div>
+          <button onClick={onAddRow} className="text-xs font-medium hover:underline" style={{ color: '#5E58A3' }}>
+            + Ajouter une école
+          </button>
+        </>
       )}
     </div>
   );

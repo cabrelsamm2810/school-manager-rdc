@@ -32,12 +32,15 @@ export type ParseResult = {
 
 export type RowStatus = 'ok' | 'warning' | 'error';
 
+export type FieldConfidence = 'high' | 'medium' | 'low' | null;
+
 export type PreviewRow = ParsedSchoolRow & {
   rowIndex: number;
   status: RowStatus;
   messages: string[];
   duplicateId?: string;
   duplicateNom?: string;
+  fieldConfidence?: Partial<Record<keyof ParsedSchoolRow, FieldConfidence>>;
 };
 
 /** Colonnes reconnues dans l'en-tête d'un fichier TXT structuré. */

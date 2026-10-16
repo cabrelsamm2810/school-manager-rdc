@@ -5,6 +5,7 @@ import type { Worker } from 'tesseract.js';
 import {
   type ParsedSchoolRow,
   type PreviewRow,
+  type FieldConfidence,
   MAX_IMPORT_LINES,
 } from '@/lib/txt-import-parser';
 import { SchoolNamesPreview } from '@/components/import/SchoolNamesPreview';
@@ -19,6 +20,7 @@ type OcrEcolesImportDialogProps = {
 type Phase = 'upload' | 'processing' | 'review-table' | 'result';
 
 type FileQuality = { score: number; blurry: boolean; assessing: boolean };
+type FileProgress = { status: 'pending' | 'processing' | 'done'; progress: number };
 
 /** Seuil de variance du Laplacien en dessous duquel une image est considérée floue. */
 const BLUR_THRESHOLD = 100;
@@ -151,18 +153,18 @@ function extractDirector(line: string): string | null {
  * Extraction des données d'écoles depuis le texte OCR.
  * Détecte le nom, l'adresse, le téléphone et le chef d'établissement.
  */
-function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: string[] } {
+function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: string[]; confidences: Partial<Record<string, FieldConfidence>>[] } {
   const warnings: string[] = [];
   const allLines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
 
   if (allLines.length === 0) {
-    return { rows: [], warnings: ['Aucun texte détecté.'] };
+    return { rows: [], warnings: ['Aucun texte détecté.'], confidences: [] };
   }
 
   const lines = allLines.filter((l) => !isNoiseLine(l));
 
   if (lines.length === 0) {
-    return { rows: [], warnings: ['Aucune ligne valide détectée après filtrage du bruit OCR.'] };
+    return { rows: [], warnings: ['Aucune ligne valide détectée après filtrage du bruit OCR.'], confidences: [] };
   }
 
   if (lines.length > MAX_IMPORT_LINES) {
@@ -171,6 +173,7 @@ function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: s
 
   const cappedLines = lines.slice(0, MAX_IMPORT_LINES);
   const rows: ParsedSchoolRow[] = [];
+  const confidences: Partial<Record<string, FieldConfidence>>[] = [];
   const seen = new Set<string>();
 
   for (let i = 0; i < cappedLines.length; i++) {
@@ -212,9 +215,17 @@ function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: s
       provinceEducationnelle: '', ville: '', commune: '', adresse,
       telephone, email: '', chefEcole, effectif: '',
     });
+    // Score de confiance par champ
+    const normNom = normalizeText(nom);
+    confidences.push({
+      nom: SCHOOL_KEYWORDS.some((kw) => normNom.includes(kw)) ? 'high' : 'medium',
+      telephone: telephone ? 'high' : null,
+      adresse: adresse ? 'high' : null,
+      chefEcole: chefEcole ? 'high' : null,
+    });
   }
 
-  return { rows, warnings };
+  return { rows, warnings, confidences };
 }
 
 /**
@@ -329,6 +340,8 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   const [result, setResult] = useState<BatchResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [fileQuality, setFileQuality] = useState<FileQuality[]>([]);
+  const [fileProgress, setFileProgress] = useState<FileProgress[]>([]);
+  const currentFileIdx = useRef(0);
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -373,13 +386,21 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setProgress(0);
     setProgressLabel('');
     setError('');
+    setFileProgress(files.map(() => ({ status: 'pending', progress: 0 })));
 
     try {
       const { createWorker } = await import('tesseract.js');
       const worker = await createWorker('fra', 1, {
         logger: (m: { status: string; progress: number }) => {
           if (m.status === 'recognizing text') {
-            setProgress(Math.round(m.progress * 100));
+            const p = Math.round(m.progress * 100);
+            const idx = currentFileIdx.current;
+            setProgress(p);
+            setFileProgress((prev) => {
+              const next = [...prev];
+              if (next[idx]) next[idx] = { status: 'processing', progress: p };
+              return next;
+            });
           }
         },
       });
@@ -387,13 +408,24 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
       const allText: string[] = [];
       for (let i = 0; i < files.length; i++) {
+        currentFileIdx.current = i;
         setProgressLabel(`Image ${i + 1} / ${files.length}`);
         setProgress(0);
+        setFileProgress((prev) => {
+          const next = [...prev];
+          next[i] = { status: 'processing', progress: 0 };
+          return next;
+        });
         // Prétraiter l'image pour accélérer l'OCR
         const processed = await preprocessImage(files[i]);
         const { data } = await worker.recognize(processed);
         const text = data.text.trim();
         if (text) allText.push(text);
+        setFileProgress((prev) => {
+          const next = [...prev];
+          next[i] = { status: 'done', progress: 100 };
+          return next;
+        });
       }
 
       await worker.terminate();
@@ -416,7 +448,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
         return;
       }
 
-      await checkDuplicates(parsed.rows);
+      await checkDuplicates(parsed.rows, parsed.confidences);
       setPhase('review-table');
     } catch {
       setError("Échec de la reconnaissance de texte. Réessayez avec des images plus nettes.");
@@ -424,9 +456,13 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     }
   }
 
-  async function checkDuplicates(rows: ParsedSchoolRow[]) {
+  async function checkDuplicates(rows: ParsedSchoolRow[], confidences?: Partial<Record<string, FieldConfidence>>[]) {
     setLoading(true);
     setError('');
+    const attachConfidence = (r: ParsedSchoolRow, i: number) => ({
+      ...r, rowIndex: i, status: 'ok' as const, messages: [],
+      fieldConfidence: confidences?.[i] ?? {},
+    });
     try {
       const res = await fetch('/api/import/ecoles/preview', {
         method: 'POST',
@@ -435,12 +471,14 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
       });
       const data = await res.json();
       if (res.ok) {
-        setPreviewRows(data.rows);
+        setPreviewRows(data.rows.map((r: PreviewRow, i: number) => ({
+          ...r, fieldConfidence: confidences?.[i] ?? r.fieldConfidence ?? {},
+        })));
       } else {
-        setPreviewRows(rows.map((r, i) => ({ ...r, rowIndex: i, status: 'ok' as const, messages: [] })));
+        setPreviewRows(rows.map(attachConfidence));
       }
     } catch {
-      setPreviewRows(rows.map((r, i) => ({ ...r, rowIndex: i, status: 'ok' as const, messages: [] })));
+      setPreviewRows(rows.map(attachConfidence));
     } finally {
       setLoading(false);
     }
@@ -503,6 +541,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     setProgress(0);
     setProgressLabel('');
     setFileQuality([]);
+    setFileProgress([]);
   }
 
   function handleClose() {
@@ -727,12 +766,13 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
           {/* Phase: Processing */}
           {phase === 'processing' && (
-            <div className="flex flex-col items-center justify-center py-16">
+            <div className="flex flex-col items-center justify-center py-8">
               <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200" style={{ borderTopColor: '#5E58A3' }} />
-              <p className="text-sm font-medium text-slate-700">Analyse de l'image en cours…</p>
+              <p className="text-sm font-medium text-slate-700">Analyse des images en cours…</p>
               {progressLabel && (
                 <p className="mt-1 text-xs text-slate-500">{progressLabel}</p>
               )}
+              {/* Barre de progression globale */}
               <div className="mt-4 w-full max-w-xs">
                 <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                   <div
@@ -742,6 +782,31 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 </div>
                 <p className="mt-1 text-center text-xs text-slate-500">{progress}%</p>
               </div>
+              {/* Progression par fichier */}
+              {files.length > 1 && (
+                <div className="mt-5 w-full max-w-sm space-y-2">
+                  {files.map((f, i) => {
+                    const fp = fileProgress[i];
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 shrink-0">
+                          {fp?.status === 'done' ? (
+                            <span className="block h-2.5 w-2.5 rounded-full bg-green-500" />
+                          ) : fp?.status === 'processing' ? (
+                            <span className="block h-2.5 w-2.5 animate-pulse rounded-full" style={{ backgroundColor: '#5E58A3' }} />
+                          ) : (
+                            <span className="block h-2.5 w-2.5 rounded-full border border-slate-300" />
+                          )}
+                        </span>
+                        <span className="flex-1 truncate text-[11px] text-slate-500">{f.name}</span>
+                        <span className="w-8 text-right text-[11px] font-medium text-slate-600">
+                          {fp?.status === 'done' ? '✓' : fp?.status === 'processing' ? `${fp.progress}%` : '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
