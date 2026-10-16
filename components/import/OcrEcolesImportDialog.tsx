@@ -7,8 +7,8 @@ import {
   type PreviewRow,
   MAX_IMPORT_LINES,
 } from '@/lib/txt-import-parser';
-import { SchoolPreviewTable } from '@/components/import/SchoolPreviewTable';
-import { SchoolPreviewStats, SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
+import { SchoolNamesPreview } from '@/components/import/SchoolNamesPreview';
+import { SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
 import { OcrWorkflowStepper } from '@/components/import/OcrWorkflowStepper';
 
 type OcrEcolesImportDialogProps = {
@@ -16,97 +16,17 @@ type OcrEcolesImportDialogProps = {
   onClose: () => void;
 };
 
-type Phase = 'upload' | 'processing' | 'review-text' | 'review-table' | 'result';
+type Phase = 'upload' | 'processing' | 'review-table' | 'result';
 
 const PHASE_STEP: Record<Phase, number> = {
   upload: 0,
   processing: 1,
-  'review-text': 2,
-  'review-table': 3,
-  result: 4,
+  'review-table': 2,
+  result: 3,
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
-
-/** Alias d'en-tête → champ cible (insensible à la casse et aux accents). */
-const HEADER_ALIASES: Record<string, keyof ParsedSchoolRow> = {
-  nom: 'nom',
-  "nom de l'ecole": 'nom',
-  "nom de l'école": 'nom',
-  "nom de l ecole": 'nom',
-  ecole: 'nom',
-  école: 'nom',
-  denomination: 'nom',
-  convention: 'institution',
-  institution: 'institution',
-  type: 'type',
-  dinacope: 'dinacope',
-  province: 'province',
-  'province administrative': 'province',
-  'province educationnelle': 'provinceEducationnelle',
-  'province éducationnelle': 'provinceEducationnelle',
-  'province educ': 'provinceEducationnelle',
-  'prov educ': 'provinceEducationnelle',
-  'sous-division': 'commune',
-  'sous division': 'commune',
-  'sousdivision': 'commune',
-  commune: 'commune',
-  ville: 'ville',
-  adresse: 'adresse',
-  telephone: 'telephone',
-  téléphone: 'telephone',
-  tel: 'telephone',
-  email: 'email',
-  'e-mail': 'email',
-  chef: 'chefEcole',
-  "chef d'ecole": 'chefEcole',
-  "chef d'école": 'chefEcole',
-  directeur: 'chefEcole',
-  effectif: 'effectif',
-};
-
-function normalizeHeader(h: string): string {
-  return h
-    .toLowerCase()
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, ' ');
-}
-
-function matchHeader(header: string): keyof ParsedSchoolRow | null {
-  const h = normalizeHeader(header);
-  if (HEADER_ALIASES[h]) return HEADER_ALIASES[h];
-  for (const [alias, field] of Object.entries(HEADER_ALIASES)) {
-    if (h.includes(alias) || alias.includes(h)) return field;
-  }
-  return null;
-}
-
-function createEmptyRow(): ParsedSchoolRow {
-  return {
-    nom: '', type: '', institution: '', dinacope: '', province: '',
-    provinceEducationnelle: '', ville: '', commune: '', adresse: '',
-    telephone: '', email: '', chefEcole: '', effectif: '',
-  };
-}
-
-const DELIMITERS: { label: string; value: string; regex: RegExp }[] = [
-  { label: 'Auto', value: 'auto', regex: /\t|\s{2,}|[,;|]/ },
-  { label: 'Tabulation', value: 'tab', regex: /\t/ },
-  { label: '2+ espaces', value: 'spaces', regex: /\s{2,}/ },
-  { label: '1 espace', value: 'space', regex: / / },
-  { label: 'Virgule', value: 'comma', regex: /,/ },
-  { label: 'Point-virgule', value: 'semicolon', regex: /;/ },
-  { label: 'Barre |', value: 'pipe', regex: /\|/ },
-];
-
-function parseLine(line: string, regex: RegExp): string[] {
-  return line
-    .split(regex)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
+const OCR_MAX_WIDTH = 1000; // Redimensionner les grandes images pour accélérer l'OCR
 
 /** Mots-clés typiques dans les noms d'écoles (insensible aux accents/casse). */
 const SCHOOL_KEYWORDS = [
@@ -134,7 +54,6 @@ function isNoiseLine(line: string): boolean {
   const trimmed = line.trim();
   if (trimmed.length < 3) return true;
   if (NOISE_PATTERNS.some((p) => p.test(trimmed))) return true;
-  // Ligne uniquement constituée de chiffres et ponctuation
   if (/^[\d\s\-.,;:|/()]+$/.test(trimmed)) return true;
   return false;
 }
@@ -143,21 +62,17 @@ function isNoiseLine(line: string): boolean {
 function looksLikeSchoolName(text: string): boolean {
   const norm = normalizeText(text);
   if (norm.length < 3) return false;
-  // Doit contenir au moins des lettres
   if (!/[a-zà-ÿ]/i.test(text)) return false;
-  // Contient un mot-clé d'école
   if (SCHOOL_KEYWORDS.some((kw) => norm.includes(kw))) return true;
-  // Ou est suffisamment long avec des lettres (nom propre probable)
   if (norm.length >= 5 && /[a-zà-ÿ]{3,}/i.test(text)) return true;
   return false;
 }
 
 /**
- * Parse le texte OCR extrait en lignes d'écoles structurées.
- * Filtre le bruit OCR et ne garde que les lignes qui ressemblent à des données d'écoles.
- * Détecte l'en-tête et mappe les colonnes vers les champs ParsedSchoolRow.
+ * Extraction rapide des noms d'écoles depuis le texte OCR.
+ * Filtre le bruit et ne garde que les lignes qui ressemblent à des noms d'écoles.
  */
-function parseOcrText(text: string, delim: string): { rows: ParsedSchoolRow[]; warnings: string[] } {
+function extractSchoolNames(text: string): { rows: ParsedSchoolRow[]; warnings: string[] } {
   const warnings: string[] = [];
   const allLines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
 
@@ -165,7 +80,6 @@ function parseOcrText(text: string, delim: string): { rows: ParsedSchoolRow[]; w
     return { rows: [], warnings: ['Aucun texte détecté.'] };
   }
 
-  // ── Filtrer le bruit OCR ──
   const lines = allLines.filter((l) => !isNoiseLine(l));
 
   if (lines.length === 0) {
@@ -177,63 +91,50 @@ function parseOcrText(text: string, delim: string): { rows: ParsedSchoolRow[]; w
   }
 
   const cappedLines = lines.slice(0, MAX_IMPORT_LINES);
-  let regex = (DELIMITERS.find((d) => d.value === delim) ?? DELIMITERS[0]).regex;
-
-  // Détection de l'en-tête : ligne où au moins 2 champs correspondent à des colonnes connues
-  const headerLineIdx = cappedLines.findIndex((line) => {
-    const fields = parseLine(line, regex);
-    return fields.filter((f) => matchHeader(f) !== null).length >= 2;
-  });
-
-  // Auto : si le regex par défaut donne ~1 champ par ligne, passer à l'espace simple
-  const dataLineCount = headerLineIdx >= 0 ? cappedLines.length - 1 : cappedLines.length;
-  if (delim === 'auto' && dataLineCount > 0) {
-    const sample = cappedLines.filter((_, i) => i !== headerLineIdx).slice(0, 5);
-    const avgFields = sample.reduce((sum, l) => sum + parseLine(l, regex).length, 0) / sample.length;
-    if (avgFields <= 1) {
-      regex = / /;
-    }
-  }
-
-  let colMap: (keyof ParsedSchoolRow | null)[] | null = null;
-  if (headerLineIdx >= 0) {
-    const headerFields = parseLine(cappedLines[headerLineIdx], regex);
-    colMap = headerFields.map(matchHeader);
-  }
-
-  const dataLines = cappedLines.filter((_, i) => i !== headerLineIdx);
   const rows: ParsedSchoolRow[] = [];
+  const seen = new Set<string>();
 
-  for (const line of dataLines) {
-    const fields = parseLine(line, regex);
-
-    if (colMap) {
-      const row = createEmptyRow();
-      fields.forEach((val, idx) => {
-        const field = colMap[idx];
-        if (field) (row[field] as string) = val;
-      });
-      // Ne garder que les lignes avec un nom d'école valide
-      if (row.nom.trim() && looksLikeSchoolName(row.nom)) {
-        rows.push(row);
-      }
-    } else {
-      // Sans en-tête : ne garder que les lignes qui ressemblent à un nom d'école
-      const nom = fields[0]?.trim() || '';
-      if (nom && looksLikeSchoolName(nom)) {
-        rows.push({ ...createEmptyRow(), nom });
-      }
-    }
+  for (const line of cappedLines) {
+    const nom = line.trim();
+    if (!nom || !looksLikeSchoolName(nom)) continue;
+    // Déduplication basique (même nom normalisé)
+    const key = normalizeText(nom);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({
+      nom, type: '', institution: '', dinacope: '', province: '',
+      provinceEducationnelle: '', ville: '', commune: '', adresse: '',
+      telephone: '', email: '', chefEcole: '', effectif: '',
+    });
   }
-
-  // Avertissements pour les lignes sans nom
-  rows.forEach((row, i) => {
-    if (!row.nom.trim()) {
-      warnings.push(`Ligne ${i + 1} : nom de l'école manquant.`);
-    }
-  });
 
   return { rows, warnings };
+}
+
+/**
+ * Prétraite une image pour accélérer l'OCR : redimensionne à max 1000px de large.
+ * Retourne un Blob JPEG optimisé.
+ */
+async function preprocessImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, OCR_MAX_WIDTH / bitmap.width);
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, w, h);
+
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => resolve(blob ?? file),
+      'image/jpeg',
+      0.85,
+    );
+  });
 }
 
 export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDialogProps) {
@@ -245,8 +146,6 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [files, setFiles] = useState<File[]>([]);
-  const [rawText, setRawText] = useState('');
-  const [delimiter, setDelimiter] = useState('auto');
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -300,7 +199,9 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
       for (let i = 0; i < files.length; i++) {
         setProgressLabel(`Image ${i + 1} / ${files.length}`);
         setProgress(0);
-        const { data } = await worker.recognize(files[i]);
+        // Prétraiter l'image pour accélérer l'OCR
+        const processed = await preprocessImage(files[i]);
+        const { data } = await worker.recognize(processed);
         const text = data.text.trim();
         if (text) allText.push(text);
       }
@@ -315,38 +216,22 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
         return;
       }
 
-      setRawText(combinedText);
-      const parsed = parseOcrText(combinedText, delimiter);
+      // Extraction rapide des noms d'écoles uniquement
+      const parsed = extractSchoolNames(combinedText);
       setParseWarnings(parsed.warnings);
 
-      setPhase('review-text');
+      if (parsed.rows.length === 0) {
+        setError("Aucun nom d'école détecté. Réessayez avec une photo plus nette du document.");
+        setPhase('upload');
+        return;
+      }
+
+      await checkDuplicates(parsed.rows);
+      setPhase('review-table');
     } catch {
       setError("Échec de la reconnaissance de texte. Réessayez avec des images plus nettes.");
       setPhase('upload');
     }
-  }
-
-  function reparse(newDelim: string) {
-    setDelimiter(newDelim);
-    const parsed = parseOcrText(rawText, newDelim);
-    setParseWarnings(parsed.warnings);
-    if (parsed.rows.length > 0) {
-      checkDuplicates(parsed.rows);
-    } else {
-      setPreviewRows([]);
-    }
-  }
-
-  async function goToTablePreview() {
-    const parsed = parseOcrText(rawText, delimiter);
-    setParseWarnings(parsed.warnings);
-    setError('');
-    if (parsed.rows.length === 0) {
-      setError('Aucune ligne valide détectée. Ajustez le séparateur ou éditez le texte.');
-      return;
-    }
-    await checkDuplicates(parsed.rows);
-    setPhase('review-table');
   }
 
   async function checkDuplicates(rows: ParsedSchoolRow[]) {
@@ -371,9 +256,9 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     }
   }
 
-  function updateCell(rowIdx: number, key: keyof ParsedSchoolRow, value: string) {
+  function updateName(rowIdx: number, value: string) {
     setPreviewRows((prev) =>
-      prev.map((r, i) => (i === rowIdx ? { ...r, [key]: value } : r)),
+      prev.map((r, i) => (i === rowIdx ? { ...r, nom: value } : r)),
     );
   }
 
@@ -421,14 +306,12 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   function reset() {
     setPhase('upload');
     setFiles([]);
-    setRawText('');
     setPreviewRows([]);
     setParseWarnings([]);
     setError('');
     setResult(null);
     setProgress(0);
     setProgressLabel('');
-    setDelimiter('auto');
   }
 
   function handleClose() {
@@ -597,16 +480,16 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
           {/* Phase: Processing */}
           {phase === 'processing' && (
             <div className="flex flex-col items-center justify-center py-16">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
-              <p className="text-sm font-medium text-slate-700">Reconnaissance de texte en cours…</p>
+              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200" style={{ borderTopColor: '#5E58A3' }} />
+              <p className="text-sm font-medium text-slate-700">Analyse de l'image en cours…</p>
               {progressLabel && (
                 <p className="mt-1 text-xs text-slate-500">{progressLabel}</p>
               )}
               <div className="mt-4 w-full max-w-xs">
                 <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                   <div
-                    className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                    style={{ width: `${progress}%` }}
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%`, backgroundColor: '#5E58A3' }}
                   />
                 </div>
                 <p className="mt-1 text-center text-xs text-slate-500">{progress}%</p>
@@ -614,84 +497,15 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
             </div>
           )}
 
-          {/* Phase: Review-text (étape 1 — correction du texte OCR) */}
-          {phase === 'review-text' && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">1</span>
-                <span className="font-medium">Étape 1/2 — Corrigez le texte extrait par l'OCR</span>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-500">
-                  Texte extrait (modifiable — corrigez les erreurs de reconnaissance) :
-                </label>
-                <textarea
-                  value={rawText}
-                  onChange={(e) => {
-                    setRawText(e.target.value);
-                    const parsed = parseOcrText(e.target.value, delimiter);
-                    setParseWarnings(parsed.warnings);
-                  }}
-                  className="h-40 w-full resize-y rounded-xl border border-slate-200 p-3 font-mono text-xs text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-100"
-                  placeholder="Texte OCR…"
-                />
-              </div>
-
-              {/* Séparateur */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-slate-500">Séparateur :</span>
-                {DELIMITERS.map((d) => (
-                  <button
-                    key={d.value}
-                    onClick={() => reparse(d.value)}
-                    className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
-                      delimiter === d.value
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-
-              <SchoolParseWarnings warnings={parseWarnings} />
-
-              {/* Aperçu rapide du nombre de lignes détectées */}
-              {(() => {
-                const parsed = parseOcrText(rawText, delimiter);
-                return parsed.rows.length > 0 ? (
-                  <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                    ✓ {parsed.rows.length} école(s) détectée(s) avec ce séparateur
-                  </div>
-                ) : (
-                  <div className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">
-                    ✕ Aucune ligne valide — ajustez le séparateur ou corrigez le texte
-                  </div>
-                );
-              })()}
-
-              {error && (
-                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-              )}
-            </div>
-          )}
-
-          {/* Phase: Review-table (étape 2 — validation des écoles avant enregistrement) */}
+          {/* Phase: Review-table — vérification des noms d'écoles */}
           {phase === 'review-table' && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">2</span>
-                <span className="font-medium">Étape 2/2 — Vérifiez et corrigez les écoles avant l'enregistrement définitif</span>
+              <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ backgroundColor: '#E0E7FF', color: '#5E58A3' }}>
+                <span className="font-medium">✓ {previewRows.length} école(s) détectée(s) — vérifiez et corrigez les noms</span>
               </div>
 
-              {previewRows.length > 0 && (
-                <SchoolPreviewStats rows={previewRows} />
-              )}
               <SchoolParseWarnings warnings={parseWarnings} />
 
-              {/* Loading indicator */}
               {loading && (
                 <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
@@ -699,9 +513,9 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                 </div>
               )}
 
-              <SchoolPreviewTable
+              <SchoolNamesPreview
                 rows={previewRows}
-                onUpdateCell={updateCell}
+                onUpdateName={updateName}
                 onDeleteRow={deleteRow}
                 onAddRow={addRow}
               />
@@ -740,34 +554,17 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
               disabled={files.length === 0}
               className="btn-primary flex-1 px-4 py-2.5 text-sm disabled:opacity-50"
             >
-              🔍 Lancer l'OCR ({files.length} image{files.length > 1 ? 's' : ''})
+              🔍 Analyser ({files.length} image{files.length > 1 ? 's' : ''})
             </button>
-          )}
-
-          {phase === 'review-text' && (
-            <>
-              <button
-                onClick={reset}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-              >
-                ← Nouvelle image
-              </button>
-              <button
-                onClick={goToTablePreview}
-                className="btn-primary flex-1 px-4 py-2.5 text-sm"
-              >
-                Continuer →
-              </button>
-            </>
           )}
 
           {phase === 'review-table' && (
             <>
               <button
-                onClick={() => setPhase('review-text')}
+                onClick={reset}
                 className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
               >
-                ← Modifier le texte
+                ← Nouvelle photo
               </button>
               <button
                 onClick={handleSave}
