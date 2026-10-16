@@ -31,10 +31,10 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
     { label: 'Bureaux & fonctions', href: '/bureaux-fonctions', icon: 'office', color: 'amber' },
   ],
   AGENT_PROVINCIAL: [
+    { label: 'EC-ERC', href: '/ec-erc', icon: 'organization', color: 'violet' },
     { label: 'Dossiers', href: '/dossiers', icon: 'folder', color: 'rose' },
-    { label: 'Visites', href: '/visites', icon: 'visit', color: 'blue' },
-    { label: 'Institutions', href: '/ecoles', icon: 'school', color: 'violet' },
-    { label: 'Élèves', href: '/eleves', icon: 'users', color: 'emerald' },
+    { label: 'Écoles en attente', href: '/agent-provincial/ecoles-en-attente', icon: 'clock', color: 'blue' },
+    { label: 'Visites', href: '/visites', icon: 'visit', color: 'emerald' },
   ],
   COORDINATION_SOUS_PROVINCIALE: [
     { label: 'Coord. sous-provinciale', href: '/coordination-sous-provinciale', icon: 'district', color: 'violet' },
@@ -142,6 +142,8 @@ function ActionIcon({ name }: { name: string }) {
     chat: 'M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z',
     document: 'M14.25 3v5.25h5.25M6.75 3h7.5l5.25 5.25V21H6.75V3zM9.75 12.75h4.5M9.75 16.5h4.5',
     map: 'M9 3L3 6v15l6-3 6 3 6-3V3l-6 3-6-3z',
+    clock: 'M12 6v6l4 2M12 2a10 10 0 100 20 10 10 0 000-20z',
+    organization: 'M3.75 21h16.5M4.5 3v18M19.5 3v18M9 7.5h6M9 12h6M9 16.5h6',
   };
 
   return (
