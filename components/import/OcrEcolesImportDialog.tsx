@@ -285,7 +285,17 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   const [dragOver, setDragOver] = useState(false);
   const [fileQuality, setFileQuality] = useState<FileQuality[]>([]);
   const [fileProgress, setFileProgress] = useState<FileProgress[]>([]);
+  const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const fileUrlsRef = useRef<string[]>([]);
   const currentFileIdx = useRef(0);
+
+  // Garder la ref à jour pour le nettoyage au démontage
+  useEffect(() => { fileUrlsRef.current = fileUrls; }, [fileUrls]);
+
+  // Révoquer les blob URLs au démontage
+  useEffect(() => {
+    return () => { fileUrlsRef.current.forEach((u) => URL.revokeObjectURL(u)); };
+  }, []);
   const [selectedInstitution, setSelectedInstitution] = useState<string>('');
   const [institutionSearch, setInstitutionSearch] = useState('');
   const [dbInstitutions, setDbInstitutions] = useState<InstitutionInfo[]>([]);
@@ -311,6 +321,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
     if (valid.length > 0) {
       const startIdx = files.length;
       setFiles((prev) => [...prev, ...valid]);
+      setFileUrls((prev) => [...prev, ...valid.map((f) => URL.createObjectURL(f))]);
       setFileQuality((prev) => [...prev, ...valid.map((): FileQuality => ({
         sharpness: 0, blurry: false, brightness: 128, tooDark: false, tooBright: false,
         contrast: 0, lowContrast: false, isDocument: true, textDensity: 0,
@@ -330,6 +341,10 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
   }
 
   function removeFile(idx: number) {
+    setFileUrls((prev) => {
+      prev[idx] && URL.revokeObjectURL(prev[idx]);
+      return prev.filter((_, i) => i !== idx);
+    });
     setFiles((prev) => prev.filter((_, i) => i !== idx));
     setFileQuality((prev) => prev.filter((_, i) => i !== idx));
   }
@@ -545,6 +560,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
   function reset() {
     setPhase('upload');
+    setFileUrls((prev) => { prev.forEach((u) => URL.revokeObjectURL(u)); return []; });
     setFiles([]);
     setPreviewRows([]);
     setParseWarnings([]);
@@ -563,6 +579,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
 
   function handleClose() {
     if (workerRef.current) workerRef.current.terminate();
+    fileUrls.forEach((u) => URL.revokeObjectURL(u));
     onClose();
   }
 
@@ -640,7 +657,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                       return (
                         <div key={idx} className="relative">
                           <img
-                            src={URL.createObjectURL(f)}
+                            src={fileUrls[idx]}
                             alt={f.name}
                             className={`h-24 w-24 rounded-lg object-cover ${ringClass}`}
                           />
@@ -841,7 +858,7 @@ export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDi
                     >
                       {/* Vignette */}
                       <img
-                        src={URL.createObjectURL(f)}
+                        src={fileUrls[i]}
                         alt={f.name}
                         className={`h-9 w-9 shrink-0 rounded object-cover ${isDone ? 'opacity-60' : ''}`}
                       />
