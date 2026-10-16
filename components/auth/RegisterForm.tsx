@@ -56,7 +56,7 @@ const emptyForm: FormState = {
 };
 
 const ROLES_NEEDING_LOCATION = new Set([
-  'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE', 'ENSEIGNANT', 'ELEVE', 'PARENT',
+  'COORDINATION_PROVINCIALE', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE', 'ENSEIGNANT', 'ELEVE', 'PARENT',
 ]);
 const ROLES_NEEDING_EDUC_PROVINCE = new Set(['COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE']);
 const ROLES_NEEDING_SCHOOL_FORM = new Set(['DIRECTION_ECOLE']);
@@ -88,6 +88,7 @@ const INSTITUTION_DESC: Record<string, string> = {
 const ROLE_DESC: Record<string, string> = {
   'COORDINATION_NATIONALE': 'Administration nationale',
   'COORDINATION_PROVINCIALE': 'Administration provinciale',
+  'AGENT_PROVINCIAL': 'Agent de la coordination provinciale',
   'COORDINATION_SOUS_PROVINCIALE': 'Administration sous-provinciale',
   'DIRECTION_ECOLE': 'Gestion d’école',
   'ENSEIGNANT': 'Corps enseignant',
@@ -126,6 +127,7 @@ function RoleIcon({ type, selected }: { type: string; selected: boolean }) {
   let content: ReactNode = null;
   if (type === 'COORDINATION_NATIONALE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0-18c2.5 3 4 6 4 9s-1.5 6-4 9m-4-18c-2.5 3-4 6-4 9s1.5 6 4 9" />);
   else if (type === 'COORDINATION_PROVINCIALE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-5 4 4 3-3" />);
+  else if (type === 'AGENT_PROVINCIAL') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m1.5-5.5h-11A2.5 2.5 0 003.5 7.5v9A2.5 2.5 0 006 19h11a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0017 6.5z" />);
   else if (type === 'COORDINATION_SOUS_PROVINCIALE') content = (<g><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></g>);
   else if (type === 'DIRECTION_ECOLE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
   else if (type === 'ENSEIGNANT') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25v14.25" />);
@@ -219,7 +221,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         if (!form.role) return 'Veuillez sélectionner un niveau.';
         return '';
       case 2:
-        if (form.role === 'COORDINATION_PROVINCIALE') {
+        if (form.role === 'COORDINATION_PROVINCIALE' || form.role === 'AGENT_PROVINCIAL') {
           if (!form.bureauAffectation) return 'Veuillez sélectionner un bureau d’affectation.';
           if (!form.fonction) return 'Veuillez sélectionner une fonction.';
           if (!form.grade) return 'Veuillez sélectionner un grade.';
@@ -308,7 +310,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
 
   const isEcErc = form.typeInstitution === 'EC_ERC';
   const COORDINATION_ROLES = new Set([
-    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE',
+    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE',
   ]);
   const roleOptions: RoleOption[] = isEcErc
     ? allRegistrationRoleOptions
@@ -319,10 +321,10 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   const availableSousDivisions = form.provinceEducationnelle
     ? sousDivisionsByEducationProvince[form.provinceEducationnelle] ?? []
     : [];
-  const availableFonctions = form.role === 'COORDINATION_PROVINCIALE'
+  const availableFonctions = (form.role === 'COORDINATION_PROVINCIALE' || form.role === 'AGENT_PROVINCIAL')
     ? fonctionsByBureau[form.bureauAffectation] ?? []
     : fonctionsByRole[form.role] ?? [];
-  const availableGrades = form.role === 'COORDINATION_PROVINCIALE'
+  const availableGrades = (form.role === 'COORDINATION_PROVINCIALE' || form.role === 'AGENT_PROVINCIAL')
     ? gradesByBureau[form.bureauAffectation] ?? []
     : gradesByRole[form.role] ?? [];
 
@@ -473,7 +475,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
               </div>
             )}
 
-            {form.role === 'COORDINATION_PROVINCIALE' && (
+            {(form.role === 'COORDINATION_PROVINCIALE' || form.role === 'AGENT_PROVINCIAL') && (
               <div>
                 <label className={labelClass}>Bureau d’affectation *</label>
                 <select className={inputClass} value={form.bureauAffectation} onChange={(e) => handleBureau(e.target.value)}>
@@ -487,11 +489,11 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
               <div>
                 <label className={labelClass}>Fonction *</label>
                 <select className={inputClass} value={form.fonction} onChange={(e) => updateField('fonction', e.target.value)}
-                  disabled={form.role === 'COORDINATION_PROVINCIALE' && !form.bureauAffectation}>
+                  disabled={(form.role === 'COORDINATION_PROVINCIALE' || form.role === 'AGENT_PROVINCIAL') && !form.bureauAffectation}>
                   <option value="">— Sélectionner —</option>
                   {availableFonctions.map((f) => <option key={f} value={f}>{f}</option>)}
                 </select>
-                {form.role === 'COORDINATION_PROVINCIALE' && !form.bureauAffectation && (
+                {(form.role === 'COORDINATION_PROVINCIALE' || form.role === 'AGENT_PROVINCIAL') && !form.bureauAffectation && (
                   <p className="mt-1 text-xs text-slate-400">Sélectionnez d’abord un bureau.</p>
                 )}
               </div>

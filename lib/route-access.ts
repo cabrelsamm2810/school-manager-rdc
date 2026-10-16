@@ -39,7 +39,7 @@ export const ROUTE_MIN_ROLE: Record<string, string> = {
   '/provinces-educationnelles': 'COORDINATION_PROVINCIALE',
   '/sous-divisions': 'COORDINATION_PROVINCIALE',
   '/provinces': 'COORDINATION_PROVINCIALE',
-  '/ec-erc': 'COORDINATION_PROVINCIALE',
+  '/ec-erc': 'AGENT_PROVINCIAL',
   '/coordination-nationale': 'COORDINATION_NATIONALE',
   '/coordination-provinciale': 'COORDINATION_PROVINCIALE',
   '/coordination-sous-provinciale': 'COORDINATION_SOUS_PROVINCIALE',

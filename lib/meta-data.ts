@@ -50,6 +50,7 @@ export const registrationInstitutionTypes = [
 export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },
+  { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
   { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
   { value: 'PROMOTEUR', label: 'Promoteur' },
