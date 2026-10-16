@@ -86,26 +86,26 @@ function MessageActions({
 
   return (
     <div
-      className="absolute z-20 min-w-[150px] overflow-hidden rounded-2xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200/80"
+      className="absolute z-20 min-w-[150px] overflow-hidden rounded-2xl bg-[#132f4c] py-1.5 shadow-xl ring-1 ring-[#1e3a8a]"
       style={{ animation: 'msgActionIn 0.15s ease-out' }}
       onClick={(e) => e.stopPropagation()}
     >
-      <button onClick={onReply} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#2563eb]">
+      <button onClick={onReply} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-white transition hover:bg-[#17395d]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#60a5fa]">
           <polyline points="9 17 4 12 9 7" />
           <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
         </svg>
         Répondre
       </button>
-      <button onClick={onForward} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-brand-500">
+      <button onClick={onForward} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-white transition hover:bg-[#17395d]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#60a5fa]">
           <line x1="22" y1="2" x2="11" y2="13" />
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
         Transférer
       </button>
       {canDelete && (
-        <button onClick={onDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-red-500 transition hover:bg-red-50">
+        <button onClick={onDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-red-400 transition hover:bg-[#3b1220]">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
             <polyline points="3 6 5 6 21 6" />
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -234,7 +234,7 @@ export const ChatBubble = memo(function ChatBubble({
             'relative text-[14px] leading-relaxed transition',
             isMe
               ? 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-[0_1px_3px_rgba(29,78,216,0.25)]'
-              : 'bg-white text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60',
+              : 'bg-[#132f4c] text-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] ring-1 ring-[#1e3a8a]/60',
             // Coins arrondis élégants — le dernier message d'un groupe a un coin "pointe"
             isMe
               ? isConsecutive && !isLastInGroup
@@ -249,20 +249,20 @@ export const ChatBubble = memo(function ChatBubble({
           )}
         >
           {isGroup && !isMe && showSenderName && msg.senderName && (
-            <p className="mb-1 text-[12px] font-bold tracking-wide text-[#2563eb]">{msg.senderName}</p>
+            <p className="mb-1 text-[12px] font-bold tracking-wide text-[#60a5fa]">{msg.senderName}</p>
           )}
 
           {replyToMessage && (
             <div
               className={clsx(
                 'mb-2 rounded-lg border-l-[3px] px-2.5 py-1.5',
-                isMe ? 'bg-white/15 border-white/50' : 'bg-slate-50 border-[#2563eb]/50'
+                isMe ? 'bg-white/15 border-white/50' : 'bg-[#0f2540] border-[#60a5fa]/50'
               )}
             >
-              <p className={clsx('truncate text-[11px] font-semibold', isMe ? 'text-white' : 'text-[#1d4ed8]')}>
+              <p className={clsx('truncate text-[11px] font-semibold', isMe ? 'text-white' : 'text-[#60a5fa]')}>
                 {replyToMessage.senderName || (replyToMessage.senderId === msg.senderId ? 'Vous' : 'Utilisateur')}
               </p>
-              <p className={clsx('truncate text-[11px]', isMe ? 'text-white/70' : 'text-slate-500')}>
+              <p className={clsx('truncate text-[11px]', isMe ? 'text-white/70' : 'text-[#93c5fd]')}>
                 {getMessagePreview(replyToMessage)}
               </p>
             </div>
@@ -310,7 +310,7 @@ export const ChatBubble = memo(function ChatBubble({
 
           {/* Heure discrète + accusé de lecture */}
           <div className={clsx('flex items-center justify-end gap-1', isOnlyMedia ? 'mt-1 px-1' : 'mt-0.5')}>
-            <span className={clsx('text-[10px] tabular-nums leading-none', isMe ? 'text-white/60' : 'text-slate-400')}>
+            <span className={clsx('text-[10px] tabular-nums leading-none', isMe ? 'text-white/60' : 'text-[#93c5fd]/60')}>
               {formatMessageTime(msg.createdAt)}
             </span>
             {isMe && <MessageStatus msg={msg} />}

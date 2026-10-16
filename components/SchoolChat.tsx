@@ -85,6 +85,7 @@ export function SchoolChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterMode, setFilterMode] = useState<'all' | 'unread' | 'favorites' | 'groups'>('all');
   const [showNewChat, setShowNewChat] = useState(false);
   const [allUsers, setAllUsers] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -588,6 +589,13 @@ export function SchoolChat() {
     );
   }, [conversations, groups, normalizedSearch]);
 
+  const filteredChatList = useMemo<ChatListItem[]>(() => {
+    if (filterMode === 'all') return chatList;
+    if (filterMode === 'unread') return chatList.filter((item) => item.kind === 'conversation' && item.conversation.unreadCount > 0);
+    if (filterMode === 'groups') return chatList.filter((item) => item.kind === 'group');
+    return [];
+  }, [chatList, filterMode]);
+
   const filteredUsers = useMemo(
     () => allUsers.filter((u) => !normalizedSearch || u.displayName.toLowerCase().includes(normalizedSearch)),
     [allUsers, normalizedSearch]
@@ -603,80 +611,77 @@ export function SchoolChat() {
 
   // ── Rendu ──
   return (
-    <div className="flex h-[calc(100dvh-3.5rem-68px)] overflow-hidden bg-slate-100 lg:h-[calc(100vh-3.5rem)]">
+    <div className="flex h-[calc(100dvh-3.5rem-68px)] overflow-hidden bg-[#0a1729] lg:h-[calc(100vh-3.5rem)]">
       {/* ── Panneau gauche : liste des conversations ── */}
       <aside
         className={clsx(
-          'min-w-0 flex-col overflow-hidden bg-white md:flex md:w-[336px] md:shrink-0 md:border-r md:border-slate-200',
+          'relative min-w-0 flex-col overflow-hidden bg-[#0a1729] md:flex md:w-[336px] md:shrink-0 md:border-r md:border-[#1e3a8a]',
           mobileShowChat ? 'hidden md:flex' : 'flex w-full'
         )}
       >
-        <div className="flex h-14 shrink-0 items-center gap-2.5 bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-3">
-          <SchoolChatMark className="h-9 w-9 rounded-full ring-1 ring-white/25" />
-          <h2 className="min-w-0 flex-1 truncate text-[19px] font-bold tracking-tight text-white">SchoolChat</h2>
+        <div className="shrink-0 bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-3.5 py-3" style={{ animation: 'scFadeDown 0.6s ease-out both', boxShadow: '0 4px 14px rgba(0,0,0,0.4)' }}>
+          <div className="flex items-center gap-2.5">
+            <SchoolChatMark className="h-8 w-8 shrink-0 rounded-[10px] ring-1 ring-[#60a5fa]" />
+            <h2 className="min-w-0 flex-1 truncate text-[20px] font-bold tracking-tight text-white">SchoolChat</h2>
 
-          {currentUser && (
-            <Avatar
-              photoUrl={currentUser.profilePhotoUrl}
-              prenom={currentUser.prenom}
-              nom={currentUser.nom}
-              size="sm"
-              className="ring-2 ring-white/30"
-            />
-          )}
+            {currentUser && (
+              <Avatar
+                photoUrl={currentUser.profilePhotoUrl}
+                prenom={currentUser.prenom}
+                nom={currentUser.nom}
+                size="sm"
+                className="ring-2 ring-white/30"
+              />
+            )}
 
-          <button
-            onClick={() => setShowNewChat(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 active:scale-90"
-            aria-label="Nouvelle conversation"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
+            <button
+              onClick={() => setShowNewGroup(true)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/12 text-white transition hover:bg-white/25 active:scale-90"
+              aria-label="Nouveau groupe"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </button>
+          </div>
 
-          <button
-            onClick={() => setShowNewGroup(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/85 transition hover:bg-white/15 hover:text-white active:scale-90"
-            aria-label="Nouveau groupe"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="shrink-0 border-b border-slate-100 px-3 py-2">
-          <div className="relative">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
+          <div className="mt-3 flex items-center gap-2 rounded-full bg-[#0f2540] px-3.5 py-2 ring-1 ring-[#1e3a8a]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-[#93c5fd]">
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
             </svg>
             <input
               type="text"
-              placeholder="Rechercher une conversation…"
+              placeholder="Rechercher"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Rechercher une conversation"
-              className="w-full rounded-full bg-slate-100 py-2 pl-9 pr-3 text-[13px] text-slate-700 outline-none transition focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
+              className="min-w-0 flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[#93c5fd]"
             />
           </div>
         </div>
 
+        <div className="flex gap-2 px-3.5 py-3" style={{ animation: 'scFadeDown 0.6s 0.1s ease-out both' }}>
+          <button type="button" onClick={() => setFilterMode('all')} className={clsx('rounded-full px-3.5 py-2 text-[13px] font-semibold transition', filterMode === 'all' ? 'bg-[#2563eb] text-white' : 'bg-[#132f4c] text-[#93c5fd] hover:bg-[#1b3f66]')}>Toutes</button>
+          <button type="button" onClick={() => setFilterMode('unread')} className={clsx('rounded-full px-3.5 py-2 text-[13px] font-semibold transition', filterMode === 'unread' ? 'bg-[#2563eb] text-white' : 'bg-[#132f4c] text-[#93c5fd] hover:bg-[#1b3f66]')}>Non lues</button>
+          <button type="button" onClick={() => setFilterMode('favorites')} className={clsx('rounded-full px-3.5 py-2 text-[13px] font-semibold transition', filterMode === 'favorites' ? 'bg-[#2563eb] text-white' : 'bg-[#132f4c] text-[#93c5fd] hover:bg-[#1b3f66]')}>Favoris</button>
+          <button type="button" onClick={() => setFilterMode('groups')} className={clsx('rounded-full px-3.5 py-2 text-[13px] font-semibold transition', filterMode === 'groups' ? 'bg-[#2563eb] text-white' : 'bg-[#132f4c] text-[#93c5fd] hover:bg-[#1b3f66]')}>Groupes</button>
+        </div>
+
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {chatList.length === 0 ? (
+          {filteredChatList.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-100">
-                <Icon name="chat" className="h-7 w-7 text-slate-300" />
+              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#132f4c] ring-1 ring-[#1e3a8a]">
+                <Icon name="chat" className="h-7 w-7 text-[#60a5fa]/40" />
               </span>
-              <p className="text-[13px] font-semibold text-slate-600">Aucune conversation</p>
-              <p className="mt-1 text-xs text-slate-400">Démarrez une discussion avec l&apos;icône crayon.</p>
+              <p className="text-[13px] font-semibold text-[#93c5fd]">Aucune conversation</p>
+              <p className="mt-1 text-xs text-[#93c5fd]/60">Démarrez une discussion avec le bouton +.</p>
             </div>
           ) : (
-            chatList.map((item) => {
+            <div className="flex flex-col gap-2 px-3 pb-24">
+            {filteredChatList.map((item) => {
               if (item.kind === 'group') {
                 const group = item.group!;
                 return (
@@ -731,9 +736,22 @@ export function SchoolChat() {
                   onSelect={handleSelectChat}
                 />
               );
-            })
+            })}
+            </div>
           )}
         </div>
+
+        <button
+          onClick={() => setShowNewChat(true)}
+          className="absolute right-4 bottom-4 z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2563eb] text-white shadow-[0_8px_20px_rgba(37,99,235,0.5)] transition hover:bg-[#3b76f0] hover:shadow-[0_10px_26px_rgba(37,99,235,0.7)] active:bg-[#1d4ed8]"
+          style={{ animation: 'scPop 0.5s 0.6s cubic-bezier(0.2,1.4,0.4,1) both' }}
+          aria-label="Nouvelle discussion"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <path d="M12 8v6M9 11h6" />
+          </svg>
+        </button>
       </aside>
 
       {/* ── Panneau droit : fil de discussion ── */}
@@ -759,9 +777,9 @@ export function SchoolChat() {
             />
 
             {showSearchInConv && (
-              <div className="shrink-0 border-b border-slate-200 bg-white px-3 py-2" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+              <div className="shrink-0 border-b border-[#1e3a8a] bg-[#0f2540] px-3 py-2" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
                 <div className="relative">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#93c5fd]">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.35-4.35" />
                   </svg>
@@ -772,14 +790,14 @@ export function SchoolChat() {
                     onChange={(e) => setConvSearchQuery(e.target.value)}
                     autoFocus
                     aria-label="Rechercher dans la conversation"
-                    className="w-full rounded-full bg-slate-100 py-2 pl-9 pr-9 text-[13px] text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
+                    className="w-full rounded-full bg-[#132f4c] py-2 pl-9 pr-9 text-[13px] text-white outline-none focus:ring-2 focus:ring-[#2563eb]/25"
                   />
                   <button
                     onClick={() => {
                       setShowSearchInConv(false);
                       setConvSearchQuery('');
                     }}
-                    className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200"
+                    className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#93c5fd]/60 transition hover:bg-[#17395d]"
                     aria-label="Fermer la recherche"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-4 w-4">
@@ -795,15 +813,15 @@ export function SchoolChat() {
               ref={messagesContainerRef}
               className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 md:px-6"
               style={{
-                backgroundColor: '#f3f5fb',
+                backgroundColor: '#0a1729',
                 backgroundImage:
-                  "url(\"data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23c7d2fe' fill-opacity='0.35'/%3E%3C/svg%3E\")"
+                  "url(\"data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%231e3a8a' fill-opacity='0.15'/%3E%3C/svg%3E\")"
               }}
             >
               {filteredMessages.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <div className="max-w-xs rounded-2xl bg-white/95 px-5 py-4 text-center shadow-sm ring-1 ring-slate-200/70">
-                    <p className="text-[13px] font-medium text-slate-600">
+                  <div className="max-w-xs rounded-2xl bg-[#132f4c] px-5 py-4 text-center ring-1 ring-[#1e3a8a]/60">
+                    <p className="text-[13px] font-medium text-[#93c5fd]">
                       {convSearchQuery
                         ? 'Aucun message trouvé pour cette recherche.'
                         : activeGroup
@@ -833,7 +851,7 @@ export function SchoolChat() {
                       <div key={msg.id}>
                         {showDate && (
                           <div className="my-3 flex justify-center">
-                            <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200/60">
+                            <span className="rounded-full bg-[#132f4c] px-3 py-1 text-[11px] font-semibold text-[#93c5fd] ring-1 ring-[#1e3a8a]/60">
                               {new Date(msg.createdAt).toLocaleDateString('fr-FR', {
                                 weekday: 'long',
                                 day: 'numeric',
@@ -898,12 +916,12 @@ export function SchoolChat() {
             />
           </>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center bg-white px-8 text-center">
-            <span className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#1e3a8a]/10 to-[#2563eb]/10 ring-1 ring-[#1e3a8a]/10">
-              <Icon name="chat" className="h-10 w-10 text-[#1e3a8a]" />
+          <div className="flex h-full flex-col items-center justify-center bg-[#0a1729] px-8 text-center">
+            <span className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#132f4c] ring-1 ring-[#1e3a8a]">
+              <Icon name="chat" className="h-10 w-10 text-[#60a5fa]" />
             </span>
-            <p className="text-lg font-bold tracking-tight text-slate-800">SchoolChat</p>
-            <p className="mt-1.5 max-w-xs text-[13px] text-slate-500">
+            <p className="text-lg font-bold tracking-tight text-white">SchoolChat</p>
+            <p className="mt-1.5 max-w-xs text-[13px] text-[#93c5fd]">
               Sélectionnez une conversation ou démarrez-en une nouvelle pour commencer à discuter.
             </p>
           </div>
@@ -929,8 +947,8 @@ export function SchoolChat() {
 
       {/* ── Modal : transfert de message ── */}
       {showForwardModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-4 pt-16 backdrop-blur-sm md:pt-24">
-          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-[#0a1729]/60 p-4 pt-16 backdrop-blur-sm md:pt-24">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-[#132f4c] shadow-2xl ring-1 ring-[#1e3a8a]" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
             <div className="flex items-center justify-between bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-4 py-3">
               <h3 className="text-[15px] font-semibold text-white">Transférer le message</h3>
               <button
@@ -946,7 +964,7 @@ export function SchoolChat() {
             </div>
             <div className="max-h-80 overflow-y-auto p-1.5">
               {conversations.length === 0 ? (
-                <p className="p-6 text-center text-[13px] text-slate-400">Aucune conversation disponible.</p>
+                <p className="p-6 text-center text-[13px] text-[#93c5fd]/60">Aucune conversation disponible.</p>
               ) : (
                 conversations.map((conv) => (
                   <ConversationListItem
@@ -971,8 +989,8 @@ export function SchoolChat() {
 
       {/* ── Modal : nouveau groupe ── */}
       {showNewGroup && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-4 pt-16 backdrop-blur-sm md:pt-24">
-          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-[#0a1729]/60 p-4 pt-16 backdrop-blur-sm md:pt-24">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-[#132f4c] shadow-2xl ring-1 ring-[#1e3a8a]" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
             <div className="flex items-center justify-between bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-4 py-3">
               <h3 className="text-[15px] font-semibold text-white">Nouveau groupe de classe</h3>
               <button
@@ -989,31 +1007,31 @@ export function SchoolChat() {
             </div>
             <div className="space-y-4 p-4">
               <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-slate-700">Nom du groupe</label>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#93c5fd]">Nom du groupe</label>
                 <input
                   type="text"
                   placeholder="Ex : Classe de 6e A"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full rounded-xl bg-slate-50 px-3.5 py-2.5 text-[13.5px] text-slate-700 outline-none ring-1 ring-slate-200 transition focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
+                  className="w-full rounded-xl bg-[#0f2540] px-3.5 py-2.5 text-[13.5px] text-white outline-none ring-1 ring-[#1e3a8a] transition focus:ring-2 focus:ring-[#2563eb]/25"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-slate-700">Classe</label>
+                <label className="mb-1.5 block text-[13px] font-medium text-[#93c5fd]">Classe</label>
                 <input
                   type="text"
                   list="available-classes"
                   placeholder="Ex : 6A"
                   value={newGroupClasse}
                   onChange={(e) => setNewGroupClasse(e.target.value)}
-                  className="w-full rounded-xl bg-slate-50 px-3.5 py-2.5 text-[13.5px] text-slate-700 outline-none ring-1 ring-slate-200 transition focus:bg-white focus:ring-2 focus:ring-[#2563eb]/25"
+                  className="w-full rounded-xl bg-[#0f2540] px-3.5 py-2.5 text-[13.5px] text-white outline-none ring-1 ring-[#1e3a8a] transition focus:ring-2 focus:ring-[#2563eb]/25"
                 />
                 <datalist id="available-classes">
                   {availableClasses.map((c) => (
                     <option key={c} value={c} />
                   ))}
                 </datalist>
-                <p className="mt-1.5 text-xs text-slate-400">
+                <p className="mt-1.5 text-xs text-[#93c5fd]/60">
                   Tous les élèves inscrits avec cette classe seront automatiquement ajoutés.
                 </p>
               </div>
@@ -1031,8 +1049,8 @@ export function SchoolChat() {
 
       {/* ── Modal : nouvelle conversation ── */}
       {showNewChat && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 p-4 pt-16 backdrop-blur-sm md:pt-24">
-          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-[#0a1729]/60 p-4 pt-16 backdrop-blur-sm md:pt-24">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-[#132f4c] shadow-2xl ring-1 ring-[#1e3a8a]" style={{ animation: 'chatSlideIn 0.2s ease-out' }}>
             <div className="flex items-center justify-between bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] px-4 py-3">
               <h3 className="text-[15px] font-semibold text-white">Nouvelle conversation</h3>
               <button
@@ -1043,9 +1061,9 @@ export function SchoolChat() {
                 <Icon name="close" className="h-5 w-5" />
               </button>
             </div>
-            <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
+            <div className="border-b border-[#1e3a8a] bg-[#0f2540] px-4 py-3">
               <div className="relative">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#93c5fd]">
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.35-4.35" />
                 </svg>
@@ -1055,13 +1073,13 @@ export function SchoolChat() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   aria-label="Rechercher un utilisateur"
-                  className="w-full rounded-full bg-white py-2 pl-9 pr-3 text-[13px] text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-[#2563eb]/25"
+                  className="w-full rounded-full bg-[#132f4c] py-2 pl-9 pr-3 text-[13px] text-white outline-none ring-1 ring-[#1e3a8a] focus:ring-2 focus:ring-[#2563eb]/25"
                 />
               </div>
             </div>
             <div className="max-h-80 overflow-y-auto p-1.5">
               {filteredUsers.length === 0 ? (
-                <div className="p-8 text-center text-[13px] text-slate-400">Aucun utilisateur trouvé.</div>
+                <div className="p-8 text-center text-[13px] text-[#93c5fd]/60">Aucun utilisateur trouvé.</div>
               ) : (
                 filteredUsers.map((user) => (
                   <ConversationListItem

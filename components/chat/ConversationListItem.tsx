@@ -60,7 +60,7 @@ const PREVIEW_ICONS: Record<Exclude<ChatPreviewKind, 'text'>, JSX.Element> = {
 
 function CheckMark({ read }: { read: boolean }) {
   return (
-    <svg viewBox="0 0 18 11" className={clsx('h-3 w-[15px] shrink-0', read ? 'text-[#2563eb]' : 'text-slate-400')} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 18 11" className={clsx('h-3 w-[15px] shrink-0', read ? 'text-[#60a5fa]' : 'text-[#93c5fd]')} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
       <path d="M1.6 5.6l2.9 2.9L10.3 2.5" />
       {read && <path d="M7.4 6.6l2.5 2.5L16.4 2.5" />}
     </svg>
@@ -68,9 +68,8 @@ function CheckMark({ read }: { read: boolean }) {
 }
 
 /**
- * Ligne de la liste des conversations — design moderne et professionnel.
- * Photo de profil circulaire, nom, aperçu du dernier message, heure,
- * indicateur de messages non lus, aperçu audio/fichier quand pertinent.
+ * Ligne de la liste des conversations — design sombre « Bleu nuit ».
+ * Carte arrondie, avatar avec anneau bleu, badges, heure, aperçu.
  */
 export const ConversationListItem = memo(function ConversationListItem({
   id,
@@ -96,14 +95,15 @@ export const ConversationListItem = memo(function ConversationListItem({
       onClick={() => onSelect(id, kind)}
       aria-current={isActive ? 'true' : undefined}
       className={clsx(
-        'relative flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2.5 text-left transition-colors',
-        isActive ? 'bg-[#eff4ff]' : 'hover:bg-slate-50 active:bg-slate-100'
+        'sc-item relative flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[#60a5fa] focus-visible:outline-offset-2',
+        isActive ? 'bg-[#1e4a78]' : 'bg-[#132f4c] hover:bg-[#17395d] active:bg-[#1e4a78]'
       )}
+      style={{
+        boxShadow: isActive ? '0 4px 14px rgba(37,99,235,0.3)' : '0 2px 8px rgba(0,0,0,0.3)',
+      }}
     >
-      {isActive && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-[#2563eb]" aria-hidden />}
-
       {kind === 'group' ? (
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1e3a8a] to-[#2563eb] text-white shadow-sm ring-1 ring-black/5">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1e3a8a] to-[#2563eb] text-white shadow-[0_0_0_2px_#1e3a8a]">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
@@ -117,30 +117,30 @@ export const ConversationListItem = memo(function ConversationListItem({
           nom={nom}
           size="md"
           loading="lazy"
-          className="ring-1 ring-black/5"
+          className="ring-2 ring-[#2563eb]"
         />
       )}
 
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className={clsx('min-w-0 flex-1 truncate text-[14px] leading-tight', unread ? 'font-bold text-slate-900' : 'font-semibold text-slate-800')}>
+          <span className={clsx('min-w-0 flex-1 truncate text-[15px] leading-tight', unread ? 'font-bold text-white' : 'font-semibold text-white')}>
             {name}
           </span>
           {timeLabel && (
-            <span className={clsx('shrink-0 text-[11px] tabular-nums leading-tight', unread ? 'font-semibold text-[#2563eb]' : 'text-slate-400')}>
+            <span className="shrink-0 text-[11.5px] tabular-nums leading-tight text-[#60a5fa]">
               {timeLabel}
             </span>
           )}
         </span>
 
         <span className="mt-1 flex items-center gap-1.5">
-          <span className={clsx('flex min-w-0 flex-1 items-center gap-1 text-[12.5px] leading-tight', previewKind === 'missed' ? 'font-medium text-red-500' : unread ? 'font-medium text-slate-600' : 'text-slate-500')}>
+          <span className={clsx('flex min-w-0 flex-1 items-center gap-1 text-[13px] leading-tight', previewKind === 'missed' ? 'font-medium text-red-400' : 'text-[#93c5fd]')}>
             {previewKind !== 'text' && PREVIEW_ICONS[previewKind]}
             {lastMessageMine && previewKind !== 'missed' && <CheckMark read={!!lastMessageRead} />}
             <span className="truncate">{preview}</span>
           </span>
           {unread && (
-            <span className="flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#2563eb] px-1.5 text-[10.5px] font-bold text-white shadow-sm ring-2 ring-white">
+            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#60a5fa] px-1.5 text-[11.5px] font-bold text-[#0a1729]">
               {unreadCount}
             </span>
           )}

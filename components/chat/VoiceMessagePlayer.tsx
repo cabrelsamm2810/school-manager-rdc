@@ -74,7 +74,7 @@ export const VoiceMessagePlayer = memo(function VoiceMessagePlayer({ src, isMe }
   const bars = Array.from({ length: 28 }, (_, i) => 24 + (Math.sin(i * 2.1) * 0.5 + 0.5) * 70);
 
   const playedColor = isMe ? '#ffffff' : '#2563eb';
-  const trackColor = isMe ? 'bg-white/30' : 'bg-slate-200';
+  const trackColor = isMe ? 'bg-white/30' : 'bg-[#1e3a8a]';
 
   return (
     <div className="flex items-center gap-2.5 py-1">
@@ -114,14 +114,14 @@ export const VoiceMessagePlayer = memo(function VoiceMessagePlayer({ src, isMe }
           })}
         </div>
         <div className="mt-1 flex items-center justify-between">
-          <span className={clsx('text-[11px] font-medium tabular-nums', isMe ? 'text-white/75' : 'text-slate-500')}>
+          <span className={clsx('text-[11px] font-medium tabular-nums', isMe ? 'text-white/75' : 'text-[#93c5fd]')}>
             {playing || current > 0 ? formatDuration(remaining) : formatDuration(duration)}
           </span>
           <button
             onClick={cycleSpeed}
             className={clsx(
               'rounded-md px-1.5 py-0.5 text-[10px] font-bold transition',
-              isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-[#0f2540] text-[#93c5fd] hover:bg-[#17395d]'
             )}
           >
             {SPEEDS[speedIdx]}×
