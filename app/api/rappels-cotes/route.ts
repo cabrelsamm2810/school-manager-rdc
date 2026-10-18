@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getCurrentPeriode, getRappelStatut } from '@/lib/rappels-cotes';
 import { getCurrentAnneeScolaire } from '@/lib/cahier-de-cote';
+
+export const maxDuration = 60;
 import { sendRappelCote } from '@/lib/mail';
 
 /** GET — statut des rappels: période courante, enseignants à jour / en retard. */

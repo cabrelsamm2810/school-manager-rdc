@@ -8,9 +8,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
   },
-  connectionTimeout: 10_000,
-  greetingTimeout: 10_000,
-  socketTimeout: 15_000,
+  // Timeouts réduits pour compatibilité serverless (Vercel)
+  connectionTimeout: 8_000,
+  greetingTimeout: 8_000,
+  socketTimeout: 12_000,
 });
 
 export async function sendValidationCode(email: string, code: string, nom: string): Promise<void> {

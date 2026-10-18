@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { sendAbsenceNotification, sendPresenceNotification } from '@/lib/mail';
 
+export const maxDuration = 60;
+
 const createSchema = z.object({
   eleveId: z.string().trim().min(1, 'L\u2019\u00e9l\u00e8ve est obligatoire.'),
   date: z.string().trim().min(1, 'La date est obligatoire.'),

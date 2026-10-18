@@ -4,6 +4,9 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { sendValidationCode } from '@/lib/mail';
 
+// Vercel serverless : autoriser suffisamment de temps pour l'envoi SMTP
+export const maxDuration = 60;
+
 const resendSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 });
