@@ -234,6 +234,13 @@ activate with `POST /api/auth/verify` → log in at `/login` (sets the session c
   et recherchées sans tenir compte de la casse, y compris pour les comptes historiques.
 - `verificationEmailSent=false` signale un compte créé mais un email non envoyé : garder ce compte et
   proposer le renvoi, sans afficher une fausse confirmation d’envoi.
+- **Diagnostic SMTP : l'erreur `Missing credentials for "PLAIN"` signifie que `SMTP_USER`/`SMTP_PASS` sont
+  vides à l'exécution**, pas un problème de code ni de réseau (Nodemailer échoue avant toute connexion). En
+  local, `/run/base44/app.env` fournit ces variables ; sur Vercel elles doivent être définies pour
+  l'environnement concerné (Production **et** Preview, ce sont deux cibles distinctes) puis suivies d'un
+  redéploiement. `lib/mail.ts` journalise désormais les variables vides à côté du message d'erreur, et nettoie
+  les valeurs (espaces/sauts de ligne d'un copier-coller). Vérification d'un jeu d'identifiants sans envoyer
+  d'email : `transporter.verify()` dans le conteneur `web` (`SMTP_VERIFY=OK`).
 - Tests ciblés : `npm test -- tests/activation.test.ts` (SMTP et Prisma simulés). Pour tester le parcours
   complet sans email extérieur, utiliser un récepteur SMTP local temporaire ; supprimer uniquement les
   comptes créés pour ce test par leur identifiant, puis restaurer la configuration SMTP habituelle.

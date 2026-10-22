@@ -1,12 +1,21 @@
 import nodemailer from 'nodemailer';
 
+/** Noms des variables SMTP indispensables à l'envoi, vides ou absentes. */
+export function missingSmtpVariables(): string[] {
+  return ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'].filter((key) => !process.env[key]?.trim());
+}
+
+const smtpPort = Number((process.env.SMTP_PORT || '587').trim());
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: Number(process.env.SMTP_PORT || 587) === 465,
+  // Valeurs nettoyées : un copier-coller dans un tableau de bord ajoute souvent
+  // un espace ou un saut de ligne, ce qui fait échouer l'authentification.
+  host: (process.env.SMTP_HOST || 'smtp.gmail.com').trim(),
+  port: smtpPort,
+  secure: smtpPort === 465,
   auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
+    user: (process.env.SMTP_USER || '').trim(),
+    pass: (process.env.SMTP_PASS || '').trim(),
   },
   // Timeouts réduits pour compatibilité serverless (Vercel)
   connectionTimeout: 8_000,
@@ -45,7 +54,12 @@ export async function sendValidationCode(email: string, code: string, nom: strin
       text,
     });
   } catch (error) {
-    console.error('Erreur envoi email de validation:', error instanceof Error ? error.message : error);
+    const missing = missingSmtpVariables();
+    console.error(
+      'Erreur envoi email de validation:',
+      error instanceof Error ? error.message : error,
+      missing.length > 0 ? `(variables SMTP vides à l'exécution: ${missing.join(', ')})` : '',
+    );
     throw new Error("Impossible d'envoyer l'email de validation.");
   }
 }
