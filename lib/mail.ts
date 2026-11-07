@@ -4,6 +4,7 @@ import { sendSmtpMail } from '@/lib/smtp';
 export { missingSmtpVariables } from '@/lib/smtp';
 
 export async function sendValidationCode(email: string, code: string, nom: string): Promise<void> {
+  const safeNom = nom.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -11,7 +12,7 @@ export async function sendValidationCode(email: string, code: string, nom: strin
         <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Validation de votre compte</p>
       </div>
       <div style="background: #f8fafc; border-radius: 12px; padding: 24px; text-align: center;">
-        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">Bonjour ${nom},</p>
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">Bonjour ${safeNom},</p>
         <p style="color: #334155; font-size: 15px; margin: 0 0 20px;">Voici votre code de validation :</p>
         <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #2563eb; background: white; border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 0 auto 20px; display: inline-block;">${code}</div>
         <p style="color: #64748b; font-size: 13px; margin: 0;">Ce code expire 15 minutes après sa création. Un renvoi ne prolonge pas sa validité. Ne le partagez avec personne.</p>

@@ -66,10 +66,18 @@ type SmtpMessage = Omit<SendMailOptions, 'from' | 'to'> & { to: string };
 
 export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
   let transport: ReturnType<typeof nodemailer.createTransport> | undefined;
+  let deadline: ReturnType<typeof setTimeout> | undefined;
   try {
     const { from, options } = smtpConfiguration();
     transport = nodemailer.createTransport(options);
-    const info = await transport.sendMail({ ...message, from, replyTo: message.replyTo || from });
+    // Un serveur qui répond au compte-gouttes peut réarmer le socketTimeout.
+    // Borner aussi la durée totale, en restant sous maxDuration=60 sur Vercel.
+    const info = await Promise.race([
+      transport.sendMail({ ...message, from, replyTo: message.replyTo || from }),
+      new Promise<never>((_, reject) => {
+        deadline = setTimeout(() => reject(new MailDeliveryError('timeout')), 45_000);
+      }),
+    ]);
     const accepted = (info.accepted || []).some((recipient: string | { address: string }) =>
       (typeof recipient === 'string' ? recipient : recipient.address).toLowerCase() === message.to.toLowerCase());
     if (!accepted) throw new MailDeliveryError('recipient');
@@ -89,6 +97,7 @@ export async function sendSmtpMail(message: SmtpMessage): Promise<void> {
     });
     throw failure;
   } finally {
+    if (deadline) clearTimeout(deadline);
     transport?.close();
   }
 }

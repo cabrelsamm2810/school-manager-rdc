@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         reference: error instanceof MailDeliveryError ? error.reference : undefined,
       }, { status: 503, headers: { 'Retry-After': '60' } });
     }
-    return NextResponse.json({ ok: true, message: 'Le code de validation a été renvoyé.', expiresIn: Math.ceil((state.expiresAt - now) / 1000) });
+    return NextResponse.json({ ok: true, message: 'Le code de validation a été renvoyé.', expiresIn: Math.max(0, Math.floor((state.expiresAt - Date.now()) / 1000)) });
   } catch {
     console.error('[auth/resend] request_failed');
     return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });

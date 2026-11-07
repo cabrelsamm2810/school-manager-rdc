@@ -13,7 +13,7 @@ beforeEach(() => {
   mocks.createTransport.mockReturnValue({ sendMail: mocks.sendMail, close: mocks.close });
   mocks.sendMail.mockResolvedValue({ accepted: ['recipient@example.invalid'], rejected: [] });
 });
-afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
+afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('configuration SMTP sécurisée', () => {
   it('exige STARTTLS, TLS 1.2 et un certificat valide sur 587', () => {
@@ -51,6 +51,24 @@ describe('envoi et diagnostic', () => {
     expect(mocks.sendMail).toHaveBeenCalledTimes(1);
     expect(mocks.sendMail.mock.calls[0][0]).toMatchObject({ from: 'School Manager <sender@example.invalid>', text: expect.stringContaining('123456') });
     expect(mocks.close).toHaveBeenCalledTimes(1);
+  });
+  it('interrompt un envoi bloqué au bout de 45 secondes, sans double envoi', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.sendMail.mockImplementation(() => new Promise(() => {}));
+    const pending = sendSmtpMail({ to: 'recipient@example.invalid', text: 'test' });
+    const rejected = expect(pending).rejects.toMatchObject({ category: 'timeout' });
+    await vi.advanceTimersByTimeAsync(45_000);
+    await rejected;
+    expect(mocks.sendMail).toHaveBeenCalledTimes(1);
+    expect(mocks.close).toHaveBeenCalledTimes(1);
+  });
+  it('échappe le nom dans le HTML, sans altérer la version texte', async () => {
+    await sendValidationCode('recipient@example.invalid', '123456', '<script>test</script>');
+    const message = mocks.sendMail.mock.calls[0][0];
+    expect(message.html).toContain('&lt;script&gt;test&lt;/script&gt;');
+    expect(message.html).not.toContain('<script>');
+    expect(message.text).toContain('<script>test</script>');
   });
   it('ne confirme pas un email sans destinataire accepté', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
