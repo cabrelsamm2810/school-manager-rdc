@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { randomInt } from 'crypto';
+import { createVerification, reserveVerificationSend } from '@/lib/email-verification';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
@@ -70,8 +70,9 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
   const existing = await prisma.user.findFirst({ where: { email: { equals: data.email, mode: 'insensitive' } } });
   if (existing) return { ok: false, error: 'Un compte existe d\u00e9j\u00e0 avec cet email.' };
 
-  // Générer un code de validation à 6 chiffres
-  const validationCode = randomInt(100000, 1000000).toString();
+  // Durée de vie et compteurs persistants, également appliqués au premier envoi.
+  const verification = reserveVerificationSend(createVerification());
+  const validationCode = JSON.stringify(verification);
 
   const passwordHash = await hashPassword(data.password);
 
@@ -112,7 +113,7 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
 
   // Envoyer le code de validation par email
   try {
-    await sendValidationCode(data.email, validationCode, data.prenom);
+    await sendValidationCode(data.email, verification.code, data.prenom);
   } catch {
     // On garde le compte créé : l'utilisateur pourra renvoyer le code depuis /verify
     return { ok: true, user, needsValidation: true, verificationEmailSent: false };

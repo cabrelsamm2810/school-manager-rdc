@@ -114,6 +114,7 @@ function VerifyForm() {
           <>
             <div className="mb-6 rounded-2xl bg-blue-50 p-4 text-center">
               <p className="text-sm text-slate-600">Saisissez votre email d’inscription et le code à 6 chiffres reçu par email pour activer votre compte.</p>
+              <p className="mt-2 text-xs text-slate-500">Le code expire 15 minutes après sa création. Un renvoi ne prolonge pas sa validité.</p>
               <p className="mt-2 text-xs text-slate-500">Vérifiez également votre dossier spam ou courriers indésirables.</p>
             </div>
 
