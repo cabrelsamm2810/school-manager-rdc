@@ -12,7 +12,7 @@
  * Le SW précédent est supprimé et le nouveau prend le contrôle après skipWaiting.
  */
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE = `sm-rdc-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `sm-rdc-pages-${CACHE_VERSION}`;
 const ASSET_CACHE = `sm-rdc-assets-${CACHE_VERSION}`;
