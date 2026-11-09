@@ -85,6 +85,13 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
     if (existing) coordSousProvincialeId = existing.id;
   }
 
+  // Une école supprimée (ou une liste de sélection périmée dans le formulaire) faisait
+  // échouer la création sur la clé étrangère, renvoyée en 500 générique.
+  if (data.ecoleId) {
+    const ecole = await prisma.ecole.findUnique({ where: { id: data.ecoleId }, select: { id: true } });
+    if (!ecole) return { ok: false, error: 'L’école sélectionnée est introuvable. Sélectionnez-la à nouveau dans la liste.' };
+  }
+
   const user = await prisma.user.create({
     data: {
       nom: data.nom,
