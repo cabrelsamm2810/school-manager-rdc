@@ -29,4 +29,5 @@ export type DashboardStatsResponse = {
   activite: string[];
   scope: DashboardScope;
   provinceLabel: string | null;
+  ecoleGeo: { latitude: number | null; longitude: number | null } | null;
 };
