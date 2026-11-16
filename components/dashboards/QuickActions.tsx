@@ -48,6 +48,7 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
     { label: 'Élèves', href: '/eleves', icon: 'users', color: 'emerald' },
   ],
   DIRECTION_ECOLE: [
+    { label: 'Scanner un élève', href: '/scanner-eleve', icon: 'scan', color: 'emerald' },
     { label: 'Ajouter un élève', href: '/eleves', icon: 'users', color: 'blue' },
     { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', color: 'amber' },
     { label: 'Bulletins', href: '/bulletin-numerique', icon: 'document', color: 'violet' },
@@ -59,6 +60,7 @@ const ROLE_ACTIONS: Record<string, Action[]> = {
   ],
   ENSEIGNANT: [
     { label: 'Mon tableau de bord', href: '/enseignant/dashboard', icon: 'home', color: 'blue' },
+    { label: 'Scanner un QR Code élève', href: '/scanner-eleve', icon: 'scan', color: 'emerald' },
     { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', color: 'amber' },
     { label: 'Rappels de cotes', href: '/rappels-cotes', icon: 'bell', color: 'rose' },
     { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', color: 'emerald' },
