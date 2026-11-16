@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { getRoleDestination } from '@/lib/role-destination';
 
@@ -28,6 +29,10 @@ export function LoginForm() {
       const result = await response.json();
 
       if (!response.ok) {
+        if (result.needsValidation) {
+          router.push(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+          return;
+        }
         setError(result.error ?? 'Identifiants incorrects.');
         return;
       }
@@ -96,16 +101,7 @@ export function LoginForm() {
             aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
             tabIndex={-1}
           >
-            {showPassword ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-                <path d="M3 3l18 18M10.5 10.7a2 2 0 002.8 2.8M9.4 5.2A9.6 9.6 0 0112 5c5 0 9 4 10 7a13 13 0 01-1.5 2.6M6.2 6.2C3.8 7.7 2.2 9.8 2 12c1 3 5 7 10 7 1.5 0 2.9-.3 4.1-.9" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-                <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            )}
+            <Icon name={showPassword ? 'eye-off' : 'eye'} className="h-[18px] w-[18px]" />
           </button>
         </div>
       </div>
@@ -153,6 +149,13 @@ export function LoginForm() {
           <span>Se connecter</span>
         )}
       </button>
+
+      <Link
+        href={`/verify${email.trim() ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : ''}`}
+        className="login-link block text-center"
+      >
+        Activer mon compte
+      </Link>
     </form>
   );
 }

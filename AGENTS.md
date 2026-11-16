@@ -14,10 +14,20 @@ docker compose -f docker-compose.base44.yml up -d
 - `migrate` — one-shot, must exit 0 before `web` starts (`depends_on: service_completed_successfully`):
   `npm install` → `prisma generate` → `prisma db push --accept-data-loss` → `tsx prisma/seed.ts`.
   It uses `db push`, not `migrate deploy`, because the database was created with `db push` and is not baselined
-  for migrations.
-- `web` — `next dev -H 0.0.0.0 -p 3000` from the bind-mounted repo; live reload is active. `node_modules` and
-  `.next` live in container volumes, so installs do not spill into the host working tree. It clears the contents
-  of `.next` on startup, so a stale dev cache from an unclean shutdown cannot break the boot.
+  for migrations. **The deploy build must not run a database command at all** — `vercel.json`'s buildCommand is
+  `npx prisma generate && next build`, nothing else. `prisma generate` and `next build` both run with no
+  database env vars at all (verified with only `NODE_ENV=production` set), so the build cannot fail on database
+  access. Every schema command fails there instead: `npx prisma migrate deploy` against this `db push`-created
+  database → `Error: P3005` "The database schema is not empty"; `npx prisma db push --accept-data-loss` on a
+  build machine where `DIRECT_URL` is missing → `Error code: P1012 / Environment variable not found:
+  DIRECT_URL`, and where the database is unreachable → `P1001: Can't reach database server`. Schema sync stays
+  an operational step, run where the database is reachable: `npx prisma db push --accept-data-loss` with
+  `DATABASE_URL` + `DIRECT_URL` set (that is what the compose `migrate` service does on every sandbox boot).
+- `web` — `next dev -H 0.0.0.0 -p 3000` from the bind-mounted repo; live reload is active. It does **not**
+  install dependencies: `migrate` installs `node_modules` into the bind-mounted repo tree (it has no volume, so
+  the install is shared) and must exit 0 first, so `web` always finds it complete. Only `.next` is a container
+  volume, and its contents are cleared on startup, so a stale dev cache from an unclean shutdown cannot break
+  the boot.
 
 Web entry point is host port 3000; the API is served by the same Next dev server (single-origin wiring).
 `/run/base44/app.env` (the platform-managed secrets file) is the only `env_file` — it carries the SMTP
@@ -25,10 +35,22 @@ credentials. Nothing external is required to boot.
 
 ## Sharp edges
 
+- **A completed setup job is not a failed application service.** `migrate` is expected to exit 0 without a
+  healthcheck; `web` and `postgres` must remain running and healthy. The preview validator has repeatedly
+  misclassified that successful exit as a failure. After confirming `migrate` is stopped with exit 0 and
+  `OOMKilled=false`, preserving its logs, and checking both live services, its completed container can be
+  cleaned up with `docker compose -f docker-compose.base44.yml rm -f migrate` (no volume removal). This does
+  not restart either live service or change data; the next `up` recreates the setup job normally. Do not hide
+  a nonzero exit, add a dummy keep-alive, weaken healthchecks, or remove the successful-completion dependency.
+
 - **Prisma needs OpenSSL.** `node:22-bookworm-slim` lacks it and Prisma fails with an empty "Schema engine error".
   Both app services use `node:22-bookworm` (full Debian) — do not switch them to `-slim`.
-- **`migrate` and `web` each run `npm install`.** They never run concurrently, so they do not race each other;
-  do not add a third installer against the same `node_modules` volume.
+- **Only `migrate` installs dependencies.** It owns `npm install` against the bind-mounted `node_modules`, and
+  `web` starts only after migrate exits 0, so the two can never race. Do not re-add `npm install` (or a
+  `/app/node_modules` volume) to `web`: the duplicate install ran back-to-back with migrate's and added ~25 s to
+  a cold start, which is enough to miss the preview's startup window and be reported as "the app failed to
+  start" even though nothing errors. Cold start to first HTTP 200 measured: 61 s with the duplicate install,
+  40 s without it (same warm database, all caches removed before each run).
 - **`package-lock.json` is tracked**, but the service commands still use `npm install` (not `npm ci`), so a
   dependency change should be followed by an install to keep the lockfile in sync.
 - **Tailwind/PostCSS config must exist.** Without `postcss.config.mjs` Next.js skips PostCSS entirely, so the
@@ -144,23 +166,28 @@ fails non-deterministically (`PageNotFoundError: Cannot find module for page: /a
 next `next dev` boot then dies with `Error: Cannot find module './7787.js'` and serves `/` as 404/500 until it
 has finished recompiling.
 
-Verified command (`✓ Compiled successfully`, type-check step passed, exit 0) — a throwaway container that
-reuses `web`'s `node_modules` but gets its **own** `.next` volume, so `next dev` keeps running untouched:
+Verified command (`✓ Compiled successfully`, type-check step passed, exit 0) — a throwaway container that uses
+the repo tree's `node_modules` (installed by `migrate`; `web` no longer keeps its own copy) and gets its
+**own** `.next` volume, so `next dev` keeps running untouched. It runs exactly the `vercel.json` buildCommand,
+so it is also the deploy-build gate:
 
 ```bash
-NODE_VOL=$(docker inspect school-manager-rdc-web-1 -f '{{range .Mounts}}{{if eq .Destination "/app/node_modules"}}{{.Name}}{{end}}{{end}}')
 NET=$(docker inspect school-manager-rdc-web-1 -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}')
-docker run --rm -v "$PWD:/app" -v "$NODE_VOL:/app/node_modules" -v /app/.next \
-  --network "$NET" --env-file /run/base44/app.env \
+docker run --rm -v "$PWD:/app" -v /app/.next \
+  --network "$NET" \
   -e NODE_ENV=production \
-  -e DATABASE_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
-  -e DIRECT_URL='postgresql://school:schoolpass@postgres:5432/school?schema=public' \
-  -w /app node:22-bookworm npm run build
+  -w /app node:22-bookworm \
+  sh -c 'export PATH="/app/node_modules/.bin:$PATH"; npx prisma generate && next build'
 ```
 
-Reusing `node_modules` avoids a reinstall; the network name lets the build resolve `postgres`; `-v /app/.next`
-creates a fresh volume used only by that run. `next build` type-checks every file, so this is also the type
-gate. Verified with `web` up: exit 0, `web` kept answering 200, and `web`'s `.next` entry count was unchanged.
+No `DATABASE_URL`/`DIRECT_URL` and no env file are passed on purpose: this is the deploy build, and it must
+succeed without any database access (verified: exit 0 with only `NODE_ENV=production` set).
+The `PATH` export matters: Vercel puts `node_modules/.bin` on `PATH` for the buildCommand, a bare
+`sh -c` does not — without it the run dies at `sh: 1: next: not found` (exit 127), which looks like a build
+failure but is only a missing `PATH` entry.
+The network name lets the build resolve `postgres`; `-v /app/.next` creates a fresh volume used only by that
+run. `next build` type-checks every file, so this is also the type gate. Verified with `web` up: exit 0, `web`
+kept answering 200, and `web`'s `.next` entry count was unchanged.
 
 From a clean checkout, keep devDependencies in the install step too:
 
@@ -194,6 +221,33 @@ The generated stylesheet must contain real Tailwind output:
 Full flow: register at `/register` (the account starts inactive and a 6-digit code is emailed) →
 activate with `POST /api/auth/verify` → log in at `/login` (sets the session cookie) →
 `GET /api/auth/session` → `GET /api/users/me`.
+
+### Activation par email
+
+- `/verify` accepte aussi une ouverture sans paramètre : l’email d’inscription est saisissable. Le lien
+  « Activer mon compte » existe sur la connexion et après inscription. La connexion d’un compte en attente
+  n’oriente vers le code qu’après vérification du mot de passe ; elle ne crée aucune session.
+- Le renvoi **réutilise le code en attente** : remplacer le code avant un envoi SMTP rendait les emails
+  retardés inutilisables, y compris après un échec d’envoi. Aucun code ni hash ne doit être retourné au client.
+- La validation synchronise `isActive=true`, `userStatus=ACTIF` et efface `validationCode`. Les comptes
+  `SUSPENDU`/`DESACTIVE` ne sont jamais réactivés par ce parcours. Les adresses sont normalisées à l’entrée
+  et recherchées sans tenir compte de la casse, y compris pour les comptes historiques.
+- `verificationEmailSent=false` signale un compte créé mais un email non envoyé : garder ce compte et
+  proposer le renvoi, sans afficher une fausse confirmation d’envoi.
+- **Diagnostic SMTP : l'erreur `Missing credentials for "PLAIN"` signifie que `SMTP_USER`/`SMTP_PASS` sont
+  vides à l'exécution**, pas un problème de code ni de réseau (Nodemailer échoue avant toute connexion). En
+  local, `/run/base44/app.env` fournit ces variables ; sur Vercel elles doivent être définies pour
+  l'environnement concerné (Production **et** Preview, ce sont deux cibles distinctes) puis suivies d'un
+  redéploiement. `lib/mail.ts` journalise désormais les variables vides à côté du message d'erreur, et nettoie
+  les valeurs (espaces/sauts de ligne d'un copier-coller). Vérification d'un jeu d'identifiants sans envoyer
+  d'email : `transporter.verify()` dans le conteneur `web` (`SMTP_VERIFY=OK`).
+- Tests ciblés : `npm test -- tests/activation.test.ts` (SMTP et Prisma simulés). Pour tester le parcours
+  complet sans email extérieur, utiliser un récepteur SMTP local temporaire ; supprimer uniquement les
+  comptes créés pour ce test par leur identifiant, puis restaurer la configuration SMTP habituelle.
+- Vérification navigateur : utiliser les liens réels de Next pour changer de page. Le helper de navigation
+  de la prévisualisation peut changer l’URL sans rendre la page sur cette version de Next ; une URL changée
+  n’est donc pas une preuve de navigation. Entrer directement sur `/login` avant le test évite aussi la
+  redirection différée de `StartupGate`.
 
 ## Accès restreint par rôle exact
 

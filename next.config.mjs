@@ -3,7 +3,7 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   experimental: {
-    serverComponentsExternalPackages: ['pdfkit', '@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner'],
+    serverComponentsExternalPackages: ['pdfkit', '@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner', 'nodemailer'],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {

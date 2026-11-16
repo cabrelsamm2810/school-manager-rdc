@@ -72,10 +72,10 @@ export function ChatComposer({
 
   if (isRecording) {
     return (
-      <div className="shrink-0 border-t border-slate-200 bg-white px-2.5 py-2.5 md:px-4">
+      <div className="shrink-0 border-t border-[#1e3a8a] bg-[#0f2540] px-2.5 py-2.5 md:px-4">
         <div className="flex items-center gap-2.5">
           {/* Bouton annuler */}
-          <button onClick={onCancelRecording} className={clsx(iconBtn, 'bg-red-50 text-red-500 hover:bg-red-100')} aria-label="Annuler l'enregistrement">
+          <button onClick={onCancelRecording} className={clsx(iconBtn, 'bg-[#3b1220] text-red-400 hover:bg-[#7f1d3a]')} aria-label="Annuler l'enregistrement">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" className="h-5 w-5">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -83,13 +83,13 @@ export function ChatComposer({
           </button>
 
           {/* Indicateur d'enregistrement animé */}
-          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-red-50 px-4 py-2.5 ring-1 ring-red-100">
+          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-[#3b1220] px-4 py-2.5 ring-1 ring-[#7f1d3a]">
             <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
               <span className="absolute h-3 w-3 rounded-full bg-red-500/40" style={{ animation: 'recPulse 1.5s ease-in-out infinite' }} />
               <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
             </span>
-            <span className="shrink-0 text-[14px] font-bold tabular-nums text-red-600">{formatDuration(recordingTime)}</span>
-            <span className="hidden truncate text-[13px] font-medium text-red-400 sm:block">Enregistrement…</span>
+            <span className="shrink-0 text-[14px] font-bold tabular-nums text-[#fca5b8]">{formatDuration(recordingTime)}</span>
+            <span className="hidden truncate text-[13px] font-medium text-[#fca5b8] sm:block">Enregistrement…</span>
             {/* Animation de barres vocales */}
             <div className="ml-auto flex h-5 items-center gap-[2px]">
               {Array.from({ length: 7 }, (_, i) => (
@@ -113,13 +113,13 @@ export function ChatComposer({
             </svg>
           </button>
         </div>
-        {recordingError && <p className="mt-1.5 text-center text-xs text-red-500">{recordingError}</p>}
+        {recordingError && <p className="mt-1.5 text-center text-xs text-red-400">{recordingError}</p>}
       </div>
     );
   }
 
   return (
-    <div className="relative shrink-0 border-t border-slate-200 bg-white px-2 py-2 md:px-3 md:py-2.5">
+    <div className="relative shrink-0 border-t border-[#1e3a8a] bg-[#0f2540] px-2 py-2 md:px-3 md:py-2.5">
       {/* Inputs cachés */}
       <input
         ref={fileInputRef}
@@ -134,15 +134,15 @@ export function ChatComposer({
 
       {/* Aperçu de réponse */}
       {replyTo && (
-        <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200/70">
-          <span className="h-8 w-[3px] shrink-0 rounded-full bg-[#2563eb]" />
+        <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-[#132f4c] px-3 py-2 ring-1 ring-[#1e3a8a]/60">
+          <span className="h-8 w-[3px] shrink-0 rounded-full bg-[#60a5fa]" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] font-semibold text-[#1d4ed8]">Réponse à {replyTo.name}</p>
-            <p className="truncate text-[12px] text-slate-500">{replyTo.preview}</p>
+            <p className="truncate text-[12px] font-semibold text-[#60a5fa]">Réponse à {replyTo.name}</p>
+            <p className="truncate text-[12px] text-[#93c5fd]">{replyTo.preview}</p>
           </div>
           <button
             onClick={onCancelReply}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#93c5fd]/60 transition hover:bg-[#17395d]"
             aria-label="Annuler la réponse"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-4 w-4">
@@ -173,7 +173,7 @@ export function ChatComposer({
         <button
           onClick={() => setShowAttach((s) => !s)}
           disabled={uploading || sending}
-          className={clsx(iconBtn, 'text-slate-500 hover:bg-slate-100 hover:text-[#2563eb]')}
+          className={clsx(iconBtn, 'text-[#93c5fd] hover:bg-[#17395d] hover:text-white')}
           aria-label="Pièces jointes"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
@@ -184,7 +184,7 @@ export function ChatComposer({
         </button>
 
         {/* Champ de saisie + bouton caméra intégré */}
-        <div className="flex min-w-0 flex-1 items-center rounded-full bg-slate-100 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-[#2563eb]/30">
+        <div className="flex min-w-0 flex-1 items-center rounded-full bg-[#132f4c] ring-1 ring-[#1e3a8a] transition focus-within:ring-[#2563eb]/30">
           <input
             type="text"
             value={value}
@@ -197,12 +197,12 @@ export function ChatComposer({
             }}
             placeholder="Tapez un message…"
             aria-label="Votre message"
-            className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
+            className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[14px] text-white outline-none placeholder:text-[#93c5fd]/60"
           />
           <button
             onClick={() => videoInputRef.current?.click()}
             disabled={uploading}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:text-[#2563eb] disabled:opacity-40"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#93c5fd]/60 transition hover:text-white disabled:opacity-40"
             aria-label="Enregistrer une vidéo"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
@@ -213,7 +213,7 @@ export function ChatComposer({
           <button
             onClick={() => cameraInputRef.current?.click()}
             disabled={uploading}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:text-[#2563eb] disabled:opacity-40"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#93c5fd]/60 transition hover:text-white disabled:opacity-40"
             aria-label="Appareil photo"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
@@ -245,7 +245,7 @@ export function ChatComposer({
           <button
             onClick={onStartRecording}
             disabled={uploading}
-            className={clsx(iconBtn, 'text-slate-500 hover:bg-slate-100 hover:text-[#2563eb]')}
+            className={clsx(iconBtn, 'text-[#93c5fd] hover:bg-[#17395d] hover:text-white')}
             aria-label="Enregistrer un message vocal"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
@@ -257,9 +257,9 @@ export function ChatComposer({
         )}
       </div>
 
-      {uploading && <p className="mt-1 text-center text-[11px] text-slate-400">Envoi du fichier…</p>}
+      {uploading && <p className="mt-1 text-center text-[11px] text-[#93c5fd]/60">Envoi du fichier…</p>}
       {uploadError && !uploading && (
-        <div className="mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-[11px] font-medium text-red-600">
+        <div className="mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-[#3b1220] px-3 py-1.5 text-[11px] font-medium text-red-400">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-3.5 w-3.5 shrink-0">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />

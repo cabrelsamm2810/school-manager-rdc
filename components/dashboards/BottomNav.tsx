@@ -23,6 +23,11 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Écoles', href: '/ecoles', icon: 'school' },
     { label: 'Notifs', href: '/notifications', icon: 'bell' }
   ],
+  ADMIN_SCHOOL_MANAGER_RDC: [
+    { label: 'Établissements', href: '/admin-smd/ecoles', icon: 'school' },
+    { label: 'En attente', href: '/admin-smd/ecoles-en-attente', icon: 'clock' },
+    { label: 'Utilisateurs', href: '/admin/users', icon: 'people' }
+  ],
   COORDINATION_NATIONALE: [
     { label: 'Provinces', href: '/provinces', icon: 'globe' },
     { label: 'Coordination', href: '/coordination-nationale', icon: 'flag' },
@@ -48,6 +53,16 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Institutions', href: '/ecoles', icon: 'school' },
     { label: 'Élèves', href: '/eleves', icon: 'users' }
   ],
+  CHEF_ADMINISTRATION: [
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
+    { label: 'Élèves', href: '/eleves', icon: 'users' },
+    { label: 'Notifs', href: '/notifications', icon: 'bell' }
+  ],
+  PROMOTEUR: [
+    { label: 'Écoles', href: '/ecoles', icon: 'school' },
+    { label: 'Élèves', href: '/eleves', icon: 'users' },
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' }
+  ],
   DIRECTION_ECOLE: [
     { label: 'Élèves', href: '/eleves', icon: 'users' },
     { label: 'Classes', href: '/classes-rdc', icon: 'school' },
@@ -58,6 +73,15 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Rappels', href: '/rappels-cotes', icon: 'bell' },
     { label: 'Chat', href: '/schoolchat', icon: 'chat' }
   ],
+  SECRETAIRE: [
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' },
+    { label: 'Notifs', href: '/notifications', icon: 'bell' }
+  ],
+  COMPTABLE: [
+    { label: 'Paiements', href: '/paiements', icon: 'card' },
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' },
+    { label: 'Notifs', href: '/notifications', icon: 'bell' }
+  ],
   PARENT: [
     { label: 'Notifs', href: '/notifications', icon: 'bell' },
     { label: 'Chat', href: '/schoolchat', icon: 'chat' },
@@ -67,6 +91,10 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Notifs', href: '/notifications', icon: 'bell' },
     { label: 'Chat', href: '/schoolchat', icon: 'chat' },
     { label: 'Bulletins', href: '/verifier-bulletin', icon: 'notebook' }
+  ],
+  VISITEUR: [
+    { label: 'Notifs', href: '/notifications', icon: 'bell' },
+    { label: 'Chat', href: '/schoolchat', icon: 'chat' }
   ]
 };
 
@@ -86,7 +114,7 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] backdrop-blur-md pb-[env(safe-area-inset-bottom)] lg:hidden"
       aria-label="Navigation rapide"
     >
       <ul className="flex items-stretch">
@@ -98,17 +126,20 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={clsx(
-                  'flex flex-col items-center gap-1 px-0.5 py-2 text-[10px] font-medium transition',
-                  active ? 'text-brand-700' : 'text-slate-500 active:text-slate-700'
+                  'relative flex flex-col items-center gap-1 px-0.5 pt-2.5 pb-2 text-[10px] transition',
+                  active ? 'font-bold text-brand-700' : 'font-medium text-slate-500 active:text-slate-700'
                 )}
               >
+                {active && (
+                  <span className="absolute top-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-brand-600" />
+                )}
                 <span
                   className={clsx(
-                    'flex h-7 w-11 items-center justify-center rounded-full transition',
-                    active && 'bg-brand-100'
+                    'flex h-8 w-8 items-center justify-center rounded-xl transition',
+                    active ? 'bg-brand-100 ring-1 ring-brand-200' : 'bg-transparent'
                   )}
                 >
-                  <Icon name={tab.icon} className="h-[18px] w-[18px]" />
+                  <Icon name={tab.icon} className={clsx('transition', active ? 'h-[19px] w-[19px]' : 'h-[18px] w-[18px]')} />
                 </span>
                 <span className="w-full truncate text-center">{tab.label}</span>
               </Link>
@@ -120,9 +151,9 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
           <button
             type="button"
             onClick={onMore}
-            className="flex w-full flex-col items-center gap-1 px-0.5 py-2 text-[10px] font-medium text-slate-500 transition hover:text-brand-700 active:text-brand-700"
+            className="relative flex w-full flex-col items-center gap-1 px-0.5 pt-2.5 pb-2 text-[10px] font-medium text-slate-500 transition hover:text-brand-700 active:text-brand-700"
           >
-            <span className="flex h-7 w-11 items-center justify-center rounded-full">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl">
               <Icon name="more" className="h-[18px] w-[18px]" />
             </span>
             <span className="w-full truncate text-center">Plus</span>

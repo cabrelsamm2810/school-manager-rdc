@@ -147,7 +147,7 @@ export function FileBubble({
       <div
         className={clsx(
           'flex items-center gap-3 rounded-xl p-2.5 ring-1 transition',
-          isMe ? 'bg-white/15 ring-white/20' : 'bg-slate-50 ring-slate-200/70'
+          isMe ? 'bg-white/15 ring-white/20' : 'bg-[#0f2540] ring-[#1e3a8a]/60'
         )}
       >
         {/* Icône du type de fichier avec dégradé */}
@@ -161,15 +161,15 @@ export function FileBubble({
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className={clsx('truncate text-[13px] font-semibold leading-tight', isMe ? 'text-white' : 'text-slate-800')}>
+          <p className="truncate text-[13px] font-semibold leading-tight text-white">
             {fileName}
           </p>
           <div className="mt-0.5 flex items-center gap-2">
-            <span className={clsx('rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide', isMe ? 'bg-white/20 text-white/90' : 'bg-slate-200 text-slate-600')}>
+            <span className={clsx('rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide', isMe ? 'bg-white/20 text-white/90' : 'bg-[#1e3a8a] text-[#93c5fd]')}>
               {label}
             </span>
             {fileSize != null && (
-              <span className={clsx('text-[11px] tabular-nums', isMe ? 'text-white/65' : 'text-slate-500')}>
+              <span className={clsx('text-[11px] tabular-nums', isMe ? 'text-white/65' : 'text-[#93c5fd]')}>
                 {formatFileSize(fileSize)}
               </span>
             )}
@@ -177,7 +177,7 @@ export function FileBubble({
         </div>
 
         {sending ? (
-          <span className={clsx('flex h-9 w-9 shrink-0 items-center justify-center', isMe ? 'text-white/80' : 'text-slate-400')}>
+          <span className={clsx('flex h-9 w-9 shrink-0 items-center justify-center', isMe ? 'text-white/80' : 'text-[#93c5fd]')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 animate-spin">
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
@@ -202,7 +202,7 @@ export function FileBubble({
             onClick={(e) => e.stopPropagation()}
             className={clsx(
               'flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-90',
-              isMe ? 'bg-white/15 text-white hover:bg-white/25' : 'bg-slate-200/70 text-slate-600 hover:bg-slate-300'
+              isMe ? 'bg-white/15 text-white hover:bg-white/25' : 'bg-[#1e3a8a]/70 text-[#93c5fd] hover:bg-[#17395d]'
             )}
             aria-label="Ouvrir le fichier"
           >
@@ -216,7 +216,7 @@ export function FileBubble({
       </div>
 
       {sending && (
-        <div className={clsx('mt-1.5 h-1 w-full overflow-hidden rounded-full', isMe ? 'bg-white/25' : 'bg-slate-200')}>
+        <div className={clsx('mt-1.5 h-1 w-full overflow-hidden rounded-full', isMe ? 'bg-white/25' : 'bg-[#1e3a8a]')}>
           <div className={clsx('h-full rounded-full transition-all duration-200', isMe ? 'bg-white/80' : 'bg-[#2563eb]')} style={{ width: `${progress}%` }} />
         </div>
       )}

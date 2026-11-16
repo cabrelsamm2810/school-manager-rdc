@@ -6,7 +6,7 @@
  */
 
 export const INSTITUTION_LABELS: Record<string, string> = {
-  'EC-ERC': 'EC-ERC',
+  'EC_ERC': 'EC-ERC',
   PUBLIQUE: 'École publique',
   CATHOLIQUE: 'École catholique',
   ISLAMIQUE: 'École islamique',

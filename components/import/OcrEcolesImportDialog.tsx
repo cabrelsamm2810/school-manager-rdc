@@ -1,0 +1,1143 @@
+'use client';
+
+import { useRef, useState, useEffect } from 'react';
+import type { Worker } from 'tesseract.js';
+import {
+  type ParsedSchoolRow,
+  type PreviewRow,
+  type FieldConfidence,
+  MAX_IMPORT_LINES,
+} from '@/lib/txt-import-parser';
+import { SchoolNamesPreview } from '@/components/import/SchoolNamesPreview';
+import { SchoolParseWarnings, SchoolImportResult, type BatchResult } from '@/components/import/SchoolPreviewShared';
+import { OcrWorkflowStepper } from '@/components/import/OcrWorkflowStepper';
+import { analyzeImage, type ImageAnalysis } from '@/lib/image-analysis';
+import { INSTITUTIONS } from '@/lib/institutions';
+
+type InstitutionInfo = {
+  code: string;
+  label: string;
+  description: string;
+};
+
+type CoordStructures = {
+  coordNationales: { id: string; province: string; institution: string; coordonnateur: string }[];
+  coordProvinciales: { id: string; province: string; institution: string }[];
+  coordSousProvinciales: { id: string; nom: string; province: string; institution: string; coordProvinciale?: { id: string; province: string } }[];
+};
+
+type OcrEcolesImportDialogProps = {
+  onImported: () => void;
+  onClose: () => void;
+};
+
+type Phase = 'upload' | 'processing' | 'review-table' | 'select-institution' | 'result';
+
+type FileQuality = ImageAnalysis & { assessing: boolean };
+type FileProgress = { status: 'pending' | 'processing' | 'done'; progress: number };
+
+const PHASE_STEP: Record<Phase, number> = {
+  upload: 0,
+  processing: 1,
+  'review-table': 2,
+  'select-institution': 3,
+  result: 4,
+};
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mo
+const OCR_MAX_WIDTH = 3000; // Préserver la netteté — ne réduire que les très grandes images
+
+/** Mots-clés typiques dans les noms d'écoles (insensible aux accents/casse). */
+const SCHOOL_KEYWORDS = [
+  'ecole', 'institut', 'complex', 'college', 'lycee', 'centre', 'groupe',
+  'etablissement', 'academie', 'universite', 'faculte', 'section', 'annexe',
+  'programme', 'project', 'scolaire', 'polytechnique', 'technique',
+  'professionnel', 'maternelle', 'primaire', 'secondaire', 'fondamental',
+];
+
+/** Mots-clés d'en-têtes administratifs à exclure (insensible aux accents/casse). */
+const HEADER_KEYWORDS = [
+  'republique', 'ministere', 'gouvernement', 'secretariat', 'direction',
+  'inspection', 'coordination', 'sous-province', 'province de',
+  'division provinciale', 'liste des ecoles', 'liste des etablissements',
+  'annuaire', 'catalogue', 'table des matieres', 'sommaire',
+  'democratique du congo', 'kinshasa, le', 'fait a', 'arrete a',
+];
+
+/** Patterns pour détecter un numéro de téléphone (format RDC). */
+const PHONE_REGEX = /(?:\+243\s?|0)[89]\d{2}[\s.\-]?\d{3}[\s.\-]?\d{3}/;
+
+/** Mots-clés d'adresse (insensible aux accents/casse). */
+const ADDRESS_KEYWORDS = [
+  'avenue', 'av ', 'av.', 'rue', 'boulevard', 'bd ', 'bd.', 'quartier',
+  'q. ', 'q,', 'commune', 'n°', 'no ', 'numero', 'num ', 'lot ', 'parcelle',
+  'crossing', 'marche', 'marché', 'pres de', 'près de', 'face a', 'face à',
+];
+
+/** Mots-clés de chef d'établissement (insensible aux accents/casse). */
+const DIRECTOR_KEYWORDS = [
+  'directeur', 'directrice', 'chef d', 'chef de', 'responsable',
+  'principal', 'recteur', 'regisseur', 'régisseur', 'fondateur',
+  'dir. ', 'dir.', 'cd ', 'cd.',
+];
+
+/** Patterns de bruit à exclure (numéros de page, dates seules, lignes de séparation, etc.). */
+const NOISE_PATTERNS = [
+  /^page\s+\d+/i,
+  /^page\s+\d+\s*\/\s*\d+$/i,
+  /^\d+\s*\/\s*\d+$/,
+  /^\d{1,3}$/,
+  /^[#*•\-_=~]{2,}$/,
+  /^(date|signature|cachet|nom|prenom|post[- ]?nom)\s*[:.]?$/i,
+  /^(n[°o]?\s*)?[:.]?\s*\d{4,}$/i,
+  /^\[?\d{1,2}\s*[\).\-]\s*$/,
+  /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s*[:.]?$/i,
+  /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/,
+];
+
+function normalizeText(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Vérifie si une ligne est du bruit OCR (pas une donnée d'école). */
+function isNoiseLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.length < 3) return true;
+  if (NOISE_PATTERNS.some((p) => p.test(trimmed))) return true;
+  // Ligne composée uniquement de chiffres et ponctuation
+  if (/^[\d\s\-.,;:|/()]+$/.test(trimmed)) return true;
+  // En-têtes administratifs (République, Ministère, etc.)
+  const norm = normalizeText(trimmed);
+  if (HEADER_KEYWORDS.some((kw) => norm.includes(kw))) return true;
+  // Ligne en MAJUSCULES de plus de 40 caractères = probablement un en-tête/bandeau
+  if (trimmed.length > 40 && trimmed === trimmed.toUpperCase() && !/[a-zà-ÿ]/.test(trimmed)) return true;
+  return false;
+}
+
+/** Nettoie une ligne en supprimant la numérotation de début (ex: "1. École…" → "École…"). */
+function cleanLinePrefix(line: string): string {
+  return line.replace(/^\[?\s*\d{1,3}\s*[\).\-:]\s*/, '').trim();
+}
+
+/** Vérifie si un texte ressemble à un nom d'école. */
+function looksLikeSchoolName(text: string): boolean {
+  const norm = normalizeText(text);
+  if (norm.length < 3) return false;
+  if (!/[a-zà-ÿ]/i.test(text)) return false;
+  // Doit contenir au moins un mot de 3+ lettres
+  if (!/[a-zà-ÿ]{3,}/i.test(text)) return false;
+  // Doit contenir un mot-clé d'école OU avoir une structure plausible (initiale + mots)
+  if (SCHOOL_KEYWORDS.some((kw) => norm.includes(kw))) return true;
+  // Repli strict : au moins 2 mots alphabétiques de 3+ lettres (ex: "Bon Berger", "Saint Joseph")
+  const words = norm.split(/\s+/).filter((w) => w.length >= 3 && /[a-zà-ÿ]{3,}/i.test(w));
+  return words.length >= 2;
+}
+
+/** Extrait un numéro de téléphone d'une ligne, ou null si absent. */
+function extractPhone(line: string): string | null {
+  const m = line.match(PHONE_REGEX);
+  return m ? m[0].replace(/\s+/g, ' ').trim() : null;
+}
+
+/** Extrait une adresse d'une ligne, ou null si la ligne n'en contient pas. */
+function extractAddress(line: string): string | null {
+  const norm = normalizeText(line);
+  if (!ADDRESS_KEYWORDS.some((kw) => norm.includes(kw))) return null;
+  // Nettoyer les préfixes d'étiquette (ex: "Adresse: Av. ..." → "Av. ...")
+  const cleaned = line.replace(/^(adresse|addr|localisation)\s*[:.]?\s*/i, '').trim();
+  return cleaned.length >= 5 ? cleaned : null;
+}
+
+/** Extrait le nom du chef d'établissement d'une ligne, ou null si absent. */
+function extractDirector(line: string): string | null {
+  const norm = normalizeText(line);
+  if (!DIRECTOR_KEYWORDS.some((kw) => norm.includes(kw))) return null;
+  // Extraire la partie après le mot-clé et un séparateur (: , = -)
+  const match = line.match(/(?:directeur|directrice|chef\s+d['e]\w*|responsable|principal|recteur|r[ée]gisseur|fondateur|dir\.?|cd\.?)\s*[:\-,\=]?\s*(.+)/i);
+  if (!match) return null;
+  const name = match[1].trim();
+  // Garder uniquement si ça ressemble à un nom (au moins 2 lettres, pas trop long)
+  if (name.length < 3 || name.length > 80) return null;
+  return name;
+}
+
+/**
+ * Extraction des données d'écoles depuis le texte OCR.
+ * Détecte le nom, l'adresse, le téléphone et le chef d'établissement.
+ */
+function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: string[]; confidences: Partial<Record<string, FieldConfidence>>[] } {
+  const warnings: string[] = [];
+  const allLines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+
+  if (allLines.length === 0) {
+    return { rows: [], warnings: ['Aucun texte détecté.'], confidences: [] };
+  }
+
+  const lines = allLines.filter((l) => !isNoiseLine(l));
+
+  if (lines.length === 0) {
+    return { rows: [], warnings: ['Aucune ligne valide détectée après filtrage du bruit OCR.'], confidences: [] };
+  }
+
+  if (lines.length > MAX_IMPORT_LINES) {
+    warnings.push(`Le texte contient ${lines.length} lignes. Seules les ${MAX_IMPORT_LINES} premières seront traitées.`);
+  }
+
+  const cappedLines = lines.slice(0, MAX_IMPORT_LINES);
+  const rows: ParsedSchoolRow[] = [];
+  const confidences: Partial<Record<string, FieldConfidence>>[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i < cappedLines.length; i++) {
+    const line = cappedLines[i];
+    const nom = cleanLinePrefix(line);
+    if (!nom || !looksLikeSchoolName(nom)) continue;
+    const key = normalizeText(nom);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    // Chercher adresse, téléphone et chef dans les lignes suivantes (max 5 lignes)
+    let adresse = '';
+    let telephone = '';
+    let chefEcole = '';
+
+    for (let j = i + 1; j < Math.min(i + 6, cappedLines.length); j++) {
+      const next = cappedLines[j];
+      // Si la ligne suivante est déjà un nom d'école, arrêter
+      const nextNom = cleanLinePrefix(next);
+      if (looksLikeSchoolName(nextNom) && !extractPhone(next) && !extractAddress(next) && !extractDirector(next)) {
+        break;
+      }
+      if (!telephone) {
+        const phone = extractPhone(next);
+        if (phone) { telephone = phone; continue; }
+      }
+      if (!adresse) {
+        const addr = extractAddress(next);
+        if (addr) { adresse = addr; continue; }
+      }
+      if (!chefEcole) {
+        const dir = extractDirector(next);
+        if (dir) { chefEcole = dir; continue; }
+      }
+    }
+
+    rows.push({
+      nom, type: '', institution: '', dinacope: '', province: '',
+      provinceEducationnelle: '', ville: '', commune: '', adresse,
+      telephone, email: '', chefEcole, effectif: '',
+    });
+    // Score de confiance par champ
+    const normNom = normalizeText(nom);
+    confidences.push({
+      nom: SCHOOL_KEYWORDS.some((kw) => normNom.includes(kw)) ? 'high' : 'medium',
+      telephone: telephone ? 'high' : null,
+      adresse: adresse ? 'high' : null,
+      chefEcole: chefEcole ? 'high' : null,
+    });
+  }
+
+  return { rows, warnings, confidences };
+}
+
+/**
+ * Prétraite une image pour l'OCR : ne réduit que les très grandes images (max 3000px).
+ * Retourne un Blob PNG sans perte pour préserver la netteté du texte.
+ */
+async function preprocessImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, OCR_MAX_WIDTH / bitmap.width);
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return file;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bitmap, 0, 0, w, h);
+
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => resolve(blob ?? file),
+      'image/png',
+    );
+  });
+}
+
+export function OcrEcolesImportDialog({ onImported, onClose }: OcrEcolesImportDialogProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const filesRef = useRef<HTMLInputElement>(null);
+  const workerRef = useRef<Worker | null>(null);
+
+  const [phase, setPhase] = useState<Phase>('upload');
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
+  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<BatchResult | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [fileQuality, setFileQuality] = useState<FileQuality[]>([]);
+  const [fileProgress, setFileProgress] = useState<FileProgress[]>([]);
+  const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const fileUrlsRef = useRef<string[]>([]);
+  const currentFileIdx = useRef(0);
+
+  // Garder la ref à jour pour le nettoyage au démontage
+  useEffect(() => { fileUrlsRef.current = fileUrls; }, [fileUrls]);
+
+  // Révoquer les blob URLs au démontage
+  useEffect(() => {
+    return () => { fileUrlsRef.current.forEach((u) => URL.revokeObjectURL(u)); };
+  }, []);
+  const [selectedInstitution, setSelectedInstitution] = useState<string>('');
+  const [institutionSearch, setInstitutionSearch] = useState('');
+  const [dbInstitutions, setDbInstitutions] = useState<InstitutionInfo[]>([]);
+  const [coordStructures, setCoordStructures] = useState<CoordStructures | null>(null);
+  const [structuresLoading, setStructuresLoading] = useState(false);
+  const [selectedCoordSousProv, setSelectedCoordSousProv] = useState<string>('');
+
+  function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    setError('');
+    const valid: File[] = [];
+    for (const f of Array.from(fileList)) {
+      if (!f.type.startsWith('image/')) {
+        setError(`${f.name} : type non supporté (JPG, PNG uniquement).`);
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        setError(`${f.name} : trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} Mo).`);
+        continue;
+      }
+      valid.push(f);
+    }
+    if (valid.length > 0) {
+      const startIdx = files.length;
+      setFiles((prev) => [...prev, ...valid]);
+      setFileUrls((prev) => [...prev, ...valid.map((f) => URL.createObjectURL(f))]);
+      setFileQuality((prev) => [...prev, ...valid.map((): FileQuality => ({
+        sharpness: 0, blurry: false, brightness: 128, tooDark: false, tooBright: false,
+        contrast: 0, lowContrast: false, isDocument: true, textDensity: 0,
+        overall: 'acceptable', issues: [], assessing: true,
+      }))]);
+      // Analyser chaque nouvelle image (netteté, luminosité, contraste, type de document)
+      valid.forEach((f, i) => {
+        analyzeImage(f).then((a) => {
+          setFileQuality((prev) => {
+            const next = [...prev];
+            next[startIdx + i] = { ...a, assessing: false };
+            return next;
+          });
+        });
+      });
+    }
+  }
+
+  function removeFile(idx: number) {
+    setFileUrls((prev) => {
+      prev[idx] && URL.revokeObjectURL(prev[idx]);
+      return prev.filter((_, i) => i !== idx);
+    });
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
+    setFileQuality((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function runOcr() {
+    if (files.length === 0) return;
+    setPhase('processing');
+    setProgress(0);
+    setProgressLabel('');
+    setError('');
+    setFileProgress(files.map(() => ({ status: 'pending', progress: 0 })));
+
+    try {
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('fra', 1, {
+        logger: (m: { status: string; progress: number }) => {
+          if (m.status === 'recognizing text') {
+            const p = Math.round(m.progress * 100);
+            const idx = currentFileIdx.current;
+            setProgress(p);
+            setFileProgress((prev) => {
+              const next = [...prev];
+              if (next[idx]) next[idx] = { status: 'processing', progress: p };
+              return next;
+            });
+          }
+        },
+      });
+      workerRef.current = worker;
+
+      const allText: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        currentFileIdx.current = i;
+        setProgressLabel(`Image ${i + 1} / ${files.length}`);
+        setProgress(0);
+        setFileProgress((prev) => {
+          const next = [...prev];
+          next[i] = { status: 'processing', progress: 0 };
+          return next;
+        });
+        // Prétraiter l'image pour accélérer l'OCR
+        const processed = await preprocessImage(files[i]);
+        const { data } = await worker.recognize(processed);
+        const text = data.text.trim();
+        if (text) allText.push(text);
+        setFileProgress((prev) => {
+          const next = [...prev];
+          next[i] = { status: 'done', progress: 100 };
+          return next;
+        });
+      }
+
+      await worker.terminate();
+      workerRef.current = null;
+
+      const combinedText = allText.join('\n\n');
+      if (!combinedText) {
+        setError("Aucun texte détecté dans les images. Réessayez avec des images plus nettes.");
+        setPhase('upload');
+        return;
+      }
+
+      // Extraction des données d'écoles (nom, adresse, téléphone, chef d'établissement)
+      const parsed = extractSchoolData(combinedText);
+      setParseWarnings(parsed.warnings);
+
+      if (parsed.rows.length === 0) {
+        setError("Aucun nom d'école détecté. Réessayez avec une photo plus nette du document.");
+        setPhase('upload');
+        return;
+      }
+
+      await checkDuplicates(parsed.rows, parsed.confidences);
+      setPhase('review-table');
+    } catch {
+      setError("Échec de la reconnaissance de texte. Réessayez avec des images plus nettes.");
+      setPhase('upload');
+    }
+  }
+
+  async function checkDuplicates(rows: ParsedSchoolRow[], confidences?: Partial<Record<string, FieldConfidence>>[]) {
+    setLoading(true);
+    setError('');
+    const attachConfidence = (r: ParsedSchoolRow, i: number) => ({
+      ...r, rowIndex: i, status: 'ok' as const, messages: [],
+      fieldConfidence: confidences?.[i] ?? {},
+    });
+    try {
+      const res = await fetch('/api/import/ecoles/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPreviewRows(data.rows.map((r: PreviewRow, i: number) => ({
+          ...r, fieldConfidence: confidences?.[i] ?? r.fieldConfidence ?? {},
+        })));
+      } else {
+        setPreviewRows(rows.map(attachConfidence));
+      }
+    } catch {
+      setPreviewRows(rows.map(attachConfidence));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function updateField(rowIdx: number, field: keyof ParsedSchoolRow, value: string) {
+    setPreviewRows((prev) =>
+      prev.map((r, i) => (i === rowIdx ? { ...r, [field]: value } : r)),
+    );
+  }
+
+  function deleteRow(rowIdx: number) {
+    setPreviewRows((prev) => prev.filter((_, i) => i !== rowIdx));
+  }
+
+  function addRow() {
+    const empty: ParsedSchoolRow = {
+      nom: '', type: '', institution: '', dinacope: '', province: '',
+      provinceEducationnelle: '', ville: '', commune: '', adresse: '',
+      telephone: '', email: '', chefEcole: '', effectif: '',
+    };
+    setPreviewRows((prev) => [...prev, { ...empty, rowIndex: prev.length, status: 'ok', messages: [] }]);
+  }
+
+  function goToInstitutionSelect() {
+    setPhase('select-institution');
+    loadInstitutions();
+  }
+
+  async function loadInstitutions() {
+    try {
+      // Récupérer la session utilisateur pour pré-sélectionner son institution
+      const [sessRes, instRes] = await Promise.all([
+        fetch('/api/auth/session'),
+        fetch('/api/institutions'),
+      ]);
+      const sessData = await sessRes.json();
+      const instData = await instRes.json();
+
+      if (instData.institutions) {
+        setDbInstitutions(instData.institutions);
+      }
+      // Pré-sélectionner l'institution de l'utilisateur
+      if (sessData.authenticated && sessData.user?.typeInstitution) {
+        setSelectedInstitution(sessData.user.typeInstitution);
+        loadStructures(sessData.user.typeInstitution);
+      }
+    } catch {
+      // Repli sur la liste statique
+      setDbInstitutions(INSTITUTIONS.map((i) => ({ code: i.code, label: i.label, description: i.description })));
+    }
+  }
+
+  async function loadStructures(institutionCode: string) {
+    setStructuresLoading(true);
+    setSelectedCoordSousProv('');
+    try {
+      const res = await fetch(`/api/institutions?institution=${institutionCode}`);
+      const data = await res.json();
+      if (data.structures) {
+        setCoordStructures(data.structures);
+      } else {
+        setCoordStructures(null);
+      }
+    } catch {
+      setCoordStructures(null);
+    } finally {
+      setStructuresLoading(false);
+    }
+  }
+
+  function handleSelectInstitution(code: string) {
+    setSelectedInstitution(code);
+    loadStructures(code);
+  }
+
+  async function handleSave() {
+    setLoading(true);
+    setError('');
+    setResult(null);
+
+    try {
+      const cleanRows = previewRows.map(({ rowIndex, status, messages, duplicateId, duplicateNom, ...rest }) => {
+        const row = { ...rest };
+        if (selectedInstitution) row.institution = selectedInstitution;
+        return row;
+      });
+      // Inclure la coordination sous-provinciale sélectionnée si présente
+      const extraBody = selectedCoordSousProv ? { coordSousProvincialeId: selectedCoordSousProv } : {};
+      const res = await fetch('/api/import/ecoles/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: cleanRows, ...extraBody }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "Erreur lors de l'enregistrement.");
+      } else {
+        setResult(data);
+        if (data.imported > 0) onImported();
+        setPhase('result');
+      }
+    } catch {
+      setError('Impossible de joindre le serveur.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function reset() {
+    setPhase('upload');
+    setFileUrls((prev) => { prev.forEach((u) => URL.revokeObjectURL(u)); return []; });
+    setFiles([]);
+    setPreviewRows([]);
+    setParseWarnings([]);
+    setError('');
+    setResult(null);
+    setProgress(0);
+    setProgressLabel('');
+    setFileQuality([]);
+    setFileProgress([]);
+    setSelectedInstitution('');
+    setInstitutionSearch('');
+    setDbInstitutions([]);
+    setCoordStructures(null);
+    setSelectedCoordSousProv('');
+  }
+
+  function handleClose() {
+    if (workerRef.current) workerRef.current.terminate();
+    fileUrls.forEach((u) => URL.revokeObjectURL(u));
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3" onClick={handleClose}>
+      <div
+        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 p-4 sm:p-5">
+          <h2 className="text-lg font-bold text-slate-900">Importer les écoles depuis une photo</h2>
+          <button onClick={handleClose} className="text-slate-400 hover:text-slate-600">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+          {/* Phase: Upload */}
+          {phase === 'upload' && (
+            <div className="space-y-5">
+              {/* Input caméra (capture forcée) */}
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              {/* Input galerie (sans capture, plusieurs images) */}
+              <input
+                ref={galleryRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              {/* Input fichiers (sélecteur de fichiers système, plusieurs images) */}
+              <input
+                ref={filesRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+
+              {files.length > 0 ? (
+                <>
+                  {/* Aperçu des images sélectionnées */}
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+                      handleFiles(e.dataTransfer.files);
+                    }}
+                    className={`flex flex-wrap justify-center gap-3 rounded-2xl border-2 border-dashed p-4 transition ${
+                      dragOver ? 'border-violet-500 bg-violet-50' : 'border-slate-200'
+                    }`}
+                  >
+                    {files.map((f, idx) => {
+                      const q = fileQuality[idx];
+                      const ringClass = !q?.assessing
+                        ? q.overall === 'good' ? 'ring-2 ring-green-400'
+                          : q.overall === 'acceptable' ? 'ring-2 ring-amber-400'
+                          : 'ring-2 ring-red-400'
+                        : '';
+                      return (
+                        <div key={idx} className="relative">
+                          <img
+                            src={fileUrls[idx]}
+                            alt={f.name}
+                            className={`h-24 w-24 rounded-lg object-cover ${ringClass}`}
+                          />
+                          {/* Badge de qualité globale */}
+                          {q?.assessing ? (
+                            <span className="absolute bottom-1 left-1 rounded bg-slate-700/80 px-1 py-0.5 text-[8px] text-white">
+                              …
+                            </span>
+                          ) : (
+                            <span
+                              className={`absolute bottom-1 left-1 rounded px-1 py-0.5 text-[8px] font-medium text-white ${
+                                q.overall === 'good' ? 'bg-green-500'
+                                  : q.overall === 'acceptable' ? 'bg-amber-500'
+                                  : 'bg-red-500'
+                              }`}
+                              title={q.issues.join(', ') || 'Bonne qualité'}
+                            >
+                              {q.overall === 'good' ? '✓' : q.overall === 'acceptable' ? '⚠' : '✕'}
+                            </span>
+                          )}
+                          {/* Badge type de document */}
+                          {!q?.assessing && q.isDocument && (
+                            <span className="absolute right-1 top-1 rounded bg-blue-500/80 px-1 py-0.5 text-[7px] text-white" title="Document détecté">
+                              📄
+                            </span>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow"
+                          >
+                            ✕
+                          </button>
+                          <p className="mt-1 max-w-[6rem] truncate text-[10px] text-slate-500">{f.name}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Alerte si problèmes de qualité détectés */}
+                  {fileQuality.some((q) => !q.assessing && q.overall !== 'good') && (
+                    <div className="rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+                      <p className="mb-1 flex items-center gap-1.5 font-medium">
+                        <span className="text-base">⚠</span>
+                        Problèmes de qualité détectés sur {fileQuality.filter((q) => !q.assessing && q.overall !== 'good').length} image(s) :
+                      </p>
+                      <div className="flex flex-wrap gap-1 pl-6">
+                        {fileQuality
+                          .map((q, i) => ({ q, i }))
+                          .filter(({ q }) => !q.assessing && q.issues.length > 0)
+                          .flatMap(({ q, i }) => q.issues.map((issue) => (
+                            <span key={`${i}-${issue}`} className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px]">
+                              #{i + 1}: {issue}
+                            </span>
+                          )))
+                        }
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Boutons compacts quand images déjà sélectionnées */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => inputRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-2 py-3 text-xs font-medium transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Photo
+                    </button>
+                    <button
+                      onClick={() => galleryRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-2 py-3 text-xs font-medium transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
+                      </svg>
+                      Galerie
+                    </button>
+                    <button
+                      onClick={() => filesRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-2 py-3 text-xs font-medium transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-7l-2-2H6a2 2 0 00-2 2z" />
+                      </svg>
+                      Fichiers
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Illustration centrale */}
+                  <div className="flex flex-col items-center pt-4">
+                    <div
+                      className="flex h-20 w-20 items-center justify-center rounded-full"
+                      style={{ backgroundColor: '#E0E7FF' }}
+                    >
+                      <svg className="h-10 w-10" fill="none" stroke="#5E58A3" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="mt-4 text-base font-bold text-slate-900">Photographier une liste d'écoles</h3>
+                    <p className="mt-1 max-w-xs text-center text-sm text-slate-500">
+                      Prenez une photo d'un document contenant les écoles. L'IA détectera le nom, l'adresse, le téléphone et le chef d'établissement.
+                    </p>
+                  </div>
+
+                  {/* Boutons d'action en pointillés verticaux */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => inputRef.current?.click()}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-semibold transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.9l.814-1.62a2 2 0 011.664-.9h5.856a2 2 0 011.664.9l.814 1.62A2 2 0 0019.07 7H20a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Prendre une photo
+                    </button>
+                    <button
+                      onClick={() => galleryRef.current?.click()}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-semibold transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4.5-4.5L12 17l3-3 6 6" />
+                      </svg>
+                      Importer depuis la galerie
+                    </button>
+                    <button
+                      onClick={() => filesRef.current?.click()}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-semibold transition hover:opacity-80"
+                      style={{ borderColor: '#5E58A3', backgroundColor: '#E0E7FF', color: '#5E58A3' }}
+                    >
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-7l-2-2H6a2 2 0 00-2 2z" />
+                      </svg>
+                      Importer des fichiers
+                    </button>
+                  </div>
+
+                  <p className="text-center text-xs text-slate-400">
+                    JPG, PNG — une ou plusieurs images · max {MAX_FILE_SIZE / 1024 / 1024} Mo · {MAX_IMPORT_LINES} écoles max
+                  </p>
+                  <p className="text-center text-xs font-medium" style={{ color: '#5E58A3' }}>
+                    💡 Astuce : maintenez la touche pour sélectionner plusieurs photos à la fois
+                  </p>
+                </>
+              )}
+
+              {error && (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+              )}
+            </div>
+          )}
+
+          {/* Phase: Processing */}
+          {phase === 'processing' && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200" style={{ borderTopColor: '#5E58A3' }} />
+              <p className="text-sm font-medium text-slate-700">Analyse des images en cours…</p>
+              {progressLabel && (
+                <p className="mt-1 text-xs text-slate-500">{progressLabel}</p>
+              )}
+              {/* Barre de progression globale */}
+              <div className="mt-4 w-full max-w-xs">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%`, backgroundColor: '#5E58A3' }}
+                  />
+                </div>
+                <p className="mt-1 text-center text-xs text-slate-500">{progress}%</p>
+              </div>
+              {/* Progression par fichier */}
+              <div className="mt-5 w-full max-w-sm space-y-2.5">
+                {files.map((f, i) => {
+                  const fp = fileProgress[i];
+                  const isDone = fp?.status === 'done';
+                  const isProcessing = fp?.status === 'processing';
+                  return (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2.5 rounded-lg border p-2 transition ${
+                        isProcessing ? 'border-violet-300 bg-violet-50' : isDone ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50'
+                      }`}
+                    >
+                      {/* Vignette */}
+                      <img
+                        src={fileUrls[i]}
+                        alt={f.name}
+                        className={`h-9 w-9 shrink-0 rounded object-cover ${isDone ? 'opacity-60' : ''}`}
+                      />
+                      {/* Nom + barre */}
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="truncate text-[11px] font-medium text-slate-600">{f.name}</span>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: isDone ? '100%' : `${fp?.progress ?? 0}%`,
+                              backgroundColor: isDone ? '#22c55e' : '#5E58A3',
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {/* Statut */}
+                      <span className="w-10 shrink-0 text-right text-[11px] font-semibold">
+                        {isDone ? (
+                          <span className="text-green-600">✓</span>
+                        ) : isProcessing ? (
+                          <span style={{ color: '#5E58A3' }}>{fp?.progress ?? 0}%</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Phase: Review-table — vérification des noms d'écoles */}
+          {phase === 'review-table' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs" style={{ backgroundColor: '#E0E7FF', color: '#5E58A3' }}>
+                <span className="font-medium">✓ {previewRows.length} école(s) détectée(s) — vérifiez et corrigez les noms</span>
+              </div>
+
+              <SchoolParseWarnings warnings={parseWarnings} />
+
+              {loading && (
+                <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+                  <p className="text-xs text-blue-700">Vérification des doublons…</p>
+                </div>
+              )}
+
+              <SchoolNamesPreview
+                rows={previewRows}
+                onUpdateField={updateField}
+                onDeleteRow={deleteRow}
+                onAddRow={addRow}
+              />
+
+              {error && (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+              )}
+            </div>
+          )}
+
+          {/* Phase: Select institution */}
+          {phase === 'select-institution' && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-600">Sélectionner l'institution à laquelle rattacher les écoles</p>
+                <p className="mt-0.5 text-xs text-slate-400">{previewRows.length} école(s) à rattacher</p>
+              </div>
+
+              {/* Recherche */}
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                </svg>
+                <input
+                  type="text"
+                  value={institutionSearch}
+                  onChange={(e) => setInstitutionSearch(e.target.value)}
+                  placeholder="Rechercher une institution..."
+                  className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+
+              {/* Liste des institutions depuis la base de données */}
+              <div className="space-y-2">
+                {(dbInstitutions.length > 0 ? dbInstitutions : INSTITUTIONS.map((i) => ({ code: i.code, label: i.label, description: i.description })))
+                  .filter((inst) => {
+                    if (!institutionSearch) return true;
+                    const q = institutionSearch.toLowerCase();
+                    return inst.label.toLowerCase().includes(q) || inst.code.toLowerCase().includes(q);
+                  })
+                  .map((inst) => {
+                    const isSelected = selectedInstitution === inst.code;
+                    const staticInst = INSTITUTIONS.find((i) => i.code === inst.code);
+                    return (
+                      <button
+                        key={inst.code}
+                        onClick={() => handleSelectInstitution(inst.code)}
+                        className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                          isSelected
+                            ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${staticInst?.bgColor || 'bg-slate-100'}`}>
+                          <svg className={`h-5 w-5 ${staticInst?.color || 'text-slate-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {inst.label.split('—')[0].trim()}
+                          </p>
+                          <p className="truncate text-xs text-slate-500">
+                            {inst.code} · {inst.description}
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <svg className="h-5 w-5 shrink-0 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Structures de coordination depuis la base de données */}
+              {selectedInstitution && (
+                <div className="space-y-3 border-t border-slate-100 pt-3">
+                  <p className="text-xs font-semibold text-slate-700">Structure de rattachement (base de données)</p>
+
+                  {structuresLoading && (
+                    <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-brand-600" />
+                      <span className="text-xs text-slate-500">Chargement des structures…</span>
+                    </div>
+                  )}
+
+                  {!structuresLoading && coordStructures && (
+                    <>
+                      {/* Coordination nationale */}
+                      {coordStructures.coordNationales.length > 0 && (
+                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-[11px] font-medium text-slate-500">Coordination nationale</p>
+                          {coordStructures.coordNationales.map((cn) => (
+                            <p key={cn.id} className="text-xs text-slate-700">
+                              {cn.province} {cn.coordonnateur && `· ${cn.coordonnateur}`}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Coordination sous-provinciale — sélectionnable */}
+                      {coordStructures.coordSousProvinciales.length > 0 ? (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-medium text-slate-500">Coordination sous-provinciale cible</label>
+                          <select
+                            value={selectedCoordSousProv}
+                            onChange={(e) => setSelectedCoordSousProv(e.target.value)}
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+                          >
+                            <option value="">— Non rattachée —</option>
+                            {coordStructures.coordSousProvinciales.map((csp) => (
+                              <option key={csp.id} value={csp.id}>
+                                {csp.nom} {csp.province ? `· ${csp.province}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400">Aucune structure de coordination enregistrée pour cette institution.</p>
+                      )}
+                    </>
+                  )}
+
+                  {!structuresLoading && !coordStructures && selectedInstitution && (
+                    <p className="text-xs text-slate-400">Aucune structure de coordination trouvée.</p>
+                  )}
+                </div>
+              )}
+
+              {error && (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+              )}
+            </div>
+          )}
+
+          {/* Phase: Result */}
+          {phase === 'result' && result && (
+            <SchoolImportResult result={result} />
+          )}
+        </div>
+
+        {/* Stepper */}
+        <div className="border-t border-slate-100 px-4 py-3 sm:px-5">
+          <OcrWorkflowStepper currentStep={PHASE_STEP[phase]} />
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 border-t border-slate-100 p-4 sm:p-5">
+          {phase === 'upload' && (
+            <button
+              onClick={handleClose}
+              className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              Annuler
+            </button>
+          )}
+
+          {phase === 'upload' && files.length > 0 && (
+            <button
+              onClick={runOcr}
+              disabled={files.length === 0}
+              className="btn-primary flex-1 px-4 py-2.5 text-sm disabled:opacity-50"
+            >
+              🔍 Analyser ({files.length} image{files.length > 1 ? 's' : ''})
+            </button>
+          )}
+
+          {phase === 'review-table' && (
+            <>
+              <button
+                onClick={reset}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                ← Nouvelle photo
+              </button>
+              <button
+                onClick={goToInstitutionSelect}
+                disabled={previewRows.length === 0}
+                className="btn-primary flex-1 px-4 py-2.5 text-sm"
+              >
+                Continuer →
+              </button>
+            </>
+          )}
+
+          {phase === 'select-institution' && (
+            <>
+              <button
+                onClick={() => setPhase('review-table')}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                ← Modifier
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!selectedInstitution || loading}
+                className={`btn-primary flex-1 px-4 py-2.5 text-sm disabled:opacity-50 ${loading ? 'btn-loading' : ''}`}
+              >
+                {loading ? (
+                  <><span className="btn-spinner" /> Enregistrement…</>
+                ) : (
+                  'Continuer →'
+                )}
+              </button>
+            </>
+          )}
+
+          {phase === 'result' && (
+            <>
+              <button
+                onClick={reset}
+                className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Importer une autre image
+              </button>
+              <button
+                onClick={handleClose}
+                className="btn-primary flex-1 px-4 py-2.5 text-sm"
+              >
+                Terminer
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

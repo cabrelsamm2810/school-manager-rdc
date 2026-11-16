@@ -104,7 +104,7 @@ export const crudModels: Record<string, CrudModelConfig> = {
     delegate: prisma.ecErc,
     entityName: 'ecErc',
     entityNamePlural: 'ecErcs',
-    minRole: 'COORDINATION_PROVINCIALE',
+    minRole: 'AGENT_PROVINCIAL',
     searchFields: ['nom', 'province'],
     defaultSort: { field: 'nom', order: 'asc' },
     provinceField: 'province',

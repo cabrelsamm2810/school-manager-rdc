@@ -79,20 +79,20 @@ export function AttachmentMenu({
 
   return (
     <div
-      className="absolute bottom-full left-0 z-20 mb-2 flex gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700"
+      className="absolute bottom-full left-0 z-20 mb-2 flex gap-2 rounded-2xl bg-[#132f4c] p-2 shadow-xl ring-1 ring-[#1e3a8a]"
       style={{ animation: 'attachmentMenuIn 0.2s ease-out' }}
     >
       {items.map((item, i) => (
         <button
           key={item.label}
           onClick={item.onClick}
-          className="flex w-16 flex-col items-center gap-1.5 rounded-xl p-2 transition hover:bg-slate-100 dark:hover:bg-slate-700"
+          className="flex w-16 flex-col items-center gap-1.5 rounded-xl p-2 transition hover:bg-[#17395d]"
           style={{ animation: `attachmentMenuIn 0.25s ease-out ${i * 0.04}s both` }}
         >
           <div className={`flex h-10 w-10 items-center justify-center rounded-full ${item.color} text-white`}>
             {item.icon}
           </div>
-          <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300">{item.label}</span>
+          <span className="text-[10px] font-medium text-[#93c5fd]">{item.label}</span>
         </button>
       ))}
     </div>

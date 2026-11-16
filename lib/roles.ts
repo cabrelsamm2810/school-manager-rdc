@@ -16,6 +16,7 @@ export const ROLE_RANK: Record<string, number> = {
   ADMIN_SCHOOL_MANAGER_RDC: 14,
   COORDINATION_NATIONALE: 13,
   COORDINATION_PROVINCIALE: 12,
+  CHEF_ADMINISTRATION: 11,
   AGENT_PROVINCIAL: 11,
   COORDINATION_SOUS_PROVINCIALE: 10,
   AGENT_SOUS_PROVINCIAL: 9,
@@ -35,6 +36,7 @@ export const ROLE_LABELS: Record<string, string> = {
   ADMIN_SCHOOL_MANAGER_RDC: 'Admin School Manager RDC',
   COORDINATION_NATIONALE: 'Coordination nationale',
   COORDINATION_PROVINCIALE: 'Coordination provinciale',
+  CHEF_ADMINISTRATION: 'Chef d\u2019administration',
   AGENT_PROVINCIAL: 'Agent provincial',
   COORDINATION_SOUS_PROVINCIALE: 'Coordination sous-provinciale',
   AGENT_SOUS_PROVINCIAL: 'Agent de coordination sous-provinciale',
@@ -62,6 +64,7 @@ export const SELF_REGISTER_ROLES = [
   'AGENT_SOUS_PROVINCIAL',
   'COORDINATION_SOUS_PROVINCIALE',
   'AGENT_PROVINCIAL',
+  'CHEF_ADMINISTRATION',
   'COORDINATION_PROVINCIALE',
   'COORDINATION_NATIONALE',
 ] as const;

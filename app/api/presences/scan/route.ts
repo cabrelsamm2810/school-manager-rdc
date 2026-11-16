@@ -4,6 +4,8 @@ import { getSessionUser } from '@/lib/session-user';
 import { buildEleveScopeWhere } from '@/lib/territory-filter';
 import { sendPresenceNotification } from '@/lib/mail';
 
+export const maxDuration = 60;
+
 /**
  * POST /api/presences/scan
  * Marque un élève comme présent via le scan de son QR code (carte scolaire).

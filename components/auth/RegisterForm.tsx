@@ -1,7 +1,8 @@
 'use client';
 
 import { FormEvent, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import {
   registrationInstitutionTypes,
   allRegistrationRoleOptions,
@@ -15,10 +16,10 @@ import {
   rolesNeedingDinacope,
   educationProvincesByAdminFromSousDivisions,
   sousDivisionsByEducationProvince,
-  ecoleTypes,
   type RoleOption,
 } from '@/lib/meta-data';
 import { ProfilePhotoUpload } from '@/components/auth/ProfilePhotoUpload';
+import { SchoolSelector } from '@/components/auth/SchoolSelector';
 
 const STEP_LABELS = ['Institution', 'Structure', 'Fonction', 'Informations', 'Compte', 'Vérification'];
 
@@ -35,12 +36,6 @@ type FormState = {
   provinceAdministrative: string;
   provinceEducationnelle: string;
   coordSousProvinciale: string;
-  ecoleNom: string;
-  ecoleCommune: string;
-  ecoleAdresse: string;
-  ecoleTelephone: string;
-  ecoleEmail: string;
-  ecoleType: string;
   nom: string;
   postNom: string;
   prenom: string;
@@ -51,18 +46,22 @@ type FormState = {
   password: string;
   confirmPassword: string;
   institutionName: string;
+  ecoleId: string;
 };
 
 const emptyForm: FormState = {
   typeInstitution: '', role: '', bureauAffectation: '', fonction: '', grade: '', dinacope: '',
   provinceAdministrative: '', provinceEducationnelle: '', coordSousProvinciale: '',
-  ecoleNom: '', ecoleCommune: '', ecoleAdresse: '', ecoleTelephone: '', ecoleEmail: '', ecoleType: '',
   nom: '', postNom: '', prenom: '', sexe: '', telephone: '', profilePhotoUrl: '',
-  email: '', password: '', confirmPassword: '', institutionName: '',
+  email: '', password: '', confirmPassword: '', institutionName: '', ecoleId: '',
 };
 
 const ROLES_NEEDING_LOCATION = new Set([
-  'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE', 'ENSEIGNANT', 'ELEVE', 'PARENT',
+  'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE', 'ENSEIGNANT', 'ELEVE', 'PARENT',
+]);
+
+const ROLES_NEEDING_BUREAU = new Set([
+  'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL',
 ]);
 const ROLES_NEEDING_EDUC_PROVINCE = new Set(['COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE']);
 const ROLES_NEEDING_SCHOOL_FORM = new Set(['DIRECTION_ECOLE']);
@@ -78,14 +77,14 @@ function isStepNeeded(step: number, role: string): boolean {
 /* ── Display helpers (presentation only — no logic change) ── */
 
 const INSTITUTION_SHORT: Record<string, string> = {
-  'EC-ERC': 'EC-ERC',
+  'EC_ERC': 'EC-ERC',
   'PUBLIQUE': 'École publique',
   'CATHOLIQUE': 'École catholique',
   'ISLAMIQUE': 'École islamique',
   'INDEPENDANTE': 'École indépendante',
 };
 const INSTITUTION_DESC: Record<string, string> = {
-  'EC-ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
+  'EC_ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
   'PUBLIQUE': 'École public',
   'CATHOLIQUE': 'Conventionné catholique',
   'ISLAMIQUE': 'École islamique',
@@ -94,6 +93,8 @@ const INSTITUTION_DESC: Record<string, string> = {
 const ROLE_DESC: Record<string, string> = {
   'COORDINATION_NATIONALE': 'Administration nationale',
   'COORDINATION_PROVINCIALE': 'Administration provinciale',
+  'CHEF_ADMINISTRATION': 'Chef de l\u2019administration provinciale',
+  'AGENT_PROVINCIAL': 'Agent de la coordination provinciale',
   'COORDINATION_SOUS_PROVINCIALE': 'Administration sous-provinciale',
   'DIRECTION_ECOLE': 'Gestion d’école',
   'ENSEIGNANT': 'Corps enseignant',
@@ -112,7 +113,7 @@ function CheckBadge() {
 }
 
 function InstitutionIcon({ type, selected }: { type: string; selected: boolean }) {
-  if (type === 'EC-ERC') return (<img src="/illustrations/ec-erc-logo.jpg" alt="EC-ERC" className="h-14 w-14 rounded-lg object-contain" />);
+  if (type === 'EC_ERC') return (<img src="/illustrations/ec-erc-logo.jpg" alt="EC-ERC" className="h-14 w-14 rounded-lg object-contain" />);
   if (type === 'CATHOLIQUE') return (<img src="/illustrations/eccath-logo.jpg" alt="ECCATH" className="h-14 w-14 rounded-lg object-contain" />);
   const bg = selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500';
   let path: ReactNode = null;
@@ -132,6 +133,8 @@ function RoleIcon({ type, selected }: { type: string; selected: boolean }) {
   let content: ReactNode = null;
   if (type === 'COORDINATION_NATIONALE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0-18c2.5 3 4 6 4 9s-1.5 6-4 9m-4-18c-2.5 3-4 6-4 9s1.5 6 4 9" />);
   else if (type === 'COORDINATION_PROVINCIALE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-5 4 4 3-3" />);
+  else if (type === 'CHEF_ADMINISTRATION') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m1.5-5.5h-11A2.5 2.5 0 003.5 7.5v9A2.5 2.5 0 006 19h11a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0017 6.5z" />);
+  else if (type === 'AGENT_PROVINCIAL') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m1.5-5.5h-11A2.5 2.5 0 003.5 7.5v9A2.5 2.5 0 006 19h11a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0017 6.5z" />);
   else if (type === 'COORDINATION_SOUS_PROVINCIALE') content = (<g><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></g>);
   else if (type === 'DIRECTION_ECOLE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
   else if (type === 'ENSEIGNANT') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25v14.25" />);
@@ -167,21 +170,21 @@ function IconInput({ icon, children }: { icon: ReactNode; children: ReactNode })
   );
 }
 
-const UserIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>);
-const PhoneIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.39a12.035 12.035 0 01-7.143-7.143c-.162-.441.014-.928.39-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>);
-const MailIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-6.938 4.007a2.25 2.25 0 01-2.286 0L1.07 8.909A2.25 2.25 0 010 6.993V6.75" /></svg>);
-const LockIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>);
-const EyeIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>);
-const EyeOffIcon: ReactNode = (<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243L9.88 9.88" /></svg>);
+const UserIcon: ReactNode = <User className="h-5 w-5" strokeWidth={1.8} />;
+const PhoneIcon: ReactNode = <Phone className="h-5 w-5" strokeWidth={1.8} />;
+const MailIcon: ReactNode = <Mail className="h-5 w-5" strokeWidth={1.8} />;
+const LockIcon: ReactNode = <Lock className="h-5 w-5" strokeWidth={1.8} />;
+const EyeIcon: ReactNode = <Eye className="h-5 w-5" strokeWidth={1.8} />;
+const EyeOffIcon: ReactNode = <EyeOff className="h-5 w-5" strokeWidth={1.8} />;
 
 export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) => void }) {
-  const router = useRouter();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -225,9 +228,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         if (!form.role) return 'Veuillez sélectionner un niveau.';
         return '';
       case 2:
-        if (rolesNeedingDinacope.has(form.role) && !form.dinacope.trim())
-          return 'Le numéro DINACOPE est obligatoire pour ce profil.';
-        if (form.role === 'COORDINATION_PROVINCIALE') {
+        if (ROLES_NEEDING_BUREAU.has(form.role)) {
           if (!form.bureauAffectation) return 'Veuillez sélectionner un bureau d’affectation.';
           if (!form.fonction) return 'Veuillez sélectionner une fonction.';
           if (!form.grade) return 'Veuillez sélectionner un grade.';
@@ -246,16 +247,12 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
           return 'Veuillez sélectionner une province éducationnelle.';
         if (ROLES_NEEDING_EDUC_PROVINCE.has(form.role) && !form.coordSousProvinciale)
           return 'Veuillez sélectionner une coordination sous-provinciale.';
-        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution === 'EC-ERC') {
-          if (!form.ecoleNom.trim()) return 'Le nom de l’école est obligatoire.';
-          if (!form.dinacope.trim()) return 'Le numéro DINACOPE de l’école est obligatoire.';
-        }
-        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && form.typeInstitution !== 'EC-ERC' && !form.institutionName.trim())
-          return 'Le nom de l’institution est obligatoire.';
+        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && !form.ecoleId)
+          return 'Veuillez sélectionner votre école dans la liste.';
         return '';
       case 4:
         if (!form.email.trim()) return 'L’email est obligatoire.';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'L’email est invalide.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'L’email est invalide.';
         if (form.password.length < 8) return 'Le mot de passe doit faire au moins 8 caractères.';
         if (form.password !== form.confirmPassword) return 'Les mots de passe ne correspondent pas.';
         return '';
@@ -282,7 +279,8 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
           nom: form.nom, postNom: form.postNom, prenom: form.prenom, sexe: form.sexe,
           email: form.email, telephone: form.telephone, password: form.password,
           role: form.role, typeInstitution: form.typeInstitution,
-          institutionName: form.ecoleNom || form.institutionName,
+          institutionName: form.institutionName,
+          ecoleId: form.ecoleId || undefined,
           provinceAdministrative: form.provinceAdministrative,
           provinceEducationnelle: form.provinceEducationnelle,
           bureauAffectation: form.bureauAffectation, fonction: form.fonction,
@@ -293,6 +291,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
       });
       const result = await response.json();
       if (!response.ok) { setError(result.error ?? 'Impossible de créer le compte.'); return; }
+      setVerificationEmailSent(result.verificationEmailSent !== false);
       setSuccess(true);
     } catch {
       setError('Impossible de joindre le serveur.');
@@ -317,9 +316,9 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
     setForm((cur) => ({ ...cur, bureauAffectation: value, fonction: '', grade: '' }));
   }
 
-  const isEcErc = form.typeInstitution === 'EC-ERC';
+  const isEcErc = form.typeInstitution === 'EC_ERC';
   const COORDINATION_ROLES = new Set([
-    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE',
+    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE',
   ]);
   const roleOptions: RoleOption[] = isEcErc
     ? allRegistrationRoleOptions
@@ -330,10 +329,10 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   const availableSousDivisions = form.provinceEducationnelle
     ? sousDivisionsByEducationProvince[form.provinceEducationnelle] ?? []
     : [];
-  const availableFonctions = form.role === 'COORDINATION_PROVINCIALE'
+  const availableFonctions = (ROLES_NEEDING_BUREAU.has(form.role))
     ? fonctionsByBureau[form.bureauAffectation] ?? []
     : fonctionsByRole[form.role] ?? [];
-  const availableGrades = form.role === 'COORDINATION_PROVINCIALE'
+  const availableGrades = (ROLES_NEEDING_BUREAU.has(form.role))
     ? gradesByBureau[form.bureauAffectation] ?? []
     : gradesByRole[form.role] ?? [];
 
@@ -346,8 +345,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   const isLastStep = step === 5;
   const needsLocation = ROLES_NEEDING_LOCATION.has(form.role);
   const needsEducProvince = ROLES_NEEDING_EDUC_PROVINCE.has(form.role);
-  const needsSchoolForm = ROLES_NEEDING_SCHOOL_FORM.has(form.role) && isEcErc;
-  const needsSimpleSchool = ROLES_NEEDING_SCHOOL_FORM.has(form.role) && !isEcErc;
+
 
   if (success) {
     return (
@@ -359,18 +357,20 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         </div>
         <div>
           <p className="text-xl font-bold text-slate-900">Votre compte a été créé avec succès.</p>
-          <p className="mt-2 text-sm text-slate-500">
-            Un code de validation a été envoyé à <span className="font-medium text-blue-600">{form.email}</span>.
-            Vérifiez votre email pour activer votre compte.
+          <p className="mt-2 break-words text-sm text-slate-600">
+            {verificationEmailSent ? 'Un code de validation a été envoyé à ' : 'Votre compte est enregistré, mais le code n’a pas pu être envoyé à '}
+            <span className="font-medium text-blue-600">{form.email.trim().toLowerCase()}</span>.
+            {verificationEmailSent ? ' Saisissez ce code pour activer votre compte.' : ' Ouvrez l’activation pour renvoyer le code.'}
           </p>
+          <p className="mt-1 text-xs text-slate-500">Vérifiez également votre dossier spam ou courriers indésirables.</p>
         </div>
-        <button
-          onClick={() => router.push(`/verify?email=${encodeURIComponent(form.email)}`)}
+        <Link
+          href={`/verify?email=${encodeURIComponent(form.email.trim().toLowerCase())}`}
           className="btn-primary w-full px-6 py-3.5 text-sm sm:w-auto sm:min-w-[280px]"
           style={{ borderRadius: '9999px' }}
         >
-          Accéder à mon espace →
-        </button>
+          Activer mon compte →
+        </Link>
       </div>
     );
   }
@@ -480,12 +480,12 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
 
             {rolesNeedingDinacope.has(form.role) && (
               <div>
-                <label className={labelClass}>Numéro DINACOPE *</label>
-                <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE" />
+                <label className={labelClass}>Numéro DINACOPE</label>
+                <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE (optionnel)" />
               </div>
             )}
 
-            {form.role === 'COORDINATION_PROVINCIALE' && (
+            {(ROLES_NEEDING_BUREAU.has(form.role)) && (
               <div>
                 <label className={labelClass}>Bureau d’affectation *</label>
                 <select className={inputClass} value={form.bureauAffectation} onChange={(e) => handleBureau(e.target.value)}>
@@ -499,11 +499,11 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
               <div>
                 <label className={labelClass}>Fonction *</label>
                 <select className={inputClass} value={form.fonction} onChange={(e) => updateField('fonction', e.target.value)}
-                  disabled={form.role === 'COORDINATION_PROVINCIALE' && !form.bureauAffectation}>
+                  disabled={(ROLES_NEEDING_BUREAU.has(form.role)) && !form.bureauAffectation}>
                   <option value="">— Sélectionner —</option>
                   {availableFonctions.map((f) => <option key={f} value={f}>{f}</option>)}
                 </select>
-                {form.role === 'COORDINATION_PROVINCIALE' && !form.bureauAffectation && (
+                {(ROLES_NEEDING_BUREAU.has(form.role)) && !form.bureauAffectation && (
                   <p className="mt-1 text-xs text-slate-400">Sélectionnez d’abord un bureau.</p>
                 )}
               </div>
@@ -610,63 +610,35 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
               </div>
             )}
 
-            {/* School form for École EC-ERC */}
-            {needsSchoolForm && (
+            {/* School selector for DIRECTION_ECOLE */}
+            {ROLES_NEEDING_SCHOOL_FORM.has(form.role) && (
               <div className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50/30 p-4">
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-1 rounded-full bg-blue-500" />
-                  <p className="text-sm font-semibold text-slate-700">École EC-ERC</p>
+                  <p className="text-sm font-semibold text-slate-700">Votre école</p>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className={labelClass}>Nom de l’école *</label>
-                    <input className={inputClass} value={form.ecoleNom} onChange={(e) => updateField('ecoleNom', e.target.value)} placeholder="Nom de l'école" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>DINACOPE *</label>
-                    <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Commune</label>
-                    <input className={inputClass} value={form.ecoleCommune} onChange={(e) => updateField('ecoleCommune', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Type d’école</label>
-                    <select className={inputClass} value={form.ecoleType} onChange={(e) => updateField('ecoleType', e.target.value)}>
-                      <option value="">— Sélectionner —</option>
-                      {ecoleTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className={labelClass}>Adresse</label>
-                    <input className={inputClass} value={form.ecoleAdresse} onChange={(e) => updateField('ecoleAdresse', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Téléphone (école)</label>
-                    <input type="tel" className={inputClass} value={form.ecoleTelephone} onChange={(e) => updateField('ecoleTelephone', e.target.value)} placeholder="+243 ..." />
-                  </div>
-                  <div>
-                    <label className={labelClass}>E-mail (école)</label>
-                    <input type="email" className={inputClass} value={form.ecoleEmail} onChange={(e) => updateField('ecoleEmail', e.target.value)} />
-                  </div>
-                </div>
+                <SchoolSelector
+                  institution={form.typeInstitution}
+                  province={form.provinceAdministrative || undefined}
+                  value={form.ecoleId}
+                  onChange={(id, nom) => { updateField('ecoleId', id); updateField('institutionName', nom); }}
+                  required
+                  label="Sélectionner votre école"
+                />
               </div>
             )}
 
-            {/* Simple school name for non-EC-ERC DIRECTION_ECOLE */}
-            {needsSimpleSchool && (
-              <div>
-                <label className={labelClass}>Nom de l’institution / école *</label>
-                <input className={inputClass} value={form.institutionName} onChange={(e) => updateField('institutionName', e.target.value)} placeholder="Nom de l'institution" />
-              </div>
-            )}
 
-            {/* School name for ENSEIGNANT/ELEVE/PARENT */}
+
+            {/* School selector for ENSEIGNANT/ELEVE/PARENT */}
             {(form.role === 'ENSEIGNANT' || form.role === 'ELEVE' || form.role === 'PARENT') && (
-              <div>
-                <label className={labelClass}>Nom de l’institution / école</label>
-                <input className={inputClass} value={form.institutionName} onChange={(e) => updateField('institutionName', e.target.value)} placeholder="Nom de l'institution (optionnel)" />
-              </div>
+              <SchoolSelector
+                institution={form.typeInstitution}
+                province={form.provinceAdministrative || undefined}
+                value={form.ecoleId}
+                onChange={(id, nom) => { updateField('ecoleId', id); updateField('institutionName', nom); }}
+                label="Sélectionner votre école (optionnel)"
+              />
             )}
           </div>
         )}
@@ -725,8 +697,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                 {form.provinceAdministrative && <SummaryRow label="Province" value={form.provinceAdministrative} onEdit={() => goToStep(3)} />}
                 {form.provinceEducationnelle && <SummaryRow label="Province éduc." value={form.provinceEducationnelle} onEdit={() => goToStep(3)} />}
                 {form.coordSousProvinciale && <SummaryRow label="Coord. sous-prov." value={form.coordSousProvinciale} onEdit={() => goToStep(3)} />}
-                {(form.ecoleNom || form.institutionName) && <SummaryRow label="École" value={form.ecoleNom || form.institutionName} onEdit={() => goToStep(3)} />}
-                {form.ecoleType && <SummaryRow label="Type école" value={form.ecoleType} onEdit={() => goToStep(3)} />}
+                {form.institutionName && <SummaryRow label="École" value={form.institutionName} onEdit={() => goToStep(3)} />}
                 <SummaryRow label="Nom complet" value={`${form.nom} ${form.postNom} ${form.prenom}`.trim()} onEdit={() => goToStep(3)} />
                 {form.sexe && <SummaryRow label="Sexe" value={form.sexe === 'M' ? 'Masculin' : 'Féminin'} onEdit={() => goToStep(3)} />}
                 {form.telephone && <SummaryRow label="Téléphone" value={form.telephone} onEdit={() => goToStep(3)} />}

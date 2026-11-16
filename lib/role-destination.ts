@@ -14,6 +14,8 @@ const ROLE_DESTINATION: Record<string, string> = {
   ADMIN_SCHOOL_MANAGER_RDC: '/admin-smd',
   COORDINATION_NATIONALE: '/coordination-nationale',
   COORDINATION_PROVINCIALE: '/coordination-provinciale',
+  CHEF_ADMINISTRATION: '/dashboard',
+  AGENT_PROVINCIAL: '/agent-provincial',
   COORDINATION_SOUS_PROVINCIALE: '/coordination-sous-provinciale',
   PROMOTEUR: '/promoteur',
   SECRETAIRE: '/secretaire',

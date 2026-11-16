@@ -1,18 +1,10 @@
-import nodemailer from 'nodemailer';
+import 'server-only';
+import { sendSmtpMail } from '@/lib/smtp';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: Number(process.env.SMTP_PORT || 587) === 465,
-  auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-  },
-});
+export { missingSmtpVariables } from '@/lib/smtp';
 
 export async function sendValidationCode(email: string, code: string, nom: string): Promise<void> {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
-
+  const safeNom = nom.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -20,26 +12,23 @@ export async function sendValidationCode(email: string, code: string, nom: strin
         <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Validation de votre compte</p>
       </div>
       <div style="background: #f8fafc; border-radius: 12px; padding: 24px; text-align: center;">
-        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">Bonjour ${nom},</p>
+        <p style="color: #334155; font-size: 15px; margin: 0 0 16px;">Bonjour ${safeNom},</p>
         <p style="color: #334155; font-size: 15px; margin: 0 0 20px;">Voici votre code de validation :</p>
         <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #2563eb; background: white; border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 0 auto 20px; display: inline-block;">${code}</div>
-        <p style="color: #64748b; font-size: 13px; margin: 0;">Ce code expire à la fin de votre session. Ne le partagez avec personne.</p>
+        <p style="color: #64748b; font-size: 13px; margin: 0;">Ce code expire 15 minutes après sa création. Un renvoi ne prolonge pas sa validité. Ne le partagez avec personne.</p>
       </div>
       <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px;">Si vous n'avez pas créé de compte, ignorez cet email.</p>
     </div>
   `;
 
-  try {
-    await transporter.sendMail({
-      from,
-      to: email,
-      subject: 'School Manager RDC — Code de validation',
-      html,
-    });
-  } catch (error) {
-    console.error('Erreur envoi email:', error);
-    throw new Error("Impossible d'envoyer l'email de validation.");
-  }
+  const text = `School Manager RDC — Validation de votre compte\n\nBonjour ${nom},\n\nVoici votre code de validation : ${code}\n\nCe code expire 15 minutes après sa création. Un renvoi ne prolonge pas sa validité. Ne le partagez avec personne.\n\nSi vous n'avez pas créé de compte, ignorez cet email.`;
+
+  await sendSmtpMail({
+    to: email,
+    subject: 'School Manager RDC — Code de validation',
+    html,
+    text,
+  });
 }
 
 /**
@@ -53,8 +42,6 @@ export async function sendAbsenceNotification(opts: {
   ecoleNom: string;
   dateAbsence: string;
 }): Promise<void> {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
-
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -86,17 +73,11 @@ export async function sendAbsenceNotification(opts: {
     </div>
   `;
 
-  try {
-    await transporter.sendMail({
-      from,
-      to: opts.parentEmail,
-      subject: `School Manager RDC — Absence de ${opts.eleveNom} le ${opts.dateAbsence}`,
-      html,
-    });
-  } catch (error) {
-    console.error('Erreur envoi notification d\'absence:', error);
-    throw error;
-  }
+  await sendSmtpMail({
+    to: opts.parentEmail,
+    subject: `School Manager RDC — Absence de ${opts.eleveNom} le ${opts.dateAbsence}`,
+    html,
+  });
 }
 
 /**
@@ -112,8 +93,6 @@ export async function sendPresenceNotification(opts: {
   heurePresence: string;
   localisation?: string;
 }): Promise<void> {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
-
   const localisationInfo = opts.localisation
     ? `<p style="color: #64748b; font-size: 13px; margin: 8px 0 0;">📍 Localisation du scan : ${opts.localisation}</p>`
     : '';
@@ -148,17 +127,11 @@ export async function sendPresenceNotification(opts: {
     </div>
   `;
 
-  try {
-    await transporter.sendMail({
-      from,
-      to: opts.parentEmail,
-      subject: `School Manager RDC — Présence de ${opts.eleveNom} le ${opts.datePresence}`,
-      html,
-    });
-  } catch (error) {
-    console.error('Erreur envoi notification de présence:', error);
-    throw error;
-  }
+  await sendSmtpMail({
+    to: opts.parentEmail,
+    subject: `School Manager RDC — Présence de ${opts.eleveNom} le ${opts.datePresence}`,
+    html,
+  });
 }
 
 /**
@@ -171,7 +144,6 @@ export async function sendDocumentSubmissionEmail(opts: {
   docCount: number;
   coordName: string;
 }): Promise<void> {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
@@ -205,17 +177,14 @@ export async function sendDocumentSubmissionEmail(opts: {
     </div>
   `;
 
-  try {
-    await transporter.sendMail({
-      from,
-      to: opts.to,
-      subject: `School Manager RDC — Dossier reçu : ${opts.ecoleNom}`,
-      html,
-    });
-  } catch (error) {
-    console.error('Erreur envoi notification de dossier:', error);
-    throw error;
-  }
+  const text = `School Manager RDC — Dossier reçu\n\nBonjour ${opts.coordinatorName || 'Coordonnateur'},\n\nL'école ${opts.ecoleNom} a soumis son dossier de documents officiels (${opts.docCount} document${opts.docCount > 1 ? 's' : ''}) pour vérification.\n\nLe dossier est désormais en attente de vérification. Connectez-vous à votre espace pour le consulter.`;
+
+  await sendSmtpMail({
+    to: opts.to,
+    subject: `School Manager RDC — Dossier reçu : ${opts.ecoleNom}`,
+    html,
+    text,
+  });
 }
 
 /**
@@ -227,8 +196,6 @@ export async function sendRappelCote(
   periode: string,
   anneeScolaire: string,
 ): Promise<void> {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@school-manager-rdc.org';
-
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -260,15 +227,9 @@ export async function sendRappelCote(
     </div>
   `;
 
-  try {
-    await transporter.sendMail({
-      from,
-      to: email,
-      subject: `School Manager RDC — Rappel : saisie des cotes ${periode}`,
-      html,
-    });
-  } catch (error) {
-    console.error('Erreur envoi rappel:', error);
-    throw error;
-  }
+  await sendSmtpMail({
+    to: email,
+    subject: `School Manager RDC — Rappel : saisie des cotes ${periode}`,
+    html,
+  });
 }
