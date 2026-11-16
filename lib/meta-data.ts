@@ -54,6 +54,7 @@ export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'CHEF_ADMINISTRATION', label: 'Chef d\u2019administration' },
   { value: 'AGENT_PROVINCIAL', label: 'Agent provincial' },
   { value: 'COORDINATION_SOUS_PROVINCIALE', label: 'Coordination sous-provinciale' },
+  { value: 'AGENT_SOUS_PROVINCIAL', label: 'Agent de coordination sous-provinciale' },
   { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
   { value: 'PROMOTEUR', label: 'Promoteur' },
   { value: 'SECRETAIRE', label: 'Secrétaire' },

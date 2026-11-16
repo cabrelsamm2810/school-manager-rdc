@@ -57,13 +57,13 @@ const emptyForm: FormState = {
 };
 
 const ROLES_NEEDING_LOCATION = new Set([
-  'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE', 'ENSEIGNANT', 'ELEVE', 'PARENT',
+  'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE', 'AGENT_SOUS_PROVINCIAL', 'DIRECTION_ECOLE', 'ENSEIGNANT', 'ELEVE', 'PARENT',
 ]);
 
 const ROLES_NEEDING_BUREAU = new Set([
   'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL',
 ]);
-const ROLES_NEEDING_EDUC_PROVINCE = new Set(['COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE']);
+const ROLES_NEEDING_EDUC_PROVINCE = new Set(['COORDINATION_SOUS_PROVINCIALE', 'AGENT_SOUS_PROVINCIAL', 'DIRECTION_ECOLE']);
 const ROLES_NEEDING_SCHOOL_FORM = new Set(['DIRECTION_ECOLE']);
 
 function isStepNeeded(step: number, role: string): boolean {
@@ -96,6 +96,7 @@ const ROLE_DESC: Record<string, string> = {
   'CHEF_ADMINISTRATION': 'Chef de l\u2019administration provinciale',
   'AGENT_PROVINCIAL': 'Agent de la coordination provinciale',
   'COORDINATION_SOUS_PROVINCIALE': 'Administration sous-provinciale',
+  'AGENT_SOUS_PROVINCIAL': 'Agent de la coordination sous-provinciale',
   'DIRECTION_ECOLE': 'Gestion d’école',
   'ENSEIGNANT': 'Corps enseignant',
   'ELEVE': 'Espace élève',
@@ -136,6 +137,7 @@ function RoleIcon({ type, selected }: { type: string; selected: boolean }) {
   else if (type === 'CHEF_ADMINISTRATION') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m1.5-5.5h-11A2.5 2.5 0 003.5 7.5v9A2.5 2.5 0 006 19h11a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0017 6.5z" />);
   else if (type === 'AGENT_PROVINCIAL') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m1.5-5.5h-11A2.5 2.5 0 003.5 7.5v9A2.5 2.5 0 006 19h11a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0017 6.5z" />);
   else if (type === 'COORDINATION_SOUS_PROVINCIALE') content = (<g><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></g>);
+  else if (type === 'AGENT_SOUS_PROVINCIAL') content = (<g><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a7.5 7.5 0 0115 0v.75H4.5v-.75z" /></g>);
   else if (type === 'DIRECTION_ECOLE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
   else if (type === 'ENSEIGNANT') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25v14.25" />);
   else if (type === 'ELEVE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347M3.75 21.75h4.5a.75.75 0 00.75-.75v-4.5a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75v-6a.75.75 0 00-.75-.75h-6a.75.75 0 01-.75-.75v-3a.75.75 0 00-.75-.75H3.75a.75.75 0 00-.75.75v3a.75.75 0 00.75.75h.75" />);
@@ -316,9 +318,27 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
     setForm((cur) => ({ ...cur, bureauAffectation: value, fonction: '', grade: '' }));
   }
 
+  /* Carte EC-ERC : organisation enregistrée automatiquement, aucune ressaisie
+     n'est perdue, et le type d'établissement n'est plus demandé (étape suivante). */
+  function chooseEcErc() {
+    setError('');
+    setDirection('forward');
+    setForm((cur) => ({ ...cur, typeInstitution: 'EC_ERC' }));
+    setStep(1);
+  }
+
+  function changeOrganization() {
+    setError('');
+    setDirection('back');
+    setForm((cur) => ({
+      ...cur, typeInstitution: '', role: '', fonction: '', grade: '', bureauAffectation: '',
+    }));
+    setStep(0);
+  }
+
   const isEcErc = form.typeInstitution === 'EC_ERC';
   const COORDINATION_ROLES = new Set([
-    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE',
+    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE', 'AGENT_SOUS_PROVINCIAL',
   ]);
   const roleOptions: RoleOption[] = isEcErc
     ? allRegistrationRoleOptions
@@ -379,6 +399,14 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Progress indicator */}
       <div className="sticky top-0 z-10 -mx-5 rounded-t-[2rem] bg-white/95 px-5 pb-3 pt-1 backdrop-blur-md sm:-mx-8 sm:px-8">
+        {isEcErc && (
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-blue-50 px-2.5 py-1.5 ring-1 ring-blue-100">
+            <img src="/illustrations/ec-erc-logo.jpg" alt="Logo EC-ERC" className="h-6 w-6 shrink-0 rounded bg-white object-contain p-0.5 ring-1 ring-slate-200" />
+            <p className="min-w-0 truncate text-[11px] font-semibold text-blue-800">
+              Inscription EC-ERC <span className="font-medium text-blue-600">· Écoles Conventionnées des Églises du Réveil du Congo</span>
+            </p>
+          </div>
+        )}
         {/* Desktop: full progress with labels */}
         <div className="hidden items-center justify-between sm:flex">
           {visibleStepIndices.map((i, displayIdx) => {
@@ -427,34 +455,96 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
 
       {/* Step content */}
       <div key={step} className={animClass}>
-        {/* STEP 0: Institution */}
+        {/* STEP 0: Institution — carte EC-ERC dédiée, puis les autres types */}
         {step === 0 && (
           <div className="space-y-4">
-            <StepHeader num={1} title="Institution" desc="Sélectionnez votre type d’institution." />
-            <div className="grid gap-3 sm:grid-cols-2">
-              {registrationInstitutionTypes.map((inst) => (
-                <div key={inst.value} onClick={() => handleInstitutionType(inst.value)}
-                  className={`select-card rounded-2xl border-2 p-4 ${form.typeInstitution === inst.value ? 'selected' : 'border-slate-200'}`}>
-                  {form.typeInstitution === inst.value && <CheckBadge />}
-                  <div className="flex items-start gap-3">
-                    <div className="flex shrink-0 items-center justify-center">
-                      <InstitutionIcon type={inst.value} selected={form.typeInstitution === inst.value} />
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="font-bold tracking-tight text-slate-900">{INSTITUTION_SHORT[inst.value] ?? inst.label}</p>
-                      <p className="text-xs leading-snug text-slate-500">{INSTITUTION_DESC[inst.value]}</p>
-                    </div>
+            <StepHeader
+              num={1}
+              title={isEcErc ? 'Parcours EC-ERC' : 'Institution'}
+              desc={isEcErc ? 'Votre organisation est déjà enregistrée pour ce parcours.' : 'Choisissez l’organisation EC-ERC ou un autre type d’établissement.'}
+            />
+
+            {isEcErc ? (
+              <div className="reg-fade-up overflow-hidden rounded-2xl border-2 border-blue-500 bg-white shadow-lg shadow-blue-500/10">
+                <div className="flex items-center gap-4 p-4 sm:p-5">
+                  <img src="/illustrations/ec-erc-logo.jpg" alt="Logo EC-ERC" className="h-20 w-20 shrink-0 rounded-xl bg-white object-contain p-1 ring-1 ring-slate-200 sm:h-24 sm:w-24" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-bold tracking-tight text-slate-900">EC-ERC</p>
+                    <p className="text-xs leading-snug text-slate-500 sm:text-sm">Écoles Conventionnées des Églises du Réveil du Congo</p>
+                    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Organisation enregistrée : EC-ERC
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
+                  <p className="text-[11px] text-slate-500">Le type d’établissement n’est plus demandé.</p>
+                  <button type="button" onClick={changeOrganization}
+                    className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100">
+                    Changer d’organisation
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <button type="button" onClick={chooseEcErc}
+                  aria-label="Continuer l’inscription avec l’organisation EC-ERC"
+                  className="group relative w-full overflow-hidden rounded-2xl border-2 border-blue-500 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 p-4 text-left text-white shadow-lg shadow-blue-600/25 transition hover:shadow-xl hover:shadow-blue-600/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 sm:p-5">
+                  <span className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                  <div className="relative flex items-center gap-4">
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-md sm:h-24 sm:w-24">
+                      <img src="/illustrations/ec-erc-logo.jpg" alt="Logo EC-ERC" className="h-full w-full object-contain" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-100">Inscription officielle</p>
+                      <p className="mt-0.5 text-xl font-bold tracking-tight sm:text-2xl">EC-ERC</p>
+                      <p className="mt-1 text-[11.5px] font-medium leading-snug text-blue-50 sm:text-sm">
+                        Écoles Conventionnées des Églises du Réveil du Congo
+                      </p>
+                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-blue-700 transition group-hover:gap-2.5">
+                        Continuer avec EC-ERC
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-slate-200" />
+                  <span className="text-center text-[10px] font-medium uppercase tracking-wider text-slate-400">ou un autre type d’établissement</span>
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {registrationInstitutionTypes.filter((inst) => inst.value !== 'EC_ERC').map((inst) => (
+                    <div key={inst.value} onClick={() => handleInstitutionType(inst.value)}
+                      className={`select-card rounded-2xl border-2 p-4 ${form.typeInstitution === inst.value ? 'selected' : 'border-slate-200'}`}>
+                      {form.typeInstitution === inst.value && <CheckBadge />}
+                      <div className="flex items-start gap-3">
+                        <div className="flex shrink-0 items-center justify-center">
+                          <InstitutionIcon type={inst.value} selected={form.typeInstitution === inst.value} />
+                        </div>
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <p className="font-bold tracking-tight text-slate-900">{INSTITUTION_SHORT[inst.value] ?? inst.label}</p>
+                          <p className="text-xs leading-snug text-slate-500">{INSTITUTION_DESC[inst.value]}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {/* STEP 1: Structure */}
         {step === 1 && (
           <div className="space-y-4">
-            <StepHeader num={2} title="Structure" desc="Sélectionnez votre niveau. Chaque niveau donne accès à un espace indépendant." />
+            <StepHeader num={2} title="Structure" desc={isEcErc ? 'Parcours EC-ERC — sélectionnez votre niveau dans la hiérarchie.' : 'Sélectionnez votre niveau. Chaque niveau donne accès à un espace indépendant.'} />
             <div className="grid gap-3 sm:grid-cols-2">
               {roleOptions.map((role) => (
                 <div key={role.value} onClick={() => handleRole(role.value)}

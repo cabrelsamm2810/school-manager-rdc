@@ -13,6 +13,16 @@ export const INSTITUTION_LABELS: Record<string, string> = {
   INDEPENDANTE: 'École indépendante'
 };
 
+/**
+ * Organisation EC-ERC du compte, telle qu'enregistrée en base (`typeInstitution`).
+ * Jamais un choix du navigateur : la même valeur est relue par `/api/auth/session`.
+ */
+export function isEcErcUser(
+  user: { typeInstitution?: string | null } | null | undefined
+): boolean {
+  return user?.typeInstitution === 'EC_ERC';
+}
+
 export function getInstitutionLabel(
   user: { institutionName?: string | null; typeInstitution?: string | null } | null | undefined
 ): string | null {

@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { useSessionUser } from '@/lib/use-session-user';
-
-const OTHER_INSTITUTION_TYPES = new Set(['PUBLIQUE', 'CATHOLIQUE', 'ISLAMIQUE', 'INDEPENDANTE']);
+import { isEcErcUser } from '@/lib/institution';
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -24,8 +23,8 @@ function hand(value: number, max: number) {
  */
 export function ClockCard({ institutionLabel }: { institutionLabel?: string | null }) {
   const user = useSessionUser();
-  /* Logo EC-ERC par défaut (coordination, direction…), sauf pour un autre type d'école connu. */
-  const showEcErc = !OTHER_INSTITUTION_TYPES.has(user?.typeInstitution ?? '');
+  /* Identité EC-ERC uniquement si l'organisation enregistrée du compte est EC_ERC. */
+  const showEcErc = isEcErcUser(user);
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {

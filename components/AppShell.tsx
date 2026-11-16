@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { allNavItems, visibleNavigationGroups, type NavGroup } from '@/lib/navigation';
 import { ROLE_LABELS } from '@/lib/rbac';
 import { useSessionUser, type SessionUser } from '@/lib/use-session-user';
+import { isEcErcUser } from '@/lib/institution';
 import { Icon } from '@/components/ui/Icon';
 import { Avatar } from '@/components/ui/Avatar';
 import { SchoolChatMark } from '@/components/ui/SchoolChatMark';
@@ -182,6 +183,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
+
+        {/* ── Bandeau d'identité EC-ERC (comptes dont l'organisation enregistrée est EC_ERC) ── */}
+        {isEcErcUser(user) && (
+          <div className="border-t border-brand-100 bg-brand-50/70">
+            <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 lg:px-5">
+              <img
+                src="/illustrations/ec-erc-logo.jpg"
+                alt="Logo EC-ERC"
+                className="h-7 w-7 shrink-0 rounded-md bg-white object-contain p-0.5 ring-1 ring-slate-200"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[11px] font-bold leading-tight text-brand-800">
+                  EC-ERC <span className="font-medium text-slate-500">· Espace officiel</span>
+                </p>
+                <p className="truncate text-[10px] leading-tight text-slate-500">
+                  Écoles Conventionnées des Églises du Réveil du Congo · School Manager RDC
+                </p>
+              </div>
+              <span className="hidden shrink-0 rounded-full bg-white px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-700 ring-1 ring-brand-100 sm:inline">
+                {ROLE_LABELS[user?.role ?? ''] ?? 'EC-ERC'}
+              </span>
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="flex">
