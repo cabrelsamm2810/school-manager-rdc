@@ -21,6 +21,7 @@ type Eleve = {
   dateNaissance: string | null;
   lieuNaissance: string;
   adresse: string;
+  photoUrl: string | null;
 };
 
 type Ecole = {

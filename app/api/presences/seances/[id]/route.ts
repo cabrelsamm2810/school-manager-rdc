@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { buildEleveScopeWhere } from '@/lib/territory-filter';
+import { resolveFileUrls } from '@/lib/storage';
 
 /**
  * GET /api/presences/seances/[id] — détails d'une séance avec élèves et présences.
@@ -24,7 +25,7 @@ export async function GET(
       presences: {
         include: {
           eleve: {
-            select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, classe: true },
+            select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, classe: true, photoUrl: true },
           },
         },
       },
@@ -43,21 +44,26 @@ export async function GET(
   eleveWhere.classe = seance.classe;
   const eleves = await prisma.eleve.findMany({
     where: eleveWhere,
-    select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, classe: true },
+    select: { id: true, matricule: true, nom: true, postNom: true, prenom: true, classe: true, photoUrl: true },
     orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
   });
 
   // Construire la liste combinée: élève + sa présence (si elle existe)
   const presenceMap = new Map(seance.presences.map((p) => [p.eleveId, p]));
-  const elevesAvecStatut = eleves.map((e) => {
-    const p = presenceMap.get(e.id);
-    return {
-      ...e,
-      presenceId: p?.id || null,
-      statut: p?.statut || null,
-      heureArrivee: p?.heureArrivee || null,
-    };
-  });
+  const elevesAvecStatut = await resolveFileUrls(
+    eleves.map((e) => {
+      const p = presenceMap.get(e.id);
+      return {
+        ...e,
+        photoUrl: e.photoUrl || null,
+        presenceId: p?.id || null,
+        statut: p?.statut || null,
+        heureArrivee: p?.heureArrivee || null,
+      };
+    }),
+    'photoUrl',
+    { signed: true },
+  );
 
   return NextResponse.json({ seance, eleves: elevesAvecStatut });
 }

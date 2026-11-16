@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { buildEleveScopeWhere } from '@/lib/territory-filter';
+import { resolveFileUrls } from '@/lib/storage';
 
 const createSchema = z.object({
   matricule: z.string().trim().min(1, 'Le matricule est obligatoire.'),
@@ -55,7 +56,9 @@ export async function GET(request: NextRequest) {
     orderBy: [{ classe: 'asc' }, { nom: 'asc' }]
   });
 
-  return NextResponse.json({ eleves });
+  // Les photos sont stockées en privé : `r2://` devient un lien signé lisible
+  // par le navigateur (même schéma que les documents élèves).
+  return NextResponse.json({ eleves: await resolveFileUrls(eleves, 'photoUrl', { signed: true }) });
 }
 
 /** POST /api/eleves — enregistrer un nouvel élève. */

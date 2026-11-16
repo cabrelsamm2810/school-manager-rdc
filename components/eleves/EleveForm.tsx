@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 
 type EleveFormProps = {
   onCreated?: () => void;
@@ -21,6 +21,7 @@ type EleveFormProps = {
     telephoneTuteur: string;
     emailTuteur: string;
     ecoleId: string | null;
+    photoUrl?: string | null;
   };
   onUpdated?: () => void;
 };
@@ -59,6 +60,10 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [ecoles, setEcoles] = useState<Ecole[]>([]);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/ecoles')
@@ -89,8 +94,77 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
         emailTuteur: eleve.emailTuteur ?? '',
         ecoleId: eleve.ecoleId ?? '',
       });
+      setPhotoUrl(eleve.photoUrl ?? null);
+      setPhotoFile(null);
     }
   }, [eleve]);
+
+  /** Téléverse la photo sélectionnée sur la fiche de l'élève. */
+  async function uploadPhoto(eleveId: string, file: File): Promise<string | null> {
+    const formData = new FormData();
+    formData.append('photo', file);
+    const res = await fetch(`/api/eleves/${eleveId}/photo`, { method: 'POST', body: formData });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      setError(data?.error ?? "La photo n'a pas pu être téléversée.");
+      return null;
+    }
+    return (data?.photoUrl as string) ?? null;
+  }
+
+  async function handlePhotoChange(file: File | null) {
+    setPhotoFile(file);
+    setError('');
+    if (!file || !isEdit) return;
+    setPhotoBusy(true);
+    try {
+      const url = await uploadPhoto(eleve!.id, file);
+      if (url) {
+        setPhotoUrl(url);
+        setPhotoFile(null);
+      }
+    } catch {
+      setError('Impossible de joindre le serveur.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  async function handleRemovePhoto() {
+    if (!isEdit) {
+      setPhotoFile(null);
+      if (photoRef.current) photoRef.current.value = '';
+      return;
+    }
+    setPhotoBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/eleves/${eleve!.id}/photo`, { method: 'DELETE' });
+      if (!res.ok) {
+        setError('La photo n\'a pas pu être supprimée.');
+        return;
+      }
+      setPhotoUrl(null);
+      setPhotoFile(null);
+      if (photoRef.current) photoRef.current.value = '';
+    } catch {
+      setError('Impossible de joindre le serveur.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  // Aperçu local du fichier choisi (avant même le téléversement)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(photoUrl);
+  useEffect(() => {
+    if (!photoFile) {
+      setPreviewUrl(photoUrl);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(photoFile);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [photoFile, photoUrl]);
 
   function updateField<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -117,11 +191,23 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
         return;
       }
 
+      // En création, la fiche vient d'exister : la photo peut enfin être téléversée.
+      const eleveId = isEdit ? eleve!.id : (result.eleve?.id as string | undefined);
+      if (!isEdit && photoFile && eleveId) {
+        try {
+          await uploadPhoto(eleveId, photoFile);
+        } catch {
+          setError("Élève enregistré, mais la photo n'a pas pu être téléversée.");
+        }
+      }
+
       setSuccess(true);
       if (isEdit) {
         onUpdated?.();
       } else {
         setForm(emptyForm);
+        setPhotoFile(null);
+        setPreviewUrl(null);
         onCreated?.();
       }
     } catch {
@@ -133,6 +219,58 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      {/* Photo de profil — visible dans la liste d'appel */}
+      <div className="flex flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row">
+        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+          {previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt={`Photo de ${form.prenom} ${form.nom}`.trim()}
+              className="h-full w-full object-cover object-center"
+            />
+          ) : (
+            <span className="text-2xl font-bold text-slate-300">
+              {`${form.prenom.charAt(0)}${form.nom.charAt(0)}`.toUpperCase() || '—'}
+            </span>
+          )}
+        </div>
+        <div className="text-center sm:text-left">
+          <p className="text-sm font-semibold text-slate-800">Photo de profil</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Affichée dans la liste d&apos;appel et sur la fiche scannée. JPG, PNG ou WebP — 5 Mo max.
+          </p>
+          <div className="mt-2.5 flex flex-wrap justify-center gap-2 sm:justify-start">
+            <input
+              ref={photoRef}
+              id="eleve-photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => handlePhotoChange(e.target.files?.[0] ?? null)}
+            />
+            <label
+              htmlFor="eleve-photo"
+              className={`inline-flex cursor-pointer items-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 ${
+                photoBusy ? 'pointer-events-none opacity-50' : ''
+              }`}
+            >
+              {photoBusy ? 'Téléversement…' : previewUrl ? 'Changer la photo' : 'Ajouter une photo'}
+            </label>
+            {previewUrl && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                disabled={photoBusy}
+                className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+              >
+                Retirer
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Identité</p>
       </div>

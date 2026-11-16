@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { QRScannerModal, type ScanResult } from './QRScannerModal';
+import { Avatar } from '@/components/ui/Avatar';
 
 type Eleve = {
   id: string;
@@ -13,6 +14,7 @@ type Eleve = {
   presenceId: string | null;
   statut: string | null;
   heureArrivee: string | null;
+  photoUrl?: string | null;
 };
 
 type Seance = {
@@ -580,10 +582,13 @@ function EleveRow({
     >
       <div className="flex items-center gap-3">
         {/* Avatar */}
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
-          {eleve.prenom.charAt(0)}
-          {eleve.nom.charAt(0)}
-        </div>
+        <Avatar
+          photoUrl={eleve.photoUrl}
+          prenom={eleve.prenom}
+          nom={eleve.nom}
+          size="md"
+          loading="lazy"
+        />
 
         {/* Nom + info */}
         <div className="min-w-0 flex-1">

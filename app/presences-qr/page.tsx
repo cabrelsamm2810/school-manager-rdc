@@ -17,6 +17,7 @@ type Eleve = {
   presenceId: string | null;
   statut: string | null;
   heureArrivee: string | null;
+  photoUrl?: string | null;
 };
 
 type Seance = {

@@ -87,6 +87,7 @@ model Eleve {
   nomTuteur       String    @default("")
   telephoneTuteur String    @default("")
   emailTuteur     String    @default("")
+  photoUrl        String    @default("")
   ecoleId String?
   ecole   Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
   createdAt       DateTime  @default(now())

@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/session-user';
 import { buildEleveScopeWhere } from '@/lib/territory-filter';
 import { canAccessPath } from '@/lib/route-access';
 import { isSignedEleveQr, parseEleveQrValue } from '@/lib/eleve-qr';
+import { resolveFileUrl } from '@/lib/storage';
 
 /** Message unique affiché pour tout QR code inconnu, invalide ou expiré. */
 const INVALID_QR = 'QR Code élève invalide ou introuvable.';
@@ -174,8 +175,7 @@ export async function POST(request: NextRequest) {
           ? 'Inscrit'
           : 'École inactive'
         : 'Non affecté',
-      // Aucune photo n'est stockée sur la fiche élève aujourd'hui.
-      photoUrl: null,
+      photoUrl: await resolveFileUrl(eleve.photoUrl, { signed: true }),
       ecole: eleve.ecole
         ? {
             id: eleve.ecole.id,
