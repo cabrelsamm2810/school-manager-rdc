@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { buildEleveScopeWhere } from '@/lib/territory-filter';
+import { isSignedEleveQr, parseEleveQrValue } from '@/lib/eleve-qr';
 import { sendPresenceNotification } from '@/lib/mail';
 
 export const maxDuration = 60;
@@ -9,8 +10,10 @@ export const maxDuration = 60;
 /**
  * POST /api/presences/scan
  * Marque un élève comme présent via le scan de son QR code (carte scolaire).
- * Le QR code encode le matricule de l'élève (identifiant unique sécurisé —
- * aucune donnée personnelle complète n'est stockée dans le QR).
+ * Accepte le QR signé généré par `lib/eleve-qr.ts` (signature HMAC vérifiée),
+ * ainsi que, pour les cartes déjà imprimées, le matricule en clair, une URL
+ * contenant `matricule`/`id`, ou l'id interne. Le QR ne contient aucune donnée
+ * personnelle : seulement un identifiant unique.
  *
  * Body: { scannedValue, seanceId?, matiere?, classe?, anneeScolaire?, latitude?, longitude? }
  */
@@ -36,14 +39,37 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 1. Identifier l'élève à partir du QR code ──
-  // Le QR encode le matricule (identifiant unique), pas les données personnelles.
+  // Le QR encode un identifiant unique, pas les données personnelles.
   let eleve = null;
 
+  // Tentative 0 : QR signé de la carte scolaire (`SMRDC-ELEVE:id:expiration:signature`).
+  // La signature HMAC est vérifiée avant toute lecture en base.
+  if (isSignedEleveQr(scannedValue)) {
+    const parsed = parseEleveQrValue(scannedValue);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        {
+          error:
+            parsed.reason === 'expired'
+              ? 'QR Code expiré. Générez une nouvelle carte scolaire.'
+              : 'QR Code élève invalide : signature non reconnue.',
+        },
+        { status: 400 },
+      );
+    }
+    eleve = await prisma.eleve.findUnique({
+      where: { id: parsed.eleveId },
+      include: { ecole: { select: { nom: true, id: true } } },
+    });
+  }
+
   // Tentative 1: chercher par matricule direct
-  eleve = await prisma.eleve.findUnique({
-    where: { matricule: scannedValue },
-    include: { ecole: { select: { nom: true, id: true } } },
-  });
+  if (!eleve) {
+    eleve = await prisma.eleve.findUnique({
+      where: { matricule: scannedValue },
+      include: { ecole: { select: { nom: true, id: true } } },
+    });
+  }
 
   // Tentative 2: extraire le matricule depuis une URL
   if (!eleve) {

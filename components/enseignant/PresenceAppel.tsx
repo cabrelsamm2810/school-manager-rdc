@@ -32,6 +32,17 @@ type Props = {
   onTerminer: () => void;
 };
 
+/**
+ * Retrouve un élève hors connexion : QR signé (`SMRDC-ELEVE:id:expiration:signature`,
+ * on ne lit que l'id — la signature est vérifiée par le serveur à la synchro),
+ * matricule en clair ou id interne.
+ */
+function findEleveByScan(value: string, eleves: Eleve[]): Eleve | undefined {
+  const raw = value.trim();
+  const signedId = raw.startsWith('SMRDC-ELEVE:') ? raw.split(':')[1] : '';
+  return eleves.find((e) => e.id === signedId || e.matricule === raw || e.id === raw);
+}
+
 const STATUTS = ['PRESENT', 'RETARD', 'ABSENT', 'JUSTIFIE'] as const;
 type Statut = (typeof STATUTS)[number];
 
@@ -182,8 +193,8 @@ export function PresenceAppel({ seance, eleves: initialEleves, onBack, onTermine
           }
         } else {
           // Mode hors connexion: stocker localement
-          // Identifier l'élève localement par matricule
-          const eleve = eleves.find((e) => e.matricule === scannedValue || e.id === scannedValue);
+          // Identifier l'élève localement (matricule, id ou QR signé)
+          const eleve = findEleveByScan(scannedValue, eleves);
           if (!eleve) {
             setLastResult({
               eleve: { id: '', matricule: scannedValue, nom: 'Inconnu', postNom: '', prenom: '', classe: '' },

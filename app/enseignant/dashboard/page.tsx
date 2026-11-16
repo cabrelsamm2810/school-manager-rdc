@@ -53,19 +53,34 @@ export default function EnseignantDashboardPage() {
               <ClockCard institutionLabel={getInstitutionLabel(user)} />
               <WelcomeCard user={user} scope="enseignant" />
               <Link
-                href="/scanner-eleve"
-                className="mb-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-brand-800 via-brand-700 to-brand-500 px-4 py-3.5 text-white shadow-card transition active:scale-[0.99]"
+                href="/presences-qr"
+                className="mb-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-brand-800 via-brand-700 to-brand-500 px-4 py-4 text-white shadow-card transition active:scale-[0.99]"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25">
                   <Icon name="scan" className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold leading-tight">Scanner un QR Code élève</span>
+                  <span className="block text-sm font-bold leading-tight">📷 Scanner QR pour la présence</span>
                   <span className="mt-0.5 block text-[11px] text-blue-100">
-                    Fiche élève instantanée depuis la carte scolaire
+                    Appel de la classe : Présent · Retard · Absent · Justifié
                   </span>
                 </span>
                 <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-white/70" />
+              </Link>
+              <Link
+                href="/scanner-eleve"
+                className="mb-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-700 shadow-sm transition active:scale-[0.99]"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-100">
+                  <Icon name="qr" className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold leading-tight">Fiche élève par QR Code</span>
+                  <span className="mt-0.5 block text-[11px] text-slate-500">
+                    Identité et établissement depuis la carte scolaire
+                  </span>
+                </span>
+                <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-slate-400" />
               </Link>
               <TeacherCheckInCard />
               <PresenceCheckInCard />
