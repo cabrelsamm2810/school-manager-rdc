@@ -54,6 +54,9 @@ model User {
   ecoleId       String?
   ecole         Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
   classe                String?
+  /// Permissions financières accordées explicitement à cet utilisateur, en plus
+  /// de celles de son rôle (ex. « finance:pay » accordée à un enseignant).
+  financePermissions    String[] @default([])
   createdAt             DateTime @default(now())
   updatedAt             DateTime @default(now()) @updatedAt
 
@@ -100,6 +103,7 @@ model Eleve {
   cours      Cours[]
   cahierDeCotes CahierDeCote[]
   bulletins  Bulletin[]
+  paiementsFrais PaiementFrais[]
 
   @@index([classe])
   @@index([nom])
@@ -274,6 +278,8 @@ model Ecole {
   validationLogs       EcoleValidationLog[]
   cahierDeCotes        CahierDeCote[]
   bulletins            Bulletin[]
+  fraisCategories      FraisCategorie[]
+  modesPaiementFrais   ModePaiementFrais[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -936,4 +942,82 @@ model UserDocument {
   @@index([userId])
   @@index([categorie])
   @@map("user_documents")
+}
+
+/// Catégorie de frais configurée par un établissement (frais scolaires, minerval,
+/// inscription, bulletin, transport, examen, tenue, autres…). Aucune liste fixe :
+/// l'établissement crée, modifie ou désactive ses catégories.
+model FraisCategorie {
+  id        String   @id @default(cuid())
+  ecoleId   String?
+  ecole     Ecole?   @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  nom       String
+  /// Montant dû par élève pour cette catégorie, en francs congolais (CDF).
+  montant   Int      @default(0)
+  ordre     Int      @default(0)
+  actif     Boolean  @default(true)
+  /// Catégorie créée par défaut pour l'établissement (ne peut être supprimée,
+  /// seulement désactivée).
+  systeme   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  paiements PaiementFrais[]
+
+  @@index([ecoleId])
+  @@index([actif])
+  @@map("frais_categories")
+}
+
+/// Mode de paiement configurable par établissement (espèces, Airtel Money,
+/// Orange Money, M-Pesa, virement bancaire, autre…).
+model ModePaiementFrais {
+  id        String   @id @default(cuid())
+  ecoleId   String?
+  ecole     Ecole?   @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  nom       String
+  ordre     Int      @default(0)
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ecoleId])
+  @@map("modes_paiement_frais")
+}
+
+/// Paiement d'un frais scolaire enregistré après identification de l'élève
+/// (scan de la carte scolaire ou recherche manuelle).
+/// `idempotencyKey` empêche les doublons lors de la synchronisation des
+/// paiements saisis hors connexion.
+model PaiementFrais {
+  id                   String         @id @default(cuid())
+  recuNumero           String         @unique
+  idempotencyKey       String?        @unique
+  eleveId              String
+  eleve                Eleve          @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  categorieId          String?
+  categorie            FraisCategorie? @relation(fields: [categorieId], references: [id], onDelete: SetNull)
+  /// Libellé figé du frais au moment du paiement (l'historique reste lisible
+  /// même si la catégorie est renommée ou supprimée).
+  categorieNom         String         @default("")
+  anneeScolaire        String         @default("")
+  montant              Int            @default(0)
+  /// Solde restant de l'élève pour ce frais après ce paiement.
+  soldeApres           Int            @default(0)
+  modePaiement         String         @default("Espèces")
+  referenceTransaction String         @default("")
+  /// Date et heure de l'opération (peut précéder la synchronisation hors ligne).
+  dateOperation        DateTime       @default(now())
+  enregistreParId      String         @default("")
+  enregistreParNom     String         @default("")
+  ecoleId              String?
+  statut               String         @default("VALIDE")
+  createdAt            DateTime       @default(now())
+
+  @@index([eleveId])
+  @@index([categorieId])
+  @@index([ecoleId])
+  @@index([anneeScolaire])
+  @@index([dateOperation])
+  @@map("paiements_frais")
 }

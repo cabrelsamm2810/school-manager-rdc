@@ -734,4 +734,58 @@ export const crudConfigs: Record<string, CrudConfig> = {
       { label: 'Classes', value: (items: any[]) => String(new Set(items.map((e) => e.classe)).size) },
     ],
   },
+
+  fraisCategories: {
+    apiPath: '/api/frais-categories',
+    entityName: 'fraisCategorie',
+    entityNamePlural: 'fraisCategories',
+    icon: 'card',
+    searchFields: ['nom'],
+    fields: [
+      { name: 'nom', label: 'Libellé du frais', type: 'text', required: true },
+      { name: 'montant', label: 'Montant dû (FC)', type: 'number', half: true, default: 0 },
+      { name: 'ordre', label: "Ordre d'affichage", type: 'number', half: true, default: 0 },
+      { name: 'actif', label: 'Frais actif', type: 'checkbox', default: true },
+    ],
+    columns: [
+      { key: 'nom', label: 'Frais', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
+      {
+        key: 'montant',
+        label: 'Montant',
+        render: (e: any) => `${new Intl.NumberFormat('fr-FR').format(Number(e.montant) || 0)} FC`,
+      },
+      { key: 'ordre', label: 'Ordre' },
+      {
+        key: 'actif',
+        label: 'Statut',
+        render: (e: any) => (e.actif ? 'Actif' : 'Désactivé'),
+      },
+    ],
+    statCards: [
+      { label: 'Frais', value: (items: any[]) => String(items.length), hint: 'Catégories configurées' },
+      { label: 'Actifs', value: (items: any[]) => String(items.filter((e) => e.actif).length) },
+    ],
+  },
+
+  modesPaiementFrais: {
+    apiPath: '/api/modes-paiement-frais',
+    entityName: 'modePaiementFrais',
+    entityNamePlural: 'modesPaiementFrais',
+    icon: 'card',
+    searchFields: ['nom'],
+    fields: [
+      { name: 'nom', label: 'Mode de paiement', type: 'text', required: true },
+      { name: 'ordre', label: "Ordre d'affichage", type: 'number', half: true, default: 0 },
+      { name: 'actif', label: 'Mode actif', type: 'checkbox', default: true },
+    ],
+    columns: [
+      { key: 'nom', label: 'Mode', render: (e: any) => <span className="font-medium text-slate-900">{e.nom}</span> },
+      { key: 'ordre', label: 'Ordre' },
+      { key: 'actif', label: 'Statut', render: (e: any) => (e.actif ? 'Actif' : 'Désactivé') },
+    ],
+    statCards: [
+      { label: 'Modes', value: (items: any[]) => String(items.length) },
+      { label: 'Actifs', value: (items: any[]) => String(items.filter((e) => e.actif).length) },
+    ],
+  },
 };

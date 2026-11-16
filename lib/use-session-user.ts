@@ -18,6 +18,8 @@ export type SessionUser = {
   institutionName?: string | null;
   bureauAffectation?: string | null;
   fonction?: string | null;
+  /** Permissions financières accordées explicitement à ce compte. */
+  financePermissions?: string[] | null;
 };
 
 /**

@@ -58,6 +58,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Recherche d’élèves', href: '/recherche-eleves', icon: 'search', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'Photo passeport', href: '/photo-passeport', icon: 'photo', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'QR & Cartes scolaires', href: '/cartes-qr', icon: 'qr', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
+      { label: 'Frais scolaires', href: '/frais-scolaires', icon: 'card', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'QR Pointage enseignants', href: '/pointage-qr', icon: 'qr', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'Rapports de présence', href: '/rapports-pointage', icon: 'activity', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'Importer mes données', href: '/import', icon: 'upload', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
@@ -76,6 +77,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Mon école', href: '/ecoles', icon: 'school', roles: ['PROMOTEUR'] },
       { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['PROMOTEUR'] },
       { label: 'Enseignants', href: '/enseignants', icon: 'teacher', roles: ['PROMOTEUR'] },
+      { label: 'Frais scolaires', href: '/frais-scolaires', icon: 'card', roles: ['PROMOTEUR'] },
       { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['PROMOTEUR'] },
       { label: 'Notifications', href: '/notifications', icon: 'bell', roles: ['PROMOTEUR'] },
     ]
@@ -96,6 +98,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Tableau de bord', href: '/comptable', icon: 'home', roles: ['COMPTABLE'] },
       { label: 'Paiements', href: '/paiements', icon: 'card', roles: ['COMPTABLE'] },
+      { label: 'Frais scolaires', href: '/frais-scolaires', icon: 'qr', roles: ['COMPTABLE'] },
       { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['COMPTABLE'] },
       { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['COMPTABLE'] },
       { label: 'Notifications', href: '/notifications', icon: 'bell', roles: ['COMPTABLE'] },

@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     institutionName: user.institutionName,
     bureauAffectation: user.bureauAffectation,
     fonction: user.fonction,
+    financePermissions: user.financePermissions,
   }});
 
   // Le rôle vient du compte enregistré : le cookie qui garde les routes est

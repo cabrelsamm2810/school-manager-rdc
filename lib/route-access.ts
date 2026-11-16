@@ -62,6 +62,7 @@ export const ROUTE_MIN_ROLE: Record<string, string> = {
   '/secretaire': 'SECRETAIRE',
   '/comptable': 'COMPTABLE',
   '/paiements': 'COMPTABLE',
+  '/frais-scolaires': 'COMPTABLE',
 };
 
 /**

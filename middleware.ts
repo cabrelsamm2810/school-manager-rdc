@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ROLE_RANK } from '@/lib/roles';
 import { getExactRoleForPath, getMinRoleForPath } from '@/lib/route-access';
 
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/verify', '/about', '/verifier-bulletin', '/access-denied'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/verify', '/about', '/verifier-bulletin', '/verifier-recus', '/access-denied'];
 
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some((route) => pathname === route);
