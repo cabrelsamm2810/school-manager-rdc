@@ -12,6 +12,7 @@ type Eleve = {
   nom: string;
   prenom: string;
   classe: string;
+  photoUrl: string | null;
   ecole?: { id: string; nom: string } | null;
 };
 
@@ -135,9 +136,19 @@ export default function CartesQrPage() {
             return (
               <div key={e.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft">
                 <div className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/20 text-3xl">👤</div>
-                  <div>
-                    <p className="font-bold">{e.nom} {e.prenom}</p>
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/20 text-3xl ring-2 ring-white/40">
+                    {e.photoUrl ? (
+                      <img
+                        src={e.photoUrl}
+                        alt={`Photo de ${e.nom} ${e.prenom}`}
+                        className="h-full w-full object-cover object-center"
+                      />
+                    ) : (
+                      '👤'
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-bold">{e.nom} {e.prenom}</p>
                     <p className="text-sm text-blue-100">{e.classe}</p>
                   </div>
                 </div>
