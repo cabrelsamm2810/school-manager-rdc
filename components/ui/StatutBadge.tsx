@@ -15,6 +15,7 @@ const STATUS_MAP: Record<string, { color: 'green' | 'red' | 'amber' | 'blue' | '
   'Terminée': { color: 'green', label: 'Terminée' },
   'Annulée': { color: 'red', label: 'Annulée' },
   'Générée': { color: 'green', label: 'Générée' },
+  'Signée': { color: 'green', label: 'Signée' },
   'Validée': { color: 'green', label: 'Validée' },
   'Manquante': { color: 'red', label: 'Manquante' },
   'En pause': { color: 'amber', label: 'En pause' },
