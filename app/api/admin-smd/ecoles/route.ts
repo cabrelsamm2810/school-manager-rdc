@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { can, PERM } from '@/lib/permissions';
 import { INSTITUTIONS } from '@/lib/institutions';
+import { buildAdminEcolesWhere } from '@/lib/admin-smd-ecoles-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,46 +24,11 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search')?.trim() || '';
-  const typeFilter = searchParams.get('type') || '';
-  const statutFilter = searchParams.get('statut') || '';
-  const statutValidationFilter = searchParams.get('statutValidation') || '';
-  const provinceFilter = searchParams.get('province') || '';
-  const provinceEducFilter = searchParams.get('provinceEducationnelle') || '';
-  const communeFilter = searchParams.get('commune') || '';
-  const niveauFilter = searchParams.get('niveau') || '';
-  const institutionFilter = searchParams.get('institution') || '';
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
 
-  // ── Construction du where ──
-  const where: Record<string, unknown> = {};
-
-  if (typeFilter) where.type = typeFilter;
-  if (statutFilter) where.statut = statutFilter;
-  if (statutValidationFilter) where.statutValidation = statutValidationFilter;
-  if (provinceFilter) where.province = provinceFilter;
-  if (provinceEducFilter) where.provinceEducationnelle = provinceEducFilter;
-  if (communeFilter) where.commune = communeFilter;
-  if (niveauFilter) where.type = niveauFilter; // niveau scolaire stocké dans `type`
-  if (institutionFilter) where.institution = institutionFilter;
-
-  // Recherche multi-champs
-  if (search) {
-    where.OR = [
-      { nom: { contains: search, mode: 'insensitive' } },
-      { dinacope: { contains: search, mode: 'insensitive' } },
-      { adresse: { contains: search, mode: 'insensitive' } },
-      { commune: { contains: search, mode: 'insensitive' } },
-      { ville: { contains: search, mode: 'insensitive' } },
-      { province: { contains: search, mode: 'insensitive' } },
-      { provinceEducationnelle: { contains: search, mode: 'insensitive' } },
-      { chefEcole: { contains: search, mode: 'insensitive' } },
-      { telephone: { contains: search, mode: 'insensitive' } },
-      { email: { contains: search, mode: 'insensitive' } },
-      { identifiantSM: { contains: search, mode: 'insensitive' } },
-    ];
-  }
+  // ── Construction du where (partagé avec l'export Excel) ──
+  const where = buildAdminEcolesWhere(searchParams);
 
   // ── Requêtes parallèles : liste + total + stats ──
   const [ecoles, total] = await Promise.all([

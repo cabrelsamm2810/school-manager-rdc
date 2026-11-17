@@ -126,6 +126,20 @@ export function EcolesManagement() {
     setRefreshKey((k) => k + 1);
   }
 
+  /** Export Excel des établissements correspondant aux filtres actifs. */
+  function handleExport() {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (typeFilter) params.set('type', typeFilter);
+    if (statutFilter) params.set('statut', statutFilter);
+    if (provinceFilter) params.set('province', provinceFilter);
+    if (provinceEducFilter) params.set('provinceEducationnelle', provinceEducFilter);
+    if (communeFilter) params.set('commune', communeFilter);
+    if (niveauFilter) params.set('niveau', niveauFilter);
+    if (institutionFilter) params.set('institution', institutionFilter);
+    window.open(`/api/admin-smd/ecoles/export?${params.toString()}`, '_blank');
+  }
+
   async function handleAction() {
     if (!confirmAction) return;
     setActionLoading(true);
@@ -173,6 +187,13 @@ export function EcolesManagement() {
             <p className="mt-0.5 text-xs text-slate-500">Supervision des établissements scolaires — Admin School Manager RDC</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              <Icon name="download" className="h-4 w-4" />
+              <span className="hidden sm:inline">Exporter Excel</span>
+            </button>
             <button
               onClick={() => setShowTxtImport(true)}
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
