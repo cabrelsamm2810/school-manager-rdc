@@ -21,6 +21,7 @@ import {
   Clock,
   CreditCard,
   Database,
+  Download,
   ExternalLink,
   Eye,
   EyeOff,
@@ -134,6 +135,7 @@ const icons: Record<string, LucideIcon> = {
   filter: Filter,
   'file-text': FileText,
   database: Database,
+  download: Download,
   edit: Pencil,
   trash: Trash2,
   plus: Plus

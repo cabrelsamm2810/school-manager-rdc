@@ -68,17 +68,26 @@ export default function EcolesPage() {
   const [initialFormData, setInitialFormData] = useState<Partial<EcoleFormData> | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  function filterParams() {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (typeFilter) params.set('type', typeFilter);
+    if (provinceFilter) params.set('province', provinceFilter);
+    if (provinceEducFilter) params.set('provinceEducationnelle', provinceEducFilter);
+    if (communeFilter) params.set('commune', communeFilter);
+    if (institutionFilter) params.set('institution', institutionFilter);
+    if (statutFilter) params.set('statutValidation', statutFilter);
+    return params;
+  }
+
+  function handleExport() {
+    window.open(`/api/ecoles/export?${filterParams().toString()}`, '_blank');
+  }
+
   async function loadData() {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (typeFilter) params.set('type', typeFilter);
-      if (provinceFilter) params.set('province', provinceFilter);
-      if (provinceEducFilter) params.set('provinceEducationnelle', provinceEducFilter);
-      if (communeFilter) params.set('commune', communeFilter);
-      if (institutionFilter) params.set('institution', institutionFilter);
-      if (statutFilter) params.set('statutValidation', statutFilter);
+      const params = filterParams();
       const res = await fetch(`/api/ecoles?${params.toString()}`);
       const data = await res.json();
       if (res.ok) setEcoles(data.ecoles ?? []);
@@ -185,11 +194,20 @@ export default function EcolesPage() {
           {view === 'list' && (
             <>
               {/* ── Titre + compteur ── */}
-              <div className="mb-4">
-                <h1 className="text-xl font-bold text-slate-900 md:text-2xl">Écoles</h1>
-                <p className="mt-0.5 text-sm text-slate-500">
-                  {loading ? 'Chargement…' : `${ecoles.length} école(s)`}
-                </p>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-xl font-bold text-slate-900 md:text-2xl">Écoles</h1>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    {loading ? 'Chargement…' : `${ecoles.length} école(s)`}
+                  </p>
+                </div>
+                <button
+                  onClick={handleExport}
+                  className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  <Icon name="download" className="h-4 w-4 shrink-0" />
+                  Exporter Excel
+                </button>
               </div>
 
               {/* ── Onglets Liste / Carte ── */}

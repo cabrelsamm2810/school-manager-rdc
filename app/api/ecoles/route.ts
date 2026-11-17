@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
+import { buildEcolesWhere, type EcoleFilterUser } from '@/lib/ecoles-query';
 import { generateIdentifiantSM, INSTITUTIONS } from '@/lib/institutions';
 
 const createSchema = z.object({
@@ -39,49 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search') || undefined;
-  const province = searchParams.get('province') || undefined;
-  const provinceEducationnelle = searchParams.get('provinceEducationnelle') || undefined;
-  const commune = searchParams.get('commune') || undefined;
-  const type = searchParams.get('type') || undefined;
-  const institution = searchParams.get('institution') || undefined;
-  const statutValidation = searchParams.get('statutValidation') || undefined;
-
-  const where: Record<string, unknown> = {};
-  if (province) where.province = province;
-  if (provinceEducationnelle) where.provinceEducationnelle = provinceEducationnelle;
-  if (commune) where.commune = commune;
-  if (type) where.type = type;
-  if (institution) where.institution = institution;
-  if (statutValidation) where.statutValidation = statutValidation;
-  if (search) {
-    where.OR = [
-      { nom: { contains: search, mode: 'insensitive' } },
-      { dinacope: { contains: search, mode: 'insensitive' } },
-      { identifiantSM: { contains: search, mode: 'insensitive' } },
-      { province: { contains: search, mode: 'insensitive' } },
-      { ville: { contains: search, mode: 'insensitive' } },
-      { commune: { contains: search, mode: 'insensitive' } },
-    ];
-  }
-
-  // ── Isolation par institution ──
-  // SUPER_ADMIN voit tout ; les autres ne voient que leur institution.
-  const userInst = (auth.user as any).typeInstitution;
-  if (auth.user.role !== 'SUPER_ADMIN' && userInst && !institution) {
-    where.institution = userInst;
-  }
-
-  // Filtrage hiérarchique par périmètre territorial
-  const scope = getScopeLevel(auth.user.role);
-  if (scope === 'sousProvincial' && (auth.user as any).coordSousProvincialeId) {
-    where.coordSousProvincialeId = (auth.user as any).coordSousProvincialeId;
-  } else if (scope === 'school' && (auth.user as any).ecoleId) {
-    where.id = (auth.user as any).ecoleId;
-  } else if (scope !== 'national') {
-    const userProv = (auth.user as any).provinceAdministrative;
-    if (userProv) where.province = userProv;
-  }
+  const where = buildEcolesWhere(searchParams, auth.user as unknown as EcoleFilterUser);
 
   const ecoles = await prisma.ecole.findMany({
     where,
