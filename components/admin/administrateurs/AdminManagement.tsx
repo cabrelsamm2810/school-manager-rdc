@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/Icon';
 import { StatCard } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { AdminFormModal, type AdminFormValues } from './AdminFormModal';
-import { AdminDetailPanel, STATUT_LABELS } from './AdminDetailPanel';
+import { AdminDetailPanel } from './AdminDetailPanel';
 
 type AdminItem = {
   id: string;
@@ -19,7 +19,7 @@ type AdminItem = {
   createdAt: string;
   revokedAt: string | null;
   userId: string | null;
-  user: { id: string; isActive: boolean; userStatus: string } | null;
+  user: { id: string; isActive: boolean; userStatus: string; createdAt: string } | null;
   createdBy: { nom: string; prenom: string } | null;
 };
 
@@ -34,11 +34,33 @@ type ActivityEntry = {
 
 type Stats = { total: number; enAttente: number; compteCree: number; revoque: number };
 
-const STATUS_BADGE: Record<string, string> = {
+/** État unique affiché dans la liste : autorisation + état réel du compte. */
+type UnifiedStatus = 'EN_ATTENTE' | 'UTILISE' | 'ACTIF' | 'REVOQUE';
+
+const UNIFIED_STATUS_LABELS: Record<UnifiedStatus, string> = {
+  EN_ATTENTE: 'En attente',
+  UTILISE: 'Utilisé',
+  ACTIF: 'Actif',
+  REVOQUE: 'Révoqué',
+};
+
+const UNIFIED_STATUS_BADGE: Record<UnifiedStatus, string> = {
   EN_ATTENTE: 'bg-amber-100 text-amber-700',
-  COMPTE_CREE: 'bg-green-100 text-green-700',
+  UTILISE: 'bg-blue-100 text-blue-700',
+  ACTIF: 'bg-green-100 text-green-700',
   REVOQUE: 'bg-red-100 text-red-700',
 };
+
+/**
+ * Un seul état lisible pour le Super Administrateur :
+ * « en attente » (aucun compte), « utilisé » (autorisation consommée, compte pas
+ * encore activé), « actif » (compte opérationnel) ou « révoqué ».
+ */
+function unifiedStatus(item: AdminItem): UnifiedStatus {
+  if (item.statut === 'REVOQUE') return 'REVOQUE';
+  if (item.statut === 'COMPTE_CREE') return item.user?.isActive ? 'ACTIF' : 'UTILISE';
+  return 'EN_ATTENTE';
+}
 
 const selectClass =
   'rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
@@ -230,6 +252,7 @@ export function AdminManagement() {
             {administrateurs.map((item) => {
               const compte = item.user;
               const actif = Boolean(compte?.isActive);
+              const etat = unifiedStatus(item);
               return (
                 <li key={item.id} className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                   <div className="min-w-0">
@@ -237,8 +260,8 @@ export function AdminManagement() {
                       <p className="truncate font-semibold text-slate-900">
                         {item.prenom} {item.postNom} {item.nom}
                       </p>
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[item.statut] ?? 'bg-slate-100 text-slate-600'}`}>
-                        {STATUT_LABELS[item.statut] ?? item.statut}
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${UNIFIED_STATUS_BADGE[etat]}`}>
+                        {UNIFIED_STATUS_LABELS[etat]}
                       </span>
                       {item.statut !== 'REVOQUE' && (
                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">
@@ -249,7 +272,9 @@ export function AdminManagement() {
                     <p className="mt-1 break-all text-sm text-slate-600">{item.email}</p>
                     <p className="mt-0.5 text-xs text-slate-400">
                       {item.telephone || 'Téléphone non renseigné'} · Préenregistré le {formatDate(item.createdAt)}
-                      {compte ? ` · Compte ${actif ? 'actif' : 'inactif'}` : ' · Aucun compte créé'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {compte ? `Compte créé le ${formatDate(compte.createdAt)}` : 'Aucun compte créé'}
                     </p>
                   </div>
 
