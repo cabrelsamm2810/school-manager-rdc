@@ -27,8 +27,20 @@ const HEADER_KEYWORDS = [
   'annuaire', 'catalogue', 'table des matieres', 'sommaire',
   'democratique du congo', 'kinshasa, le', 'fait a', 'arrete a',
   // En-têtes de bandeau photographiés au-dessus de la liste
-  'province educationnelle', 'sous-division', 'epst',
+  'province educationnelle', 'sous-division', 'epst', 'annee scolaire',
+  'service de l', 'bureau', 'liste des',
 ];
+
+/** Libellés de colonnes d'un tableau photographié (en-tête de colonnes). */
+const COLUMN_LABELS = new Set([
+  'denomination', 'designation', 'nom', 'ecole', 'etablissement', 'adresse',
+  'telephone', 'tel', 'portable', 'effectif', 'chef', 'directeur', 'observation',
+  'numero', 'code', 'dinacope', 'province', 'commune', 'ville', 'quartier',
+  'institution', 'convention', 'statut', 'type',
+]);
+
+/** Caractères invisibles déposés par l'OCR (zéro-largeur, BOM, espace insécable). */
+const INVISIBLE_CHARS = /[\u200B-\u200D\u2060\uFEFF\u00A0]/g;
 
 /** Patterns pour détecter un numéro de téléphone (format RDC). */
 const PHONE_REGEX = /(?:\+243\s?|0)[89]\d{2}[\s.\-]?\d{3}[\s.\-]?\d{3}/;
@@ -67,20 +79,60 @@ function normalizeText(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-/** Vérifie si une ligne est du bruit OCR (pas une donnée d'école). */
+/** Ligne nettoyée : caractères invisibles retirés, espaces multiples compactés. */
+function cleanLine(line: string): string {
+  return line.replace(INVISIBLE_CHARS, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Vrai si la ligne porte encore une donnée (au moins une lettre ou un chiffre). */
+function hasContent(line: string): boolean {
+  return /[\p{L}\p{N}]/u.test(line);
+}
+
+/** Mots d'une ligne normalisée, ponctuation retirée (« N° » → aucun mot). */
+function wordsOf(line: string): string[] {
+  return normalizeText(line).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter((w) => w.length >= 2);
+}
+
+/**
+ * Vrai si la ligne est un en-tête de colonnes d'un tableau photographié
+ * (« N° DÉNOMINATION ADRESSE TÉLÉPHONE ») : composée presque uniquement de
+ * libellés de colonnes.
+ */
+function isColumnHeaderLine(line: string): boolean {
+  const words = wordsOf(line);
+  if (words.length < 3) return false;
+  const labelled = words.filter((w) => COLUMN_LABELS.has(w)).length;
+  return labelled >= 3 && labelled / words.length >= 0.75;
+}
+
+/**
+ * Bandeau d'en-tête photographié au-dessus de la liste : titre administratif,
+ * en-tête de colonnes, ou mention entièrement en majuscules sans nom d'école.
+ */
+function isHeaderBanner(line: string): boolean {
+  const norm = normalizeText(line);
+  if (HEADER_KEYWORDS.some((kw) => norm.includes(kw))) return true;
+  // Une ligne qui porte un numéro de téléphone reste une donnée
+  if (PHONE_REGEX.test(line)) return false;
+  if (isColumnHeaderLine(line)) return true;
+  // Ligne en MAJUSCULES de plus de 40 caractères, sans mot-clé d'école
+  const uppercaseOnly = !/[a-zà-ÿ]/.test(line);
+  return uppercaseOnly && line.length > 40 && !hasSchoolKeyword(line);
+}
+
+/** Vérifie si une ligne est du bruit OCR ou un bandeau d'en-tête (pas une donnée d'école). */
 function isNoiseLine(line: string): boolean {
   const trimmed = line.trim();
-  if (trimmed.length < 3) return true;
+  // Ligne vide une fois nettoyée (espaces, caractères invisibles, séparateurs seuls)
+  if (!hasContent(trimmed)) return true;
   // Un numéro de téléphone seul sur sa ligne est une donnée, pas du bruit
   if (PHONE_REGEX.test(trimmed)) return false;
   if (NOISE_PATTERNS.some((p) => p.test(trimmed))) return true;
   // Ligne composée uniquement de chiffres et ponctuation
   if (/^[\d\s\-.,;:|/()]+$/.test(trimmed)) return true;
-  // En-têtes administratifs (République, Ministère, etc.)
-  const norm = normalizeText(trimmed);
-  if (HEADER_KEYWORDS.some((kw) => norm.includes(kw))) return true;
-  // Ligne en MAJUSCULES de plus de 40 caractères = probablement un en-tête/bandeau
-  if (trimmed.length > 40 && trimmed === trimmed.toUpperCase() && !/[a-zà-ÿ]/.test(trimmed)) return true;
+  // Bandeaux d'en-tête : titres administratifs et en-têtes de colonnes
+  if (isHeaderBanner(trimmed)) return true;
   return false;
 }
 
@@ -144,7 +196,11 @@ function extractDirector(line: string): string | null {
  */
 export function extractSchoolData(text: string): { rows: ParsedSchoolRow[]; warnings: string[]; confidences: Partial<Record<string, FieldConfidence>>[] } {
   const warnings: string[] = [];
-  const allLines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+  // Nettoyage post-OCR : lignes compactées, vides et réduites à des séparateurs écartées
+  const allLines = text
+    .split(/\r?\n/)
+    .map(cleanLine)
+    .filter((l) => l.length > 0 && hasContent(l));
 
   if (allLines.length === 0) {
     return { rows: [], warnings: ['Aucun texte détecté.'], confidences: [] };

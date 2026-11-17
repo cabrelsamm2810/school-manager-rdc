@@ -79,6 +79,32 @@ describe('extractSchoolData — liste d’écoles issue d’une photo', () => {
     expect(noms('Bon Berger\nSaint Joseph')).toEqual(['Bon Berger', 'Saint Joseph']);
   });
 
+  it('ignore les en-têtes de colonnes d’un tableau photographié', () => {
+    const texte = `N°  DÉNOMINATION  ADRESSE  TÉLÉPHONE
+École Primaire de Matadi
+Dénomination Adresse Téléphone Effectif`;
+    expect(noms(texte)).toEqual(['École Primaire de Matadi']);
+  });
+
+  it('ignore les bandeaux d’en-tête quelle que soit leur casse', () => {
+    const texte = `MINISTÈRE DE L'EPST
+Sous-division de Gombe
+Année scolaire 2024-2025
+École du Centre`;
+    expect(noms(texte)).toEqual(['École du Centre']);
+  });
+
+  it('ignore les lignes vides laissées par l’OCR (espaces, caractères invisibles, séparateurs)', () => {
+    const texte = 'École du Centre\n\n   \n\u200b\n· · ·\n  .  \nInstitut Lumière';
+    expect(noms(texte)).toEqual(['École du Centre', 'Institut Lumière']);
+  });
+
+  it('garde un nom d’école écrit en majuscules', () => {
+    expect(noms('ÉCOLE PRIMAIRE DE MATADI\nINSTITUT TECHNIQUE DE KINSHASA')).toEqual([
+      'ÉCOLE PRIMAIRE DE MATADI', 'INSTITUT TECHNIQUE DE KINSHASA',
+    ]);
+  });
+
   it('ignore les lignes de bruit seules (dates, séparateurs, numéros)', () => {
     const rows = noms(`Kinshasa, le 12/03/2024
 ----------
