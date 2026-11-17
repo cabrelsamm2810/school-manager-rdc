@@ -119,6 +119,8 @@ export const navigationGroups: NavGroup[] = [
     title: 'Administration',
     items: [
       { label: 'Administration School Manager RDC', href: '/admin-smd', icon: 'shield', roles: ['ADMIN_SCHOOL_MANAGER_RDC'] },
+      { label: 'Tableau de bord administrateur', href: '/admin/dashboard', icon: 'home', roles: ['ADMIN_SCHOOL_MANAGER_RDC'] },
+      { label: 'Gestion des administrateurs', href: '/admin/administrateurs', icon: 'shield', roles: ['SUPER_ADMIN'] },
       { label: 'Établissements', href: '/admin-smd/ecoles', icon: 'school', roles: ['ADMIN_SCHOOL_MANAGER_RDC'] },
       { label: 'Écoles en attente', href: '/admin-smd/ecoles-en-attente', icon: 'clock', roles: ['ADMIN_SCHOOL_MANAGER_RDC'] },
       { label: 'Utilisateurs', href: '/admin/users', icon: 'people', minRole: 'ADMIN_SCHOOL_MANAGER_RDC' },

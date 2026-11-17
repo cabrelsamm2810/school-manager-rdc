@@ -11,7 +11,7 @@ const ROLE_DESTINATION: Record<string, string> = {
   ELEVE: '/profile',
   ENSEIGNANT: '/enseignant/dashboard',
   SUPER_ADMIN: '/admin',
-  ADMIN_SCHOOL_MANAGER_RDC: '/admin-smd',
+  ADMIN_SCHOOL_MANAGER_RDC: '/admin/dashboard',
   COORDINATION_NATIONALE: '/coordination-nationale',
   COORDINATION_PROVINCIALE: '/coordination-provinciale',
   CHEF_ADMINISTRATION: '/dashboard',

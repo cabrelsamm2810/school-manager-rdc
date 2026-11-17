@@ -381,6 +381,33 @@ Ajouter les clés depuis la page Secrets ou le tableau de bord Vercel.
 Tests : `tests/storage.test.ts` — 22 tests (utilitaires, upload/resolve/delete local, edge cases
 d'autorisation, validation des fichiers). `npm test` les exécute sans base de données.
 
+## Gestion des administrateurs (SUPER_ADMIN)
+
+- Allowlist `AdminPreRegistration` (`admin_pre_registrations`, enum `AdminAuthorizationStatus` :
+  `EN_ATTENTE` / `COMPTE_CREE` / `REVOQUE`). Un email = une entrée = un compte.
+- `lib/admin-registration.ts` (module pur, testable) porte les validations partagées : normalisation
+  Gmail, comparaison des noms (accents/casse/espaces), message exact de refus, `activationFromStatutPrevu`.
+  `lib/admin-management.ts` porte la garde serveur `requireSuperAdmin` (rôle `SUPER_ADMIN` **et** permission
+  `ADMINS_MANAGE` — l'Admin SMD ne l'a pas).
+- Inscription : `/register` → type de compte « Admin School Manager RDC » → `/api/auth/register`
+  (branche `registerAdminUser` de `lib/account-service.ts` : rôle et champs institutionnels forcés côté
+  serveur, identité reprise du préenregistrement) → code email → `/api/auth/verify` (activation selon
+  `statutPrevu` ; `INACTIF` ⇒ compte `DESACTIVE` à activer par le Super Admin). Une autorisation absente
+  ou révoquée renvoie toujours le message exact « Cette adresse Gmail n'est pas autorisée… ».
+- API : `/api/admin/administrateurs` (GET liste + stats + activité récente, POST préenregistrement),
+  `/[id]` (GET fiche + historique d'audit, PATCH, DELETE révocation ⇒ désactivation du compte lié),
+  `/[id]/action` (POST `activer` / `desactiver`).
+- Pages : `/admin/administrateurs` (SUPER_ADMIN uniquement) et `/admin/dashboard` (Admin SMD : profil,
+  permissions, modules accessibles — c'est la destination de connexion du rôle, dans `lib/role-destination.ts`).
+  Les deux sont des composants serveur qui relisent la session en base avant tout rendu : un compte
+  désactivé est renvoyé vers `/login`. `ROUTE_MIN_ROLE`/`ROUTE_EXACT_ROLE` couvrent le middleware.
+- Audit : module `administrateurs` (`ADMIN_PREREGISTRE_CREE`, `ADMIN_PREREGISTRE_MODIFIE`, `ADMIN_ACTIVE`,
+  `ADMIN_DESACTIVE`, `ADMIN_AUTORISATION_REVOQUEE`, `ADMIN_COMPTE_CREE`).
+- Migration : `prisma/migrations/20261117000000_add_admin_pre_registration/migration.sql` (delta généré par
+  `prisma migrate diff`). La base du sandbox reste synchronisée par `db push` (voir plus haut) ; la migration
+  n'est pas baselinée, ne pas lancer `prisma migrate deploy` ici.
+- Tests : `npm test -- tests/admin-management.test.ts` (validations, RBAC, inscription, vérification du code).
+
 ## Tests
 
 - `npm test` — vitest unit tests (`tests/auth.test.ts`), no database needed. `vitest.config.ts` maps the `@/`

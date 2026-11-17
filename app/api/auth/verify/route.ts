@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { readVerification, refreshVerificationWindows, matchesVerificationCode, MAX_VERIFICATION_ATTEMPTS, retrySeconds } from '@/lib/email-verification';
+import {
+  ADMIN_NOT_AUTHORIZED_MESSAGE,
+  ADMIN_ROLE,
+  activationFromStatutPrevu,
+  normalizeEmail,
+} from '@/lib/admin-registration';
 
 export const runtime = 'nodejs';
 
@@ -36,16 +42,36 @@ export async function POST(request: NextRequest) {
         { status: 429, headers: { 'Retry-After': String(retryAfter) } });
     }
     const valid = matchesVerificationCode(state, code);
+
+    // Un administrateur ne peut être activé que si son autorisation est toujours
+    // valide, et l'activation suit le statut prévu par le Super Administrateur.
+    let activation = { isActive: true, userStatus: 'ACTIF' as string };
+    if (valid && user.role === ADMIN_ROLE) {
+      const authorization = await prisma.adminPreRegistration.findFirst({
+        where: { email: { equals: normalizeEmail(user.email), mode: 'insensitive' } },
+        select: { statut: true, statutPrevu: true },
+      });
+      if (!authorization || authorization.statut === 'REVOQUE') {
+        return NextResponse.json({ error: ADMIN_NOT_AUTHORIZED_MESSAGE }, { status: 403 });
+      }
+      activation = activationFromStatutPrevu(authorization.statutPrevu);
+    }
+
     const updated = await prisma.user.updateMany({
       where: { id: user.id, isActive: false, userStatus: 'EN_ATTENTE', validationCode: user.validationCode },
-      data: valid ? { isActive: true, userStatus: 'ACTIF', validationCode: null }
+      data: valid ? { ...activation, validationCode: null }
         : { validationCode: JSON.stringify({ ...state, attempts: state.attempts + 1 }) },
     });
     if (updated.count !== 1) {
       return NextResponse.json({ error: 'Une autre demande a modifié ce code. Réessayez.' }, { status: 409 });
     }
     if (!valid) return NextResponse.json({ error: 'Code de validation incorrect.' }, { status: 400 });
-    return NextResponse.json({ ok: true, message: 'Compte validé avec succès.' });
+    return NextResponse.json({
+      ok: true,
+      message: activation.isActive
+        ? 'Compte validé avec succès.'
+        : 'Compte vérifié. Votre accès administrateur sera activé par le Super Administrateur de School Manager RDC.',
+    });
   } catch {
     console.error('[auth/verify] request_failed');
     return NextResponse.json({ error: 'Une erreur est survenue lors de la validation.' }, { status: 500 });

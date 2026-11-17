@@ -62,6 +62,9 @@ model User {
   chatGroupMessages     ChatGroupMessage[]
   userDocuments         UserDocument[]
 
+  adminPreRegistrationsCreated AdminPreRegistration[] @relation("AdminPreRegistrationCreatedBy")
+  adminPreRegistration         AdminPreRegistration?  @relation("AdminPreRegistrationAccount")
+
   @@index([role])
   @@index([isActive])
   @@index([userStatus])
@@ -935,4 +938,38 @@ model UserDocument {
   @@index([userId])
   @@index([categorie])
   @@map("user_documents")
+}
+
+/// État d'une autorisation de création de compte Admin School Manager RDC.
+enum AdminAuthorizationStatus {
+  EN_ATTENTE
+  COMPTE_CREE
+  REVOQUE
+}
+
+/// Préenregistrement (allowlist) d'une adresse Gmail autorisée par le
+/// SUPER_ADMIN à créer un compte Admin School Manager RDC.
+/// Un Gmail = une seule entrée, donc un seul compte.
+model AdminPreRegistration {
+  id          String                  @id @default(cuid())
+  email       String                  @unique
+  nom         String
+  postNom     String                  @default("")
+  prenom      String
+  telephone   String                  @default("")
+  role        Role                    @default(ADMIN_SCHOOL_MANAGER_RDC)
+  /// Statut d'activation prévu par le Super Admin : ACTIF | INACTIF
+  statutPrevu String                  @default("ACTIF")
+  statut      AdminAuthorizationStatus @default(EN_ATTENTE)
+  createdById String?
+  createdBy   User?                   @relation("AdminPreRegistrationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  userId      String?                 @unique
+  user        User?                   @relation("AdminPreRegistrationAccount", fields: [userId], references: [id], onDelete: SetNull)
+  revokedAt   DateTime?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @default(now()) @updatedAt
+
+  @@index([statut])
+  @@index([createdById])
+  @@map("admin_pre_registrations")
 }

@@ -46,6 +46,7 @@ export const registrationInstitutionTypes = [
   { value: 'CATHOLIQUE', label: 'Catholique' },
   { value: 'PUBLIQUE', label: 'Publique' },
   { value: 'ISLAMIQUE', label: 'Islamique' },
+  { value: 'ADMIN_SMD', label: 'Admin School Manager RDC — Administration de la plateforme' },
 ];
 
 export const allRegistrationRoleOptions: RoleOption[] = [

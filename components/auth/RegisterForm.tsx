@@ -82,6 +82,7 @@ const INSTITUTION_SHORT: Record<string, string> = {
   'CATHOLIQUE': 'École catholique',
   'ISLAMIQUE': 'École islamique',
   'INDEPENDANTE': 'École indépendante',
+  'ADMIN_SMD': 'Admin School Manager RDC',
 };
 const INSTITUTION_DESC: Record<string, string> = {
   'EC_ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
@@ -89,9 +90,11 @@ const INSTITUTION_DESC: Record<string, string> = {
   'CATHOLIQUE': 'Conventionné catholique',
   'ISLAMIQUE': 'École islamique',
   'INDEPENDANTE': 'École indépendant',
+  'ADMIN_SMD': 'Administration de la plateforme — sur autorisation',
 };
 const ROLE_DESC: Record<string, string> = {
   'COORDINATION_NATIONALE': 'Administration nationale',
+  'ADMIN_SCHOOL_MANAGER_RDC': 'Administration de la plateforme — accès réservé',
   'COORDINATION_PROVINCIALE': 'Administration provinciale',
   'CHEF_ADMINISTRATION': 'Chef de l\u2019administration provinciale',
   'AGENT_PROVINCIAL': 'Agent de la coordination provinciale',
@@ -121,6 +124,7 @@ function InstitutionIcon({ type, selected }: { type: string; selected: boolean }
   else if (type === 'CATHOLIQUE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6M9 6h6M5 21V11l7-3 7 3v10M5 21h14" />);
   else if (type === 'ISLAMIQUE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />);
   else if (type === 'INDEPENDANTE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.5a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.662.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.482 19.34a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />);
+  else if (type === 'ADMIN_SMD') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M12 3l7.5 3.75v5.25c0 4.5-3.15 7.8-7.5 9-4.35-1.2-7.5-4.5-7.5-9V6.75L12 3z" />);
   return (
     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${bg}`}>
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>{path}</svg>
@@ -140,6 +144,7 @@ function RoleIcon({ type, selected }: { type: string; selected: boolean }) {
   else if (type === 'ENSEIGNANT') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25v14.25" />);
   else if (type === 'ELEVE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347M3.75 21.75h4.5a.75.75 0 00.75-.75v-4.5a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75v-6a.75.75 0 00-.75-.75h-6a.75.75 0 01-.75-.75v-3a.75.75 0 00-.75-.75H3.75a.75.75 0 00-.75.75v3a.75.75 0 00.75.75h.75" />);
   else if (type === 'PARENT') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />);
+  else if (type === 'ADMIN_SCHOOL_MANAGER_RDC') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M12 3l7.5 3.75v5.25c0 4.5-3.15 7.8-7.5 9-4.35-1.2-7.5-4.5-7.5-9V6.75L12 3z" />);
   return (
     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${bg}`}>
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>{content}</svg>
@@ -253,6 +258,8 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
       case 4:
         if (!form.email.trim()) return 'L’email est obligatoire.';
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'L’email est invalide.';
+        if (form.role === 'ADMIN_SCHOOL_MANAGER_RDC' && !/^[^\s@]+@gmail\.com$/i.test(form.email.trim()))
+          return 'L’adresse doit être une adresse Gmail (@gmail.com).';
         if (form.password.length < 8) return 'Le mot de passe doit faire au moins 8 caractères.';
         if (form.password !== form.confirmPassword) return 'Les mots de passe ne correspondent pas.';
         return '';
@@ -301,7 +308,14 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   }
 
   function handleInstitutionType(value: string) {
-    setForm((cur) => ({ ...cur, typeInstitution: value, role: '', fonction: '', grade: '', bureauAffectation: '' }));
+    setForm((cur) => ({
+      ...cur,
+      typeInstitution: value,
+      // Le type de compte « Admin School Manager RDC » impose son rôle unique ;
+      // le serveur le vérifie de toute façon contre l'allowlist du Super Admin.
+      role: value === 'ADMIN_SMD' ? 'ADMIN_SCHOOL_MANAGER_RDC' : '',
+      fonction: '', grade: '', bureauAffectation: '',
+    }));
   }
   function handleRole(value: string) {
     setForm((cur) => ({ ...cur, role: value, fonction: '', grade: '', bureauAffectation: '' }));
@@ -317,12 +331,15 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   }
 
   const isEcErc = form.typeInstitution === 'EC_ERC';
+  const isAdminSmd = form.typeInstitution === 'ADMIN_SMD';
   const COORDINATION_ROLES = new Set([
     'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE',
   ]);
-  const roleOptions: RoleOption[] = isEcErc
-    ? allRegistrationRoleOptions
-    : allRegistrationRoleOptions.filter((r) => !COORDINATION_ROLES.has(r.value));
+  const roleOptions: RoleOption[] = isAdminSmd
+    ? [{ value: 'ADMIN_SCHOOL_MANAGER_RDC', label: 'Admin School Manager RDC' }]
+    : isEcErc
+      ? allRegistrationRoleOptions
+      : allRegistrationRoleOptions.filter((r) => !COORDINATION_ROLES.has(r.value));
   const availableEdProvinces = form.provinceAdministrative
     ? educationProvincesByAdminFromSousDivisions[form.provinceAdministrative] ?? []
     : [];
@@ -430,7 +447,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         {/* STEP 0: Institution */}
         {step === 0 && (
           <div className="space-y-4">
-            <StepHeader num={1} title="Institution" desc="Sélectionnez votre type d’institution." />
+            <StepHeader num={1} title="Institution" desc="Sélectionnez votre type d’institution ou de compte." />
             <div className="grid gap-3 sm:grid-cols-2">
               {registrationInstitutionTypes.map((inst) => (
                 <div key={inst.value} onClick={() => handleInstitutionType(inst.value)}
@@ -454,7 +471,7 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         {/* STEP 1: Structure */}
         {step === 1 && (
           <div className="space-y-4">
-            <StepHeader num={2} title="Structure" desc="Sélectionnez votre niveau. Chaque niveau donne accès à un espace indépendant." />
+            <StepHeader num={2} title="Structure" desc={isAdminSmd ? 'Votre type de compte administrateur est déjà défini.' : 'Sélectionnez votre niveau. Chaque niveau donne accès à un espace indépendant.'} />
             <div className="grid gap-3 sm:grid-cols-2">
               {roleOptions.map((role) => (
                 <div key={role.value} onClick={() => handleRole(role.value)}
@@ -649,10 +666,15 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
             <StepHeader num={5} title="Compte" desc="Vos identifiants de connexion." />
             <div className="grid gap-4">
               <div>
-                <label className={labelClass}>E-mail *</label>
+                <label className={labelClass}>{isAdminSmd ? 'Adresse Gmail *' : 'E-mail *'}</label>
                 <IconInput icon={MailIcon}>
-                  <input type="email" className={`${inputClass} pl-11`} value={form.email} onChange={(e) => updateField('email', e.target.value)} placeholder="votre@email.com" />
+                  <input type="email" className={`${inputClass} pl-11`} value={form.email} onChange={(e) => updateField('email', e.target.value)} placeholder={isAdminSmd ? 'administrateur@gmail.com' : 'votre@email.com'} />
                 </IconInput>
+                {isAdminSmd && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Cette adresse doit avoir été préenregistrée par le Super Administrateur de School Manager RDC.
+                  </p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Mot de passe *</label>
