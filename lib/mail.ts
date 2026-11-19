@@ -123,10 +123,12 @@ export async function sendPresenceNotification(opts: {
   const localisationInfo = opts.localisation
     ? `<p style="color: #64748b; font-size: 13px; margin: 8px 0 0;">📍 Localisation du scan : ${opts.localisation}</p>`
     : '';
+  const logo = await emailLogo();
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
+        ${logo ? logo.image : ''}
         <h1 style="color: #1e3a5f; font-size: 22px; margin: 0;">School Manager RDC</h1>
         <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Notification de présence</p>
       </div>
@@ -158,6 +160,7 @@ export async function sendPresenceNotification(opts: {
     to: opts.parentEmail,
     subject: `School Manager RDC — Présence de ${opts.eleveNom} le ${opts.datePresence}`,
     html,
+    ...(logo ? { attachments: [logo.attachment] } : {}),
   });
 }
 

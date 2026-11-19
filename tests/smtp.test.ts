@@ -5,7 +5,7 @@ vi.mock('server-only', () => ({}));
 vi.mock('nodemailer', () => ({ default: { createTransport: mocks.createTransport } }));
 
 import { sendSmtpMail, smtpConfiguration, MailDeliveryError } from '@/lib/smtp';
-import { sendAbsenceNotification, sendValidationCode } from '@/lib/mail';
+import { sendAbsenceNotification, sendPresenceNotification, sendValidationCode } from '@/lib/mail';
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -63,6 +63,16 @@ describe('envoi et diagnostic', () => {
     await sendAbsenceNotification({
       parentEmail: 'recipient@example.invalid', parentNom: 'Parent', eleveNom: 'Élève',
       classe: '4e', ecoleNom: 'École', dateAbsence: '2026-11-19',
+    });
+    const message = mocks.sendMail.mock.calls[0][0];
+    expect(message.html).toContain('cid:school-manager-rdc-logo');
+    expect(message.attachments).toHaveLength(1);
+    expect(message.attachments[0]).toMatchObject({ cid: 'school-manager-rdc-logo' });
+  });
+  it('intègre aussi le logo dans la notification de présence', async () => {
+    await sendPresenceNotification({
+      parentEmail: 'recipient@example.invalid', parentNom: 'Parent', eleveNom: 'Élève',
+      classe: '4e', ecoleNom: 'École', datePresence: '2026-11-19', heurePresence: '07:45',
     });
     const message = mocks.sendMail.mock.calls[0][0];
     expect(message.html).toContain('cid:school-manager-rdc-logo');
