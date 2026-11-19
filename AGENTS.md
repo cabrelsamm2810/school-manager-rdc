@@ -136,6 +136,9 @@ credentials. Nothing external is required to boot.
   vide** — ce sont elles qui alimentent les taux de présence du tableau de bord. Sans ce seed, le
   tableau de bord enseignant n'affiche que les effectifs par classe (280 élèves, 10 classes).
   À relancer après une remise à zéro des données.
+- **Coordination nationale** : `coordination.nationale.demo@schoolmanager-rdc.cd` / `Coordination2026`,
+  rôle exact `COORDINATION_NATIONALE` (`isActive=true`, `userStatus=ACTIF`). Créé et remis à jour par
+  `prisma/seed.ts`, exécuté par le service `migrate` à chaque démarrage — disponible sans script manuel.
 - Connexion : `POST /api/auth/login` avec `{email, password}` pose les cookies
   `school_manager_session` + `school_manager_role`, puis `GET /api/enseignant/dashboard` doit
   répondre 200 (403 pour tout autre rôle).

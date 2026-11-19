@@ -1,15 +1,52 @@
 import { PrismaClient, Role } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
 import { CLASSES_RDC, MATIERES_RDC, OPTIONS_RDC } from '@/lib/curriculum-rdc';
 
 const prisma = new PrismaClient();
 
+const DEMO_NATIONAL_EMAIL = 'coordination.nationale.demo@schoolmanager-rdc.cd';
+const DEMO_NATIONAL_PASSWORD = 'Coordination2026';
+
 async function main() {
-  // Les rôles sont un enum Prisma : aucun compte ni secret n'est créé par défaut.
+  // Les rôles sont un enum Prisma : aucun compte n'est créé par défaut, hormis le
+  // compte de démonstration de la Coordination nationale ci-dessous.
   const roleCounts = await Promise.all(
     Object.values(Role).map((role) => prisma.user.count({ where: { role } }))
   );
   console.log(`Seed vérifié : ${roleCounts.length} rôles disponibles.`);
+
+  // ── Compte de démonstration — Coordination nationale EC-ERC ──
+  // Idempotent (upsert par email) : le compte est créé ou remis à jour à chaque
+  // exécution du seed, sans toucher aux autres utilisateurs.
+  const nationalPasswordHash = await bcrypt.hash(DEMO_NATIONAL_PASSWORD, 10);
+  const nationalDemo = await prisma.user.upsert({
+    where: { email: DEMO_NATIONAL_EMAIL },
+    update: {
+      role: Role.COORDINATION_NATIONALE,
+      isActive: true,
+      userStatus: 'ACTIF',
+      validationCode: null,
+      passwordHash: nationalPasswordHash,
+    },
+    create: {
+      nom: 'Mbala',
+      postNom: 'Nkasa',
+      prenom: 'Daniel',
+      sexe: 'M',
+      email: DEMO_NATIONAL_EMAIL,
+      telephone: '+243 000 000 000',
+      passwordHash: nationalPasswordHash,
+      role: Role.COORDINATION_NATIONALE,
+      isActive: true,
+      userStatus: 'ACTIF',
+      typeInstitution: 'EC_ERC',
+      institutionName: 'Coordination nationale EC-ERC',
+      fonction: 'Coordinateur national',
+      grade: 'Coordonnateur national',
+    },
+  });
+  console.log(`Compte de démonstration Coordination nationale : ${nationalDemo.email}`);
 
   // ── Enseignants ──
   const enseignants = [
