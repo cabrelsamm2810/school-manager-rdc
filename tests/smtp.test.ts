@@ -5,7 +5,7 @@ vi.mock('server-only', () => ({}));
 vi.mock('nodemailer', () => ({ default: { createTransport: mocks.createTransport } }));
 
 import { sendSmtpMail, smtpConfiguration, MailDeliveryError } from '@/lib/smtp';
-import { sendValidationCode } from '@/lib/mail';
+import { sendAbsenceNotification, sendValidationCode } from '@/lib/mail';
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -58,6 +58,16 @@ describe('envoi et diagnostic', () => {
     expect(message.html).toContain('cid:school-manager-rdc-logo');
     expect(message.attachments).toHaveLength(1);
     expect(message.attachments[0]).toMatchObject({ cid: 'school-manager-rdc-logo', filename: 'school-manager-rdc.png', content: expect.any(Buffer) });
+  });
+  it('intègre aussi le logo dans la notification d’absence', async () => {
+    await sendAbsenceNotification({
+      parentEmail: 'recipient@example.invalid', parentNom: 'Parent', eleveNom: 'Élève',
+      classe: '4e', ecoleNom: 'École', dateAbsence: '2026-11-19',
+    });
+    const message = mocks.sendMail.mock.calls[0][0];
+    expect(message.html).toContain('cid:school-manager-rdc-logo');
+    expect(message.attachments).toHaveLength(1);
+    expect(message.attachments[0]).toMatchObject({ cid: 'school-manager-rdc-logo' });
   });
   it('interrompt un envoi bloqué au bout de 45 secondes, sans double envoi', async () => {
     vi.useFakeTimers();

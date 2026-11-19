@@ -66,9 +66,11 @@ export async function sendAbsenceNotification(opts: {
   ecoleNom: string;
   dateAbsence: string;
 }): Promise<void> {
+  const logo = await emailLogo();
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
+        ${logo ? logo.image : ''}
         <h1 style="color: #1e3a5f; font-size: 22px; margin: 0;">School Manager RDC</h1>
         <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Notification d'absence</p>
       </div>
@@ -101,6 +103,7 @@ export async function sendAbsenceNotification(opts: {
     to: opts.parentEmail,
     subject: `School Manager RDC — Absence de ${opts.eleveNom} le ${opts.dateAbsence}`,
     html,
+    ...(logo ? { attachments: [logo.attachment] } : {}),
   });
 }
 
