@@ -108,7 +108,11 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
   const home = getRoleDestination(role);
   // Les onglets fermés au rôle sont retirés : aucun onglet mort sur mobile.
   const tabs: Tab[] = [{ label: 'Accueil', href: home, icon: 'home' }, ...(ROLE_TABS[role ?? ''] ?? FALLBACK_TABS)]
-    .filter((tab) => canAccessPath(role, tab.href));
+    .filter((tab) => canAccessPath(role, tab.href))
+    // Un onglet peut coïncider avec la destination d'ouverture du rôle
+    // (ex. Coordination nationale → /coordination-nationale) : sans ce
+    // dédoublonnage, deux <li> portent la même clé et React lève un avertissement.
+    .filter((tab, index, list) => list.findIndex((t) => t.href === tab.href) === index);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 

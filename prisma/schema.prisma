@@ -936,3 +936,31 @@ model UserDocument {
   @@index([categorie])
   @@map("user_documents")
 }
+
+/// Documents institutionnels de la Coordination nationale EC-ERC :
+/// circulaires, décisions, lettres officielles, rapports provinciaux
+/// et documents administratifs. Table additive — aucune donnée existante
+/// n'est modifiée.
+model DocumentNational {
+  id          String   @id @default(cuid())
+  type        String   @default("DOCUMENT_ADMIN") // CIRCULAIRE | DECISION | LETTRE_OFFICIELLE | RAPPORT_PROVINCIAL | DOCUMENT_ADMIN
+  reference   String   @default("")
+  titre       String
+  description String   @default("")
+  province    String   @default("")
+  statut      String   @default("Publié") // Brouillon | Publié | Archivé
+  fileUrl     String   @default("")
+  fileName    String   @default("")
+  fileType    String   @default("")
+  fileSize    Int      @default(0)
+  auteurId    String   @default("")
+  auteurNom   String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([statut])
+  @@index([province])
+  @@index([createdAt])
+  @@map("documents_national")
+}
