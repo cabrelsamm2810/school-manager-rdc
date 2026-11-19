@@ -52,6 +52,13 @@ describe('envoi et diagnostic', () => {
     expect(mocks.sendMail.mock.calls[0][0]).toMatchObject({ from: 'School Manager <sender@example.invalid>', text: expect.stringContaining('123456') });
     expect(mocks.close).toHaveBeenCalledTimes(1);
   });
+  it('intègre le logo de l’application dans l’email de validation', async () => {
+    await sendValidationCode('recipient@example.invalid', '123456', 'Test');
+    const message = mocks.sendMail.mock.calls[0][0];
+    expect(message.html).toContain('cid:school-manager-rdc-logo');
+    expect(message.attachments).toHaveLength(1);
+    expect(message.attachments[0]).toMatchObject({ cid: 'school-manager-rdc-logo', filename: 'school-manager-rdc.png', content: expect.any(Buffer) });
+  });
   it('interrompt un envoi bloqué au bout de 45 secondes, sans double envoi', async () => {
     vi.useFakeTimers();
     vi.spyOn(console, 'error').mockImplementation(() => {});

@@ -1,13 +1,36 @@
 import 'server-only';
+import { readFile } from 'fs/promises';
+import path from 'path';
 import { sendSmtpMail } from '@/lib/smtp';
 
 export { missingSmtpVariables } from '@/lib/smtp';
 
+const LOGO_CID = 'school-manager-rdc-logo';
+
+/**
+ * Logo joint à l'email en pièce jointe intégrée (CID) : il s'affiche même si le
+ * client bloque les images distantes et ne dépend pas de NEXT_PUBLIC_APP_URL.
+ * Un logo absent ne doit jamais empêcher l'envoi du code de validation.
+ */
+async function emailLogo(): Promise<{ image: string; attachment: { filename: string; content: Buffer; cid: string } } | null> {
+  try {
+    const content = await readFile(path.join(process.cwd(), 'public', 'icon-192x192.png'));
+    return {
+      image: `<img src="cid:${LOGO_CID}" alt="School Manager RDC" width="88" height="88" style="display: block; width: 88px; height: 88px; margin: 0 auto 12px; border: 0;" />`,
+      attachment: { filename: 'school-manager-rdc.png', content, cid: LOGO_CID },
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function sendValidationCode(email: string, code: string, nom: string): Promise<void> {
   const safeNom = nom.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
+  const logo = await emailLogo();
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
+        ${logo ? logo.image : ''}
         <h1 style="color: #1e3a5f; font-size: 22px; margin: 0;">School Manager RDC</h1>
         <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Validation de votre compte</p>
       </div>
@@ -28,6 +51,7 @@ export async function sendValidationCode(email: string, code: string, nom: strin
     subject: 'School Manager RDC — Code de validation',
     html,
     text,
+    ...(logo ? { attachments: [logo.attachment] } : {}),
   });
 }
 

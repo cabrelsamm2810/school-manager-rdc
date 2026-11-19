@@ -87,6 +87,9 @@ describe.skipIf(!opensslAvailable)('récepteur SMTP local avec STARTTLS et certi
     expect(messages[0]).toContain('123456');
     expect(messages[0]).toContain('text/plain');
     expect(messages[0]).toContain('text/html');
+    // Logo intégré : la partie image est réellement transmise et référencée en CID.
+    expect(messages[0]).toContain('image/png');
+    expect(messages[0]).toContain('cid:school-manager-rdc-logo');
   });
 
   it('identifie un expéditeur refusé sans annoncer de succès', async () => {
