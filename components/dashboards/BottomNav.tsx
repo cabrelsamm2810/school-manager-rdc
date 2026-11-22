@@ -29,9 +29,9 @@ const ROLE_TABS: Record<string, Tab[]> = {
     { label: 'Utilisateurs', href: '/admin/users', icon: 'people' }
   ],
   COORDINATION_NATIONALE: [
-    { label: 'Provinces', href: '/provinces', icon: 'globe' },
-    { label: 'Coordination', href: '/coordination-nationale', icon: 'flag' },
-    { label: 'Utilisateurs', href: '/admin/users', icon: 'people' }
+    { label: 'Documents', href: '/coordination-nationale/documents', icon: 'document' },
+    { label: 'Comptes', href: '/coordination-nationale/utilisateurs', icon: 'people' },
+    { label: 'Provinces', href: '/provinces', icon: 'globe' }
   ],
   COORDINATION_PROVINCIALE: [
     { label: 'Institutions', href: '/ecoles', icon: 'school' },
@@ -107,8 +107,11 @@ export function BottomNav({ role, onMore }: { role?: string | null; onMore: () =
   const pathname = usePathname();
   const home = getRoleDestination(role);
   // Les onglets fermés au rôle sont retirés : aucun onglet mort sur mobile.
+  // `home` peut déjà figurer dans ROLE_TABS : on déduplique pour ne pas rendre
+  // deux onglets identiques (et deux clés React identiques).
   const tabs: Tab[] = [{ label: 'Accueil', href: home, icon: 'home' }, ...(ROLE_TABS[role ?? ''] ?? FALLBACK_TABS)]
-    .filter((tab) => canAccessPath(role, tab.href));
+    .filter((tab) => canAccessPath(role, tab.href))
+    .filter((tab, index, all) => all.findIndex((t) => t.href === tab.href) === index);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 

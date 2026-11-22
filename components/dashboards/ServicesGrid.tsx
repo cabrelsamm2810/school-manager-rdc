@@ -12,8 +12,8 @@ import { Icon } from '@/components/ui/Icon';
  * voit donc que les espaces auxquels son rôle donne accès, sans règle dupliquée.
  * Grille compacte : mêmes liens, densité réduite.
  */
-export function ServicesGrid({ role }: { role: string }) {
-  const groups = visibleNavigationGroups(role)
+export function ServicesGrid({ role, fonction }: { role: string; fonction?: string | null }) {
+  const groups = visibleNavigationGroups(role, fonction)
     .map((group) => ({
       ...group,
       // Le lien vers le tableau de bord est inutile depuis le tableau de bord.

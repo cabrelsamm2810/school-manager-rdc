@@ -936,3 +936,26 @@ model UserDocument {
   @@index([categorie])
   @@map("user_documents")
 }
+
+/// Espace documentaire de la Coordination nationale EC-ERC :
+/// circulaires nationales, décisions officielles, lettres administratives
+/// et rapports reçus des provinces. Aucune donnée n'est modifiée ailleurs.
+model NationalDocument {
+  id             String   @id @default(cuid())
+  titre          String
+  categorie      String   @default("circulaire") // circulaire | decision | lettre | rapport
+  reference      String   @default("")
+  description    String   @default("")
+  fileUrl        String
+  fileName       String   @default("")
+  fileType       String   @default("")
+  fileSize       Int      @default(0)
+  auteurId       String   @default("")
+  auteurNom      String   @default("")
+  auteurFonction String   @default("")
+  createdAt      DateTime @default(now())
+
+  @@index([categorie])
+  @@index([createdAt])
+  @@map("national_documents")
+}

@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const groups = useMemo(() => visibleNavigationGroups(user?.role), [user?.role]);
+  const groups = useMemo(() => visibleNavigationGroups(user?.role, user?.fonction), [user?.role, user?.fonction]);
 
   /* Titre de la page courante, déduit de la navigation centrale (aucune route ajoutée). */
   const pageTitle = useMemo(() => {

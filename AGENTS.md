@@ -390,3 +390,33 @@ d'autorisation, validation des fichiers). `npm test` les exécute sans base de d
 
 Never run `prisma migrate reset`, `db push --force-reset`, or anything that deletes tables or the
 `postgres_data` volume.
+
+## Espace Coordination nationale EC-ERC
+
+- **Rôle technique inchangé** : `COORDINATION_NATIONALE` (`/coordination-nationale` reste en rôle exact).
+  Les quatre fonctions vivent dans `User.fonction` : `COORDINATEUR_NATIONAL`,
+  `CHEF_ADMINISTRATION_NATIONAL`, `SECRETAIRE_NATIONAL`, `AGENT_NATIONAL`.
+- **Matrice de permissions** : `lib/national-fonctions.ts`, construite sur les permissions existantes de
+  `lib/permissions.ts` (`national:*`). Fonction **vide** = toutes les permissions nationales (comptes
+  historiques) ; fonction **inconnue** = aucune (deny by default).
+- **Contrôle serveur** : `lib/national-access.ts` (`getNationalUser`, `requireNationalPermission`).
+  Chaque route vérifie le rôle **et** la fonction ; `nationalCapabilities()` ne sert qu'à l'interface
+  (liens, boutons), jamais à la sécurité.
+- **Navigation** : groupe « Coordination nationale EC-ERC » avec `fonctionPermission` ;
+  `visibleNavigationGroups(role, fonction)` masque les entrées non autorisées (sidebar, tiroir mobile,
+  `ServicesGrid`). `AppShell` et `app/dashboard/page.tsx` passent `user.fonction`.
+- **Pages** : `/coordination-nationale` (tableau de bord), `/coordination-nationale/provinces` (CRUD
+  historique `coord_nationale`), `/coordination-nationale/coordinations` (CRUD provincial + sous-provincial
+  réutilisé), `/coordination-nationale/documents`, `/coordination-nationale/utilisateurs`.
+- **API** : `/api/coordination-nationale/tableau-de-bord`, `/documents` (+ `/[id]`), `/utilisateurs`
+  (+ `/[id]`). Les statistiques sont lues en base et filtrées sur `Ecole.institution = 'EC_ERC'` : une base
+  vide renvoie des zéros, jamais de chiffres simulés.
+- **Modèle `NationalDocument`** (`national_documents`) : circulaires, décisions, lettres et rapports
+  provinciaux ; fichiers via `lib/storage.ts` (R2 si configuré, sinon `public/uploads/`).
+- **Comptes gérables** : `COORDINATION_NATIONALE`, `COORDINATION_PROVINCIALE`, `AGENT_PROVINCIAL`,
+  `COORDINATION_SOUS_PROVINCIALE`, `AGENT_SOUS_PROVINCIAL` (`lib/national-users.ts`). Jamais `SUPER_ADMIN`
+  ni `ADMIN_SCHOOL_MANAGER_RDC`. Création/modification/suppression de document écrivent `audit_logs`
+  (module `coordination-nationale`).
+- **Vérification** : avec un compte `COORDINATION_NATIONALE`, `GET /api/coordination-nationale/tableau-de-bord`
+  → 200 ; avec la fonction `SECRETAIRE_NATIONAL`, `GET /api/coordination-nationale/utilisateurs` → 403 et
+  la page « Comptes & permissions » affiche le refus.

@@ -1,4 +1,6 @@
 import { ROLE_RANK } from '@/lib/rbac';
+import { canNational } from '@/lib/national-fonctions';
+import type { Permission } from '@/lib/permissions';
 
 export type NavItem = {
   label: string;
@@ -9,6 +11,8 @@ export type NavItem = {
   roles?: string[];
   /** Rôles exclus de l'affichage (même si `minRole` le permettrait). */
   excludeRoles?: string[];
+  /** Permission de fonction exigée (Coordination nationale EC-ERC). */
+  fonctionPermission?: Permission;
 };
 
 export type NavGroup = {
@@ -28,6 +32,17 @@ export const navigationGroups: NavGroup[] = [
     title: 'Accueil',
     items: [
       { label: 'Tableau de bord', href: '/dashboard', icon: 'home', excludeRoles: ['ENSEIGNANT', 'SUPER_ADMIN', 'ADMIN_SCHOOL_MANAGER_RDC', 'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'COORDINATION_SOUS_PROVINCIALE', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'] },
+    ]
+  },
+  {
+    title: 'Coordination nationale EC-ERC',
+    items: [
+      { label: 'Tableau de bord national', href: '/coordination-nationale', icon: 'home', roles: ['COORDINATION_NATIONALE'] },
+      { label: 'Coordination nationale', href: '/coordination-nationale/provinces', icon: 'flag', roles: ['COORDINATION_NATIONALE'] },
+      { label: 'Coordinations', href: '/coordination-nationale/coordinations', icon: 'region', roles: ['COORDINATION_NATIONALE'], fonctionPermission: 'national:coordinations' },
+      { label: 'Documents nationaux', href: '/coordination-nationale/documents', icon: 'document', roles: ['COORDINATION_NATIONALE'], fonctionPermission: 'national:documents' },
+      { label: 'Communications', href: '/coordination-nationale/communications', icon: 'send', roles: ['COORDINATION_NATIONALE'], fonctionPermission: 'national:communications' },
+      { label: 'Comptes & permissions', href: '/coordination-nationale/utilisateurs', icon: 'users', roles: ['COORDINATION_NATIONALE'], fonctionPermission: 'national:users' },
     ]
   },
   {
@@ -108,7 +123,6 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Provinces éducationnelles', href: '/provinces-educationnelles', icon: 'school', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'Sous-divisions éduc.', href: '/sous-divisions', icon: 'district', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo', href: '/ec-erc', icon: 'organization', minRole: 'AGENT_PROVINCIAL' },
-      { label: 'Coord. nationale', href: '/coordination-nationale', icon: 'flag', roles: ['COORDINATION_NATIONALE'] },
       { label: 'Coord. provinciale', href: '/coordination-provinciale', icon: 'region', roles: ['COORDINATION_PROVINCIALE'] },
       { label: 'Coord. sous-provinciale', href: '/coordination-sous-provinciale', icon: 'district', roles: ['COORDINATION_SOUS_PROVINCIALE'] },
       { label: 'Tableau de bord', href: '/agent-provincial', icon: 'home', roles: ['AGENT_PROVINCIAL'] },
@@ -165,15 +179,24 @@ export const allNavItems: NavItem[] = navigationGroups.flatMap((g) => g.items);
  * Groupes de navigation visibles pour un rôle donné, vides exclus.
  * Règle unique (rang de rôle) partagée par la barre latérale et l'accueil.
  */
-export function visibleNavigationGroups(role?: string | null): NavGroup[] {
+export function visibleNavigationGroups(role?: string | null, fonction?: string | null): NavGroup[] {
   if (!role) return navigationGroups;
   return navigationGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        if (item.roles) return item.roles.includes(role);
-        if (item.excludeRoles?.includes(role)) return false;
-        return !item.minRole || (ROLE_RANK[role] ?? 0) >= (ROLE_RANK[item.minRole] ?? 0);
+        if (item.roles) {
+          if (!item.roles.includes(role)) return false;
+        } else {
+          if (item.excludeRoles?.includes(role)) return false;
+          if (item.minRole && (ROLE_RANK[role] ?? 0) < (ROLE_RANK[item.minRole] ?? 0)) return false;
+        }
+        // Permissions de fonction (Coordination nationale EC-ERC) : un menu
+        // n'est affiché que si la fonction du compte l'autorise.
+        if (item.fonctionPermission && role === 'COORDINATION_NATIONALE' && !canNational(fonction, item.fonctionPermission)) {
+          return false;
+        }
+        return true;
       })
     }))
     .filter((group) => group.items.length > 0);
