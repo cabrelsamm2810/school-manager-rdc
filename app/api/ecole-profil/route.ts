@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/rbac';
-import { ECOLE_PROFIL_CHAMP_LABELS, buildEcoleQrValue } from '@/lib/ecole-profil';
+import { ECOLE_PROFIL_CHAMP_LABELS } from '@/lib/ecole-profil';
 import {
   canEditEcoleProfil,
   ensureEcoleProfil,
   loadEcoleAutorisee,
+  loadEcoleProfilPayload,
   logEcoleProfil,
   type ProfilUtilisateur,
 } from '@/lib/ecole-profil-service';
@@ -34,71 +35,6 @@ const ECOLE_FIELDS = [
   'commune', 'adresse', 'telephone', 'email', 'chefEcole', 'effectif', 'logoUrl',
 ] as const;
 
-async function loadPayload(ecoleId: string, user: ProfilUtilisateur) {
-  const ecole = await prisma.ecole.findUnique({
-    where: { id: ecoleId },
-    include: {
-      coordSousProvinciale: { select: { id: true, nom: true } },
-      ecErc: { select: { id: true, nom: true } },
-    },
-  });
-  if (!ecole) return null;
-
-  const profil = await ensureEcoleProfil(ecole.id, ecole.institution, user);
-
-  const [chef, sections] = await Promise.all([
-    profil.chefUserId
-      ? prisma.user.findUnique({
-          where: { id: profil.chefUserId },
-          select: { id: true, nom: true, postNom: true, prenom: true, email: true, telephone: true, profilePhotoUrl: true },
-        })
-      : Promise.resolve(null),
-    prisma.ecoleSection.findMany({
-      where: { ecoleId: ecole.id },
-      orderBy: [{ type: 'asc' }, { ordre: 'asc' }, { nom: 'asc' }],
-    }),
-  ]);
-
-  return {
-    ecole: {
-      id: ecole.id,
-      nom: ecole.nom,
-      type: ecole.type,
-      institution: ecole.institution,
-      dinacope: ecole.dinacope,
-      province: ecole.province,
-      provinceEducationnelle: ecole.provinceEducationnelle,
-      ville: ecole.ville,
-      commune: ecole.commune,
-      adresse: ecole.adresse,
-      telephone: ecole.telephone,
-      email: ecole.email,
-      chefEcole: ecole.chefEcole,
-      logoUrl: ecole.logoUrl,
-      identifiantSM: ecole.identifiantSM,
-      effectif: ecole.effectif,
-      statut: ecole.statut,
-      statutValidation: ecole.statutValidation,
-      coordSousProvinciale: ecole.coordSousProvinciale,
-      ecErc: ecole.ecErc,
-    },
-    profil: {
-      id: profil.id,
-      codeEcole: profil.codeEcole,
-      chefUserId: profil.chefUserId,
-      statut: profil.statut,
-      createdAt: profil.createdAt,
-      updatedAt: profil.updatedAt,
-    },
-    chef,
-    sections,
-    qrPayload: buildEcoleQrValue(profil.codeEcole, profil.qrToken),
-    permissions: {
-      canEdit: canEditEcoleProfil(user, ecole),
-    },
-  };
-}
-
 /** GET /api/ecole-profil — école du compte (ou `?ecoleId=` dans son périmètre). */
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -109,7 +45,7 @@ export async function GET(request: NextRequest) {
   const cible = await loadEcoleAutorisee(user, ecoleId);
   if (!cible.ok) return NextResponse.json({ error: cible.error }, { status: cible.status });
 
-  const payload = await loadPayload(cible.ecole.id, user);
+  const payload = await loadEcoleProfilPayload(cible.ecole.id, user);
   if (!payload) return NextResponse.json({ error: 'École introuvable.' }, { status: 404 });
   return NextResponse.json(payload);
 }

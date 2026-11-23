@@ -2,7 +2,7 @@ import 'server-only';
 
 import { randomBytes } from 'node:crypto';
 import prisma from '@/lib/prisma';
-import { ECOLE_QR_TOKEN_LENGTH, generateCodeEcole } from '@/lib/ecole-profil';
+import { ECOLE_QR_TOKEN_LENGTH, buildEcoleQrValue, generateCodeEcole } from '@/lib/ecole-profil';
 
 /**
  * Service du Profil École.
@@ -12,7 +12,7 @@ import { ECOLE_QR_TOKEN_LENGTH, generateCodeEcole } from '@/lib/ecole-profil';
  * helpers plutôt que de relire `Ecole` à sa manière.
  */
 
-import { canAccessEcole, type ProfilUtilisateur } from '@/lib/ecole-profil-access';
+import { canAccessEcole, canEditEcoleProfil, type ProfilUtilisateur } from '@/lib/ecole-profil-access';
 
 // Les règles d'accès vivent dans un module pur (testable sans base) et sont
 // ré-exportées ici pour les routes qui importent le service.
@@ -128,4 +128,75 @@ export async function loadEcoleAutorisee(user: ProfilUtilisateur, ecoleId?: stri
     return { ok: false as const, status: 403, error: 'Accès refusé : cette école est hors de votre périmètre.' };
   }
   return { ok: true as const, ecole };
+}
+
+/**
+ * Charge toutes les données du Profil École : fiche administrative, profil
+ * (code école + jeton QR), chef associé, sections et valeur du QR Code.
+ *
+ * Partagé par `GET /api/ecole-profil` et l'export PDF.
+ */
+export async function loadEcoleProfilPayload(ecoleId: string, user: ProfilUtilisateur) {
+  const ecole = await prisma.ecole.findUnique({
+    where: { id: ecoleId },
+    include: {
+      coordSousProvinciale: { select: { id: true, nom: true } },
+      ecErc: { select: { id: true, nom: true } },
+    },
+  });
+  if (!ecole) return null;
+
+  const profil = await ensureEcoleProfil(ecole.id, ecole.institution, user);
+
+  const [chef, sections] = await Promise.all([
+    profil.chefUserId
+      ? prisma.user.findUnique({
+          where: { id: profil.chefUserId },
+          select: { id: true, nom: true, postNom: true, prenom: true, email: true, telephone: true, profilePhotoUrl: true },
+        })
+      : Promise.resolve(null),
+    prisma.ecoleSection.findMany({
+      where: { ecoleId: ecole.id },
+      orderBy: [{ type: 'asc' }, { ordre: 'asc' }, { nom: 'asc' }],
+    }),
+  ]);
+
+  return {
+    ecole: {
+      id: ecole.id,
+      nom: ecole.nom,
+      type: ecole.type,
+      institution: ecole.institution,
+      dinacope: ecole.dinacope,
+      province: ecole.province,
+      provinceEducationnelle: ecole.provinceEducationnelle,
+      ville: ecole.ville,
+      commune: ecole.commune,
+      adresse: ecole.adresse,
+      telephone: ecole.telephone,
+      email: ecole.email,
+      chefEcole: ecole.chefEcole,
+      logoUrl: ecole.logoUrl,
+      identifiantSM: ecole.identifiantSM,
+      effectif: ecole.effectif,
+      statut: ecole.statut,
+      statutValidation: ecole.statutValidation,
+      coordSousProvinciale: ecole.coordSousProvinciale,
+      ecErc: ecole.ecErc,
+    },
+    profil: {
+      id: profil.id,
+      codeEcole: profil.codeEcole,
+      chefUserId: profil.chefUserId,
+      statut: profil.statut,
+      createdAt: profil.createdAt,
+      updatedAt: profil.updatedAt,
+    },
+    chef,
+    sections,
+    qrPayload: buildEcoleQrValue(profil.codeEcole, profil.qrToken),
+    permissions: {
+      canEdit: canEditEcoleProfil(user, ecole),
+    },
+  };
 }

@@ -90,25 +90,35 @@ function ProfilEcoleContent() {
             <>
               <EcoleProfilEntete ecole={data.ecole} profil={data.profil} />
 
-              <div className="mt-5 inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
-                {TABS.map((t) => (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => setTab(t.key)}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                      tab === t.key ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Icon name={t.icon} className="h-4 w-4" />
-                    {t.label}
-                    {t.key === 'sections' && (
-                      <span className="rounded-md bg-slate-200/70 px-1.5 text-[11px] font-semibold text-slate-600">
-                        {data.sections.length}
-                      </span>
-                    )}
-                  </button>
-                ))}
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <div className="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+                  {TABS.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTab(t.key)}
+                      className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                        tab === t.key ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icon name={t.icon} className="h-4 w-4" />
+                      {t.label}
+                      {t.key === 'sections' && (
+                        <span className="rounded-md bg-slate-200/70 px-1.5 text-[11px] font-semibold text-slate-600">
+                          {data.sections.length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <a
+                  href={`/api/ecole-profil/pdf${ecoleId ? `?ecoleId=${encodeURIComponent(ecoleId)}` : ''}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  <Icon name="download" className="h-4 w-4" />
+                  Fiche PDF
+                </a>
               </div>
 
               <div className="mt-4">
