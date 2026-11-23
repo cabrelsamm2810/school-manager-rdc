@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 
 const TABS = [
   { href: '/coordination-nationale', label: "Vue d'ensemble", icon: 'home' },
+  { href: '/coordination-nationale/reseau', label: 'Réseau scolaire', icon: 'school' },
   { href: '/coordination-nationale/coordination', label: 'Coordination & comptes', icon: 'people' },
   { href: '/coordination-nationale/documents', label: 'Documents', icon: 'document' },
   { href: '/coordination-nationale/securite', label: 'Sécurité & journal', icon: 'shield' },

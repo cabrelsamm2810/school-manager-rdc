@@ -109,6 +109,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Sous-divisions éduc.', href: '/sous-divisions', icon: 'district', minRole: 'COORDINATION_PROVINCIALE' },
       { label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo', href: '/ec-erc', icon: 'organization', minRole: 'AGENT_PROVINCIAL' },
       { label: 'Tableau de bord national', href: '/coordination-nationale', icon: 'home', roles: ['COORDINATION_NATIONALE'] },
+      { label: 'Réseau scolaire national', href: '/coordination-nationale/reseau', icon: 'school', roles: ['COORDINATION_NATIONALE'] },
       { label: 'Coordination & comptes', href: '/coordination-nationale/coordination', icon: 'people', roles: ['COORDINATION_NATIONALE'] },
       { label: 'Documents nationaux', href: '/coordination-nationale/documents', icon: 'document', roles: ['COORDINATION_NATIONALE'] },
       { label: 'Sécurité & journal', href: '/coordination-nationale/securite', icon: 'shield', roles: ['COORDINATION_NATIONALE'] },
