@@ -19,8 +19,8 @@ export function NationalHeader({
       <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/5" />
       <div className="pointer-events-none absolute -bottom-20 right-24 h-44 w-44 rounded-full bg-white/5" />
       <div className="relative flex items-start gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg">
-          <ErcLogo size={44} />
+        <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-white p-2 shadow-lg">
+          <ErcLogo size={80} />
         </span>
         <div className="min-w-0">
           <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-brand-200">{eyebrow}</p>
