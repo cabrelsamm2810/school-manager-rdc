@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
   const eleves = await prisma.eleve.findMany({
     where,
-    include: { ecole: { select: { id: true, nom: true, province: true } } },
+    include: { ecole: { select: { id: true, nom: true, province: true, codeEcole: true, identifiantSM: true } } },
     orderBy: [{ classe: 'asc' }, { nom: 'asc' }]
   });
 

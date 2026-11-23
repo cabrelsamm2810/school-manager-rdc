@@ -12,7 +12,7 @@ type Eleve = {
   nom: string;
   prenom: string;
   classe: string;
-  ecole?: { id: string; nom: string } | null;
+  ecole?: { id: string; nom: string; codeEcole?: string | null; identifiantSM?: string | null } | null;
 };
 
 export default function CartesQrPage() {
@@ -85,6 +85,14 @@ export default function CartesQrPage() {
                   <p className="text-xs text-slate-500">Matricule</p>
                   <p className="font-medium text-slate-900">{e.matricule}</p>
                   {e.ecole && <p className="mt-1 text-xs text-slate-500">{e.ecole.nom}</p>}
+                  {e.ecole && (e.ecole.codeEcole || e.ecole.identifiantSM) && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Code école :{' '}
+                      <span className="font-mono font-semibold text-slate-700">
+                        {e.ecole.codeEcole || e.ecole.identifiantSM}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-white p-1">
                   {qrCacheRef.current[e.matricule] ? (
