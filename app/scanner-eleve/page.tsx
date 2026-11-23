@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, Camera, QrCode, RefreshCw, ShieldCheck, WifiOff } from 'lucide-react';
+import { AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { QRScannerModal, type ScanResult } from '@/components/enseignant/QRScannerModal';
 import { EleveScanFiche, type EleveScanne } from '@/components/enseignant/EleveScanFiche';
+import { ScannerEleveHero } from '@/components/enseignant/ScannerEleveHero';
+import { ScannerEleveGuide } from '@/components/enseignant/ScannerEleveGuide';
 import { useSessionUser } from '@/lib/use-session-user';
 import { signalScanSuccess } from '@/lib/scan-feedback';
 
@@ -116,53 +118,7 @@ export default function ScannerElevePage() {
     <AppShell>
       <div className="px-4 pb-6 pt-4 md:px-6 md:pt-6">
         <div className="mx-auto max-w-2xl">
-          {/* En-tête */}
-          <div className="flex items-start gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-lg shadow-brand-500/25">
-              <QrCode className="h-6 w-6" aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-600">
-                Espace enseignant
-              </p>
-              <h1 className="mt-0.5 text-xl font-bold leading-tight text-slate-900">Scanner QR Code élève</h1>
-              <p className="mt-1 text-[13px] leading-snug text-slate-500">
-                Scannez la carte scolaire : la fiche de l'élève s'affiche automatiquement.
-              </p>
-            </div>
-          </div>
-
-          {/* État hors ligne */}
-          {!online && (
-            <div
-              role="status"
-              className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-900"
-            >
-              <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              <p>
-                <span className="font-semibold">Mode hors ligne.</span> La recherche d'un élève nécessite une
-                connexion. Aucune donnée n'est affichée tant que le réseau n'est pas rétabli.
-              </p>
-            </div>
-          )}
-
-          {/* Bouton principal */}
-          {!eleve && (
-            <button
-              type="button"
-              onClick={ouvrirScanner}
-              disabled={!online}
-              className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 py-4 text-[15px] font-bold text-white shadow-lg shadow-brand-600/25 transition active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-            >
-              <Camera className="h-5 w-5" aria-hidden />
-              Scanner un QR Code
-            </button>
-          )}
-          {!eleve && (
-            <p className="mt-2 text-center text-[11px] text-slate-400">
-              Détection automatique · aucun bouton à appuyer
-            </p>
-          )}
+          <ScannerEleveHero online={online} onScan={ouvrirScanner} />
 
           {/* Erreur de scan */}
           {error && !eleve && (
@@ -203,23 +159,15 @@ export default function ScannerElevePage() {
 
           {/* Fiche élève */}
           {eleve && (
-            <div className="mt-5 space-y-4">
+            <div className="mt-4">
               <EleveScanFiche eleve={eleve} role={user?.role} onScanAgain={retourScanner} />
             </div>
           )}
 
-          {/* Aide / sécurité */}
+          {/* Guide d'utilisation et garanties */}
           {!eleve && (
-            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                <ShieldCheck className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-                Scan sécurisé
-              </p>
-              <ul className="mt-2.5 space-y-1.5 text-[12px] leading-relaxed text-slate-500">
-                <li>• Le QR Code ne contient que le matricule signé — aucune donnée personnelle.</li>
-                <li>• Seuls les élèves de votre établissement peuvent être consultés.</li>
-                <li>• Aucune information financière ni coordonnée de tuteur n'est affichée.</li>
-              </ul>
+            <div className="mt-4">
+              <ScannerEleveGuide />
             </div>
           )}
         </div>
