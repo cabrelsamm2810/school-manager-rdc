@@ -1,22 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { NIVEAUX_SCOLAIRES } from '@/lib/meta-data';
 
-/**
- * Liste exhaustive des niveaux scolaires disponibles.
- * Inclut les options existantes (Primaire, Secondaire, Supérieur, Professionnel)
- * et les niveaux demandés (Maternelle, Humanités, Technique / Professionnel).
- * Aucune option existante n'a été supprimée.
- */
-export const NIVEAUX_SCOLAIRES: string[] = [
-  'Maternelle',
-  'Primaire',
-  'Secondaire',
-  'Humanités',
-  'Supérieur',
-  'Professionnel',
-  'Technique / Professionnel',
-];
+// Liste exhaustive des niveaux scolaires — source unique : `lib/meta-data.ts`.
+export { NIVEAUX_SCOLAIRES };
 
 interface Props {
   value: string;

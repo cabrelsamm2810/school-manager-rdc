@@ -1,28 +1,47 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { INSTITUTIONS, DOCUMENT_TYPES, VALIDATION_STATUTS, isPrivateInstitution } from '@/lib/institutions';
-import { allProvinces, educationProvincesByAdmin, schoolSections, schoolOptions } from '@/lib/meta-data';
+import { useState, useEffect, FormEvent, type ReactNode } from 'react';
+import { INSTITUTIONS, VALIDATION_STATUTS } from '@/lib/institutions';
+import { allProvinces, educationProvincesByAdmin, NIVEAUX_SCOLAIRES } from '@/lib/meta-data';
 import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
 import { GeoLocationInput } from '@/components/ecoles/GeoLocationInput';
+import { EcoleLogoUpload } from '@/components/ecoles/EcoleLogoUpload';
+import { SectionsOptionsModal } from '@/components/ecoles/SectionsOptionsModal';
 
 export type EcoleFormData = {
   nom: string;
+  nomAbrege: string;
+  idSecope: string;
   type: string;
+  regimeGestion: string;
   institution: string;
   numeroAgrement: string;
   dateCreation: string;
+  dateFermeture: string;
   sections: string[];
   options: string[];
   dinacope: string;
+  numeroNU: string;
+  numeroNP: string;
   province: string;
   provinceEducationnelle: string;
   ville: string;
   commune: string;
+  secteur: string;
+  quartier: string;
+  avenue: string;
+  numeroParcelle: string;
   adresse: string;
   localisationGeo: string;
   latitude: number | null;
   longitude: number | null;
+  coordinationProvinciale: string;
+  codeCoordProv: string;
+  codeCoordSous: string;
+  sousDivision: string;
+  promoteur: string;
+  directeurEtudes: string;
+  responsableAdministratif: string;
   telephone: string;
   email: string;
   chefEcole: string;
@@ -37,10 +56,13 @@ export type EcoleFormData = {
 };
 
 export const emptyForm: EcoleFormData = {
-  nom: '', type: '', institution: '', numeroAgrement: '', dateCreation: '', sections: [], options: [],
-  dinacope: '', province: '',
-  provinceEducationnelle: '', ville: '', commune: '', adresse: '',
+  nom: '', nomAbrege: '', idSecope: '', type: '', regimeGestion: '', institution: '',
+  numeroAgrement: '', dateCreation: '', dateFermeture: '', sections: [], options: [],
+  dinacope: '', numeroNU: '', numeroNP: '', province: '',
+  provinceEducationnelle: '', ville: '', commune: '', secteur: '', quartier: '', avenue: '', numeroParcelle: '', adresse: '',
   localisationGeo: '', latitude: null, longitude: null,
+  coordinationProvinciale: '', codeCoordProv: '', codeCoordSous: '', sousDivision: '',
+  promoteur: '', directeurEtudes: '', responsableAdministratif: '',
   telephone: '', email: '', chefEcole: '',
   logoUrl: '', effectif: '', statut: 'Actif', statutValidation: 'Brouillon',
   coordSousProvincialeId: '', ecErcId: '', structureRattachementId: '',
@@ -48,6 +70,31 @@ export const emptyForm: EcoleFormData = {
 };
 
 type Structure = { id: string; nom: string; province: string };
+
+/** Régimes de gestion reconnus, alignés sur les catégories de `lib/institutions.ts`. */
+const REGIMES_GESTION = ['Public', 'Conventionné', 'Privé agréé', 'Privé indépendant'];
+
+const REGIME_BY_CATEGORIE: Record<string, string> = {
+  PUBLIC: 'Public',
+  CONVENTIONNE: 'Conventionné',
+  PRIVE_AGREE: 'Privé agréé',
+  PRIVE_INDEPENDANT: 'Privé indépendant',
+};
+
+/** Statuts administratifs de l'établissement. */
+export const STATUTS_ETABLISSEMENT = ['Actif', 'En attente', 'Suspendu', 'Fermé'];
+
+/** Champs obligatoires du profil, contrôlés avant l'enregistrement. */
+const REQUIRED_FIELDS: { key: keyof EcoleFormData; label: string }[] = [
+  { key: 'nom', label: 'Nom officiel de l\u2019établissement' },
+  { key: 'type', label: 'Type d\u2019établissement' },
+  { key: 'province', label: 'Province' },
+  { key: 'provinceEducationnelle', label: 'Province éducationnelle' },
+  { key: 'commune', label: 'Commune' },
+  { key: 'adresse', label: 'Adresse complète' },
+  { key: 'chefEcole', label: 'Chef d\u2019établissement' },
+  { key: 'telephone', label: 'Numéro de téléphone' },
+];
 
 const inputClass = 'w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
@@ -60,18 +107,42 @@ type Props = {
   submitLabel?: string;
   loading?: boolean;
   error?: string;
+  ecoleId?: string | null;
 };
 
-export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enregistrer', loading, error }: Props) {
-  const [step, setStep] = useState(1);
+function FormCard({ title, description, icon, children }: {
+  title: string;
+  description?: string;
+  icon: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-base">{icon}</div>
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+          {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enregistrer', loading, error, ecoleId }: Props) {
+  // Une modification existante ouvre directement le profil (étape 3).
+  const [step, setStep] = useState(initialData?.institution ? 3 : 1);
   const [form, setForm] = useState<EcoleFormData>({ ...emptyForm, ...initialData });
   const [structures, setStructures] = useState<Structure[]>([]);
   const [structuresLoading, setStructuresLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
+  const [sectionsOpen, setSectionsOpen] = useState(false);
 
   const selectedInstitution = INSTITUTIONS.find((i) => i.code === form.institution);
-  const isPrivate = isPrivateInstitution(form.institution);
   const educationProvinces = form.province ? (educationProvincesByAdmin[form.province] || []) : [];
   const communes = form.provinceEducationnelle ? getCommunesForProvinceEduc(form.provinceEducationnelle) : [];
+  const selectedStructure = structures.find((s) => s.id === form.coordSousProvincialeId);
 
   // Charger les structures administratives quand l'institution change
   useEffect(() => {
@@ -95,26 +166,16 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
 
   function selectInstitution(code: string) {
     // Changer d'institution réinitialise les champs devenus incompatibles :
-    // parcours administratif et, hors privé, le profil privé.
-    const prive = isPrivateInstitution(code);
+    // parcours administratif et régime de gestion.
+    const institution = INSTITUTIONS.find((i) => i.code === code);
     setForm((prev) => ({
       ...prev,
       institution: code,
+      regimeGestion: institution ? (REGIME_BY_CATEGORIE[institution.categorie] ?? prev.regimeGestion) : prev.regimeGestion,
       coordSousProvincialeId: '',
       structureRattachementId: '',
-      structureRattachementType: INSTITUTIONS.find((i) => i.code === code)?.structureCompetente || '',
-      numeroAgrement: prive ? prev.numeroAgrement : '',
-      dateCreation: prive ? prev.dateCreation : '',
-      sections: prive ? prev.sections : [],
-      options: prive ? prev.options : [],
+      structureRattachementType: institution?.structureCompetente || '',
     }));
-  }
-
-  function toggleListValue(key: 'sections' | 'options', value: string) {
-    setForm((prev) => {
-      const list = prev[key];
-      return { ...prev, [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] };
-    });
   }
 
   function handleProvinceChange(prov: string) {
@@ -146,6 +207,15 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const missing = REQUIRED_FIELDS.filter((f) => {
+      const value = form[f.key];
+      return Array.isArray(value) ? value.length === 0 : !String(value ?? '').trim();
+    });
+    if (missing.length > 0) {
+      setLocalError(`Champs obligatoires manquants : ${missing.map((f) => f.label).join(', ')}.`);
+      return;
+    }
+    setLocalError('');
     await onSubmit(form);
   }
 
@@ -161,7 +231,7 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
               {s}
             </div>
             <span className={`hidden text-sm font-medium sm:block ${step >= s ? 'text-slate-900' : 'text-slate-400'}`}>
-              {s === 1 ? 'Institution' : s === 2 ? 'Parcours administratif' : 'Informations'}
+              {s === 1 ? 'Institution' : s === 2 ? 'Parcours administratif' : 'Profil de l\u2019école'}
             </span>
             {s < 3 && <div className={`h-0.5 flex-1 ${step > s ? 'bg-blue-600' : 'bg-slate-200'}`} />}
           </div>
@@ -245,7 +315,7 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
               <span className="font-medium text-slate-600">{form.provinceEducationnelle || 'Province éduc.'}</span>
               <span className="text-slate-400">→</span>
               <span className="whitespace-nowrap font-medium text-slate-600">
-                {filteredStructures.find((s) => s.id === form.coordSousProvincialeId)?.nom || 'Structure compétente'}
+                {selectedStructure?.nom || 'Structure compétente'}
               </span>
               <span className="text-slate-400">→</span>
               <span className="whitespace-nowrap font-medium text-blue-600">École</span>
@@ -327,167 +397,329 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
         </div>
       )}
 
-      {/* ── Étape 3 : Informations de l'école ── */}
+      {/* ── Étape 3 : Profil de l'école ── */}
       {step === 3 && (
         <div className="space-y-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Informations de l'école</h3>
-              <p className="mt-1 text-sm text-slate-500">Renseignez les informations obligatoires.</p>
+              <h3 className="text-base font-bold text-slate-900">Profil de l'école</h3>
+              <p className="mt-1 text-sm text-slate-500">Informations administratives, localisation, coordination et responsables.</p>
             </div>
             <span className={`rounded-lg px-3 py-1 text-xs font-medium ${selectedInstitution?.bgColor} ${selectedInstitution?.color}`}>
               {selectedInstitution?.label}
             </span>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className={labelClass} htmlFor="etab-nom">Nom officiel de l'école{requiredMark}</label>
-              <input id="etab-nom" type="text" required value={form.nom}
-                onChange={(e) => update('nom', e.target.value)}
-                className={inputClass} placeholder="Ex. Institut Tuendelee" />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-dinacope">DINACOPE</label>
-              <input id="etab-dinacope" type="text" value={form.dinacope}
-                onChange={(e) => update('dinacope', e.target.value)}
-                className={inputClass} placeholder="Numéro DINACOPE (optionnel)" />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-type">Type d'école{requiredMark}</label>
-              <select id="etab-type" value={form.type}
-                onChange={(e) => update('type', e.target.value)}
-                className={inputClass} required>
-                <option value="">— Sélectionner —</option>
-                <option value="Primaire">Primaire</option>
-                <option value="Secondaire">Secondaire</option>
-                <option value="Supérieur">Supérieur</option>
-                <option value="Professionnel">Professionnel</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-chef">Chef d'établissement{requiredMark}</label>
-              <input id="etab-chef" type="text" required value={form.chefEcole}
-                onChange={(e) => update('chefEcole', e.target.value)}
-                className={inputClass} placeholder="Nom du directeur" />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-tel">Numéro de téléphone{requiredMark}</label>
-              <input id="etab-tel" type="tel" required value={form.telephone}
-                onChange={(e) => update('telephone', e.target.value)}
-                className={inputClass} placeholder="+243 ..." />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-email">Adresse e-mail</label>
-              <input id="etab-email" type="email" value={form.email}
-                onChange={(e) => update('email', e.target.value)}
-                className={inputClass} placeholder="ecole@example.com" />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-ville">Ville</label>
-              <input id="etab-ville" type="text" value={form.ville}
-                onChange={(e) => update('ville', e.target.value)}
-                className={inputClass} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass} htmlFor="etab-adresse">Adresse{requiredMark}</label>
-              <input id="etab-adresse" type="text" required value={form.adresse}
-                onChange={(e) => update('adresse', e.target.value)}
-                className={inputClass} placeholder="Avenue, numéro, quartier" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Géolocalisation</label>
-              <GeoLocationInput
-                latitude={form.latitude}
-                longitude={form.longitude}
-                onChange={(lat, lng) => {
-                  update('latitude', lat);
-                  update('longitude', lng);
-                  if (lat != null && lng != null) {
-                    update('localisationGeo', `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-                  } else {
-                    update('localisationGeo', '');
-                  }
-                }}
-              />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-effectif">Effectif</label>
-              <input id="etab-effectif" type="number" min="0" value={form.effectif}
-                onChange={(e) => update('effectif', e.target.value)}
-                className={inputClass} placeholder="0" />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="etab-statut-val">Statut de validation</label>
-              <select id="etab-statut-val" value={form.statutValidation}
-                onChange={(e) => update('statutValidation', e.target.value)}
-                className={inputClass}>
-                {VALIDATION_STATUTS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* ── Profil de l'établissement privé ── */}
-          {isPrivate && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="h-4 w-1 rounded-full bg-rose-500" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Profil de l’établissement privé</p>
-                  <p className="text-xs text-slate-500">Agrément, date de création, sections et options.</p>
-                </div>
+          {/* 1. Informations administratives */}
+          <FormCard title="Informations administratives" icon="🏛️" description="Identification officielle de l'établissement.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className={labelClass} htmlFor="etab-nom">Nom officiel de l'établissement{requiredMark}</label>
+                <input id="etab-nom" type="text" required value={form.nom}
+                  onChange={(e) => update('nom', e.target.value)}
+                  className={inputClass} placeholder="Ex. Institut Tuendelee" />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className={labelClass} htmlFor="etab-agrement">Numéro d’agrément</label>
-                  <input id="etab-agrement" type="text" value={form.numeroAgrement}
-                    onChange={(e) => update('numeroAgrement', e.target.value)}
-                    className={inputClass} placeholder="Ex. AGR/2024/0123" />
-                </div>
-                <div>
-                  <label className={labelClass} htmlFor="etab-date-creation">Date de création</label>
-                  <input id="etab-date-creation" type="date" value={form.dateCreation}
-                    onChange={(e) => update('dateCreation', e.target.value)}
-                    className={inputClass} />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>Sections</label>
-                  <div className="flex flex-wrap gap-2">
-                    {schoolSections.map((section) => {
-                      const active = form.sections.includes(section);
-                      return (
-                        <button key={section} type="button" onClick={() => toggleListValue('sections', section)}
-                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                            active ? 'border-rose-500 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-600 hover:border-rose-300'
-                          }`}>
-                          {section}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass}>Options</label>
-                  <div className="flex flex-wrap gap-2">
-                    {schoolOptions.map((option) => {
-                      const active = form.options.includes(option);
-                      return (
-                        <button key={option} type="button" onClick={() => toggleListValue('options', option)}
-                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                            active ? 'border-rose-500 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-600 hover:border-rose-300'
-                          }`}>
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-nom-abrege">Nom abrégé</label>
+                <input id="etab-nom-abrege" type="text" value={form.nomAbrege}
+                  onChange={(e) => update('nomAbrege', e.target.value)}
+                  className={inputClass} placeholder="Ex. I.T. Tuendelee" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-secope">ID SECOPE</label>
+                <input id="etab-secope" type="text" value={form.idSecope}
+                  onChange={(e) => update('idSecope', e.target.value)}
+                  className={inputClass} placeholder="Identifiant SECOPE" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-type">Type d'établissement{requiredMark}</label>
+                <select id="etab-type" value={form.type}
+                  onChange={(e) => update('type', e.target.value)}
+                  className={inputClass} required>
+                  <option value="">— Sélectionner —</option>
+                  {NIVEAUX_SCOLAIRES.map((niveau) => <option key={niveau} value={niveau}>{niveau}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-regime">Régime de gestion</label>
+                <select id="etab-regime" value={form.regimeGestion}
+                  onChange={(e) => update('regimeGestion', e.target.value)}
+                  className={inputClass}>
+                  <option value="">— Sélectionner —</option>
+                  {REGIMES_GESTION.map((regime) => <option key={regime} value={regime}>{regime}</option>)}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Institution de tutelle</label>
+                <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                  {selectedInstitution?.label || '—'}
+                </p>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-agrement">Numéro de l'arrêté d'agrément</label>
+                <input id="etab-agrement" type="text" value={form.numeroAgrement}
+                  onChange={(e) => update('numeroAgrement', e.target.value)}
+                  className={inputClass} placeholder="Ex. AGR/2024/0123" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-statut-etab">Statut de l'établissement</label>
+                <select id="etab-statut-etab" value={form.statut}
+                  onChange={(e) => update('statut', e.target.value)}
+                  className={inputClass}>
+                  {STATUTS_ETABLISSEMENT.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-date-creation">Date de création</label>
+                <input id="etab-date-creation" type="date" value={form.dateCreation}
+                  onChange={(e) => update('dateCreation', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-date-fermeture">Date de fermeture (si applicable)</label>
+                <input id="etab-date-fermeture" type="date" value={form.dateFermeture}
+                  onChange={(e) => update('dateFermeture', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Logo ou photo de l'établissement</label>
+                <EcoleLogoUpload
+                  ecoleId={ecoleId}
+                  logoUrl={form.logoUrl}
+                  onChange={(url) => update('logoUrl', url)}
+                />
               </div>
             </div>
-          )}
+          </FormCard>
 
-          {error && (
-            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+          {/* 2. Localisation géographique */}
+          <FormCard title="Localisation géographique" icon="📍" description="Découpage administratif et adresse de l'établissement.">
+            <div className="mb-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              <span className="font-medium">{form.province || 'Province'}</span>
+              {' · '}
+              <span className="font-medium">{form.provinceEducationnelle || 'Province éducationnelle'}</span>
+              {' · '}
+              <span className="font-medium">{form.commune || 'Commune'}</span>
+              <button type="button" onClick={() => setStep(2)} className="ml-2 font-medium text-blue-600 hover:text-blue-700">
+                Modifier
+              </button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass} htmlFor="etab-ville">Ville ou territoire</label>
+                <input id="etab-ville" type="text" value={form.ville}
+                  onChange={(e) => update('ville', e.target.value)}
+                  className={inputClass} placeholder="Ex. Kinshasa" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-secteur">Secteur</label>
+                <input id="etab-secteur" type="text" value={form.secteur}
+                  onChange={(e) => update('secteur', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-quartier">Quartier</label>
+                <input id="etab-quartier" type="text" value={form.quartier}
+                  onChange={(e) => update('quartier', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-avenue">Avenue</label>
+                <input id="etab-avenue" type="text" value={form.avenue}
+                  onChange={(e) => update('avenue', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-parcelle">Numéro de parcelle</label>
+                <input id="etab-parcelle" type="text" value={form.numeroParcelle}
+                  onChange={(e) => update('numeroParcelle', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass} htmlFor="etab-adresse">Adresse complète{requiredMark}</label>
+                <input id="etab-adresse" type="text" required value={form.adresse}
+                  onChange={(e) => update('adresse', e.target.value)}
+                  className={inputClass} placeholder="Avenue, numéro, quartier, commune" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Géolocalisation</label>
+                <GeoLocationInput
+                  latitude={form.latitude}
+                  longitude={form.longitude}
+                  onChange={(lat, lng) => {
+                    update('latitude', lat);
+                    update('longitude', lng);
+                    if (lat != null && lng != null) {
+                      update('localisationGeo', `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+                    } else {
+                      update('localisationGeo', '');
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </FormCard>
+
+          {/* 3. Coordination éducationnelle */}
+          <FormCard title="Coordination éducationnelle" icon="🏢" description="Hiérarchie administrative de rattachement.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass} htmlFor="etab-coord-prov">Coordination provinciale</label>
+                <input id="etab-coord-prov" type="text" value={form.coordinationProvinciale}
+                  onChange={(e) => update('coordinationProvinciale', e.target.value)}
+                  className={inputClass} placeholder="Nom de la coordination provinciale" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-code-prov">Code COORD-PROV</label>
+                <input id="etab-code-prov" type="text" value={form.codeCoordProv}
+                  onChange={(e) => update('codeCoordProv', e.target.value)}
+                  className={inputClass} placeholder="Ex. COORD-PROV-KIN" />
+              </div>
+              <div>
+                <label className={labelClass}>Coordination sous-provinciale</label>
+                <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                  {selectedStructure?.nom || '—'}
+                  <button type="button" onClick={() => setStep(2)} className="ml-2 text-xs font-medium text-blue-600 hover:text-blue-700">
+                    Modifier
+                  </button>
+                </p>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-code-sous">Code COORD-SOUS</label>
+                <input id="etab-code-sous" type="text" value={form.codeCoordSous}
+                  onChange={(e) => update('codeCoordSous', e.target.value)}
+                  className={inputClass} placeholder="Ex. COORD-SOUS-KIN" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass} htmlFor="etab-sous-division">Sous-division</label>
+                <input id="etab-sous-division" type="text" value={form.sousDivision}
+                  onChange={(e) => update('sousDivision', e.target.value)}
+                  className={inputClass} placeholder="Nom de la sous-division" />
+              </div>
+            </div>
+          </FormCard>
+
+          {/* 4. Responsables et identification */}
+          <FormCard title="Responsables et identification" icon="👥" description="Personnes responsables et identifiants administratifs.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass} htmlFor="etab-promoteur">Promoteur</label>
+                <input id="etab-promoteur" type="text" value={form.promoteur}
+                  onChange={(e) => update('promoteur', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-chef">Chef d'établissement{requiredMark}</label>
+                <input id="etab-chef" type="text" required value={form.chefEcole}
+                  onChange={(e) => update('chefEcole', e.target.value)}
+                  className={inputClass} placeholder="Nom du directeur" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-directeur-etudes">Directeur des études</label>
+                <input id="etab-directeur-etudes" type="text" value={form.directeurEtudes}
+                  onChange={(e) => update('directeurEtudes', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-responsable-admin">Responsable administratif</label>
+                <input id="etab-responsable-admin" type="text" value={form.responsableAdministratif}
+                  onChange={(e) => update('responsableAdministratif', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-tel">Numéro de téléphone{requiredMark}</label>
+                <input id="etab-tel" type="tel" required value={form.telephone}
+                  onChange={(e) => update('telephone', e.target.value)}
+                  className={inputClass} placeholder="+243 ..." />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-email">Adresse électronique</label>
+                <input id="etab-email" type="email" value={form.email}
+                  onChange={(e) => update('email', e.target.value)}
+                  className={inputClass} placeholder="ecole@example.com" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-dinacope">DINACOPE</label>
+                <input id="etab-dinacope" type="text" value={form.dinacope}
+                  onChange={(e) => update('dinacope', e.target.value)}
+                  className={inputClass} placeholder="Numéro DINACOPE" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-nu">Numéro d'identification N.U</label>
+                <input id="etab-nu" type="text" value={form.numeroNU}
+                  onChange={(e) => update('numeroNU', e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-np">Numéro d'identification N.P</label>
+                <input id="etab-np" type="text" value={form.numeroNP}
+                  onChange={(e) => update('numeroNP', e.target.value)}
+                  className={inputClass} />
+              </div>
+            </div>
+          </FormCard>
+
+          {/* 5. Sections et options */}
+          <FormCard title="Sections et options" icon="🎓" description="Sections organisées par l'établissement et options des humanités.">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-center">
+                <p className="text-xs font-medium uppercase tracking-wide text-blue-600">Nombre de sections</p>
+                <p className="mt-1 text-3xl font-bold text-blue-700">{form.sections.length}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <p className={labelClass}>Sections sélectionnées</p>
+                {form.sections.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.sections.map((section) => (
+                      <span key={section} className="rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">{section}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">Aucune section configurée.</p>
+                )}
+                {form.options.length > 0 && (
+                  <>
+                    <p className={`${labelClass} mt-3`}>Options des humanités</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {form.options.map((option) => (
+                        <span key={option} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{option}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSectionsOpen(true)}
+              className="mt-4 w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 sm:w-auto"
+            >
+              Configurer les sections et options
+            </button>
+          </FormCard>
+
+          {/* 6. Suivi administratif */}
+          <FormCard title="Suivi administratif" icon="📊" description="Effectif déclaré et statut de validation du dossier.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass} htmlFor="etab-effectif">Effectif</label>
+                <input id="etab-effectif" type="number" min="0" value={form.effectif}
+                  onChange={(e) => update('effectif', e.target.value)}
+                  className={inputClass} placeholder="0" />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="etab-statut-val">Statut de validation</label>
+                <select id="etab-statut-val" value={form.statutValidation}
+                  onChange={(e) => update('statutValidation', e.target.value)}
+                  className={inputClass}>
+                  {VALIDATION_STATUTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          </FormCard>
+
+          {(localError || error) && (
+            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{localError || error}</p>
           )}
 
           <div className="flex justify-between">
@@ -502,6 +734,18 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
           </div>
         </div>
       )}
+
+      <SectionsOptionsModal
+        open={sectionsOpen}
+        initialSections={form.sections}
+        initialOptions={form.options}
+        onSave={(sections, options) => {
+          update('sections', sections);
+          update('options', options);
+          setSectionsOpen(false);
+        }}
+        onClose={() => setSectionsOpen(false)}
+      />
     </form>
   );
 }

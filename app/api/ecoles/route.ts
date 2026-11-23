@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
 import { generateIdentifiantSM, INSTITUTIONS, parseDateCreation } from '@/lib/institutions';
+import { resolveFileUrls } from '@/lib/storage';
 
 const createSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom officiel est obligatoire.'),
@@ -11,8 +12,25 @@ const createSchema = z.object({
   institution: z.string().trim().min(1, 'L\u2019institution est obligatoire.'),
   numeroAgrement: z.string().trim().optional().or(z.literal('')),
   dateCreation: z.string().trim().optional().or(z.literal('')),
+  dateFermeture: z.string().trim().optional().or(z.literal('')),
+  nomAbrege: z.string().trim().optional().or(z.literal('')),
+  idSecope: z.string().trim().optional().or(z.literal('')),
+  regimeGestion: z.string().trim().optional().or(z.literal('')),
   sections: z.array(z.string()).optional(),
   options: z.array(z.string()).optional(),
+  secteur: z.string().trim().optional().or(z.literal('')),
+  quartier: z.string().trim().optional().or(z.literal('')),
+  avenue: z.string().trim().optional().or(z.literal('')),
+  numeroParcelle: z.string().trim().optional().or(z.literal('')),
+  coordinationProvinciale: z.string().trim().optional().or(z.literal('')),
+  codeCoordProv: z.string().trim().optional().or(z.literal('')),
+  codeCoordSous: z.string().trim().optional().or(z.literal('')),
+  sousDivision: z.string().trim().optional().or(z.literal('')),
+  promoteur: z.string().trim().optional().or(z.literal('')),
+  directeurEtudes: z.string().trim().optional().or(z.literal('')),
+  responsableAdministratif: z.string().trim().optional().or(z.literal('')),
+  numeroNU: z.string().trim().optional().or(z.literal('')),
+  numeroNP: z.string().trim().optional().or(z.literal('')),
   dinacope: z.string().trim().optional().or(z.literal('')),
   province: z.string().trim().min(1, 'La province est obligatoire.'),
   provinceEducationnelle: z.string().trim().min(1, 'La province éducationnelle est obligatoire.'),
@@ -97,7 +115,7 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ ecoles });
+  return NextResponse.json({ ecoles: await resolveFileUrls(ecoles, 'logoUrl') });
 }
 
 /** POST /api/ecoles */
@@ -187,8 +205,26 @@ export async function POST(request: NextRequest) {
       institutionId: institutionRecord.id,
       numeroAgrement: data.numeroAgrement ?? '',
       dateCreation: parseDateCreation(data.dateCreation),
+      dateFermeture: parseDateCreation(data.dateFermeture),
+      nomAbrege: data.nomAbrege ?? '',
+      idSecope: data.idSecope ?? '',
+      regimeGestion: data.regimeGestion ?? '',
       sections: data.sections ?? [],
       options: data.options ?? [],
+      nombreSections: (data.sections ?? []).length,
+      secteur: data.secteur ?? '',
+      quartier: data.quartier ?? '',
+      avenue: data.avenue ?? '',
+      numeroParcelle: data.numeroParcelle ?? '',
+      coordinationProvinciale: data.coordinationProvinciale ?? '',
+      codeCoordProv: data.codeCoordProv ?? '',
+      codeCoordSous: data.codeCoordSous ?? '',
+      sousDivision: data.sousDivision ?? '',
+      promoteur: data.promoteur ?? '',
+      directeurEtudes: data.directeurEtudes ?? '',
+      responsableAdministratif: data.responsableAdministratif ?? '',
+      numeroNU: data.numeroNU ?? '',
+      numeroNP: data.numeroNP ?? '',
       dinacope: data.dinacope ?? '',
       province: data.province,
       provinceEducationnelle: data.provinceEducationnelle,

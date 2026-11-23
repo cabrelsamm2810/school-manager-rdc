@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
 import { INSTITUTIONS, parseDateCreation } from '@/lib/institutions';
+import { resolveFileUrl } from '@/lib/storage';
 
 const updateSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom officiel est obligatoire.'),
@@ -11,8 +12,25 @@ const updateSchema = z.object({
   institution: z.string().trim().optional().or(z.literal('')),
   numeroAgrement: z.string().trim().optional().or(z.literal('')),
   dateCreation: z.string().trim().optional().or(z.literal('')),
+  dateFermeture: z.string().trim().optional().or(z.literal('')),
+  nomAbrege: z.string().trim().optional().or(z.literal('')),
+  idSecope: z.string().trim().optional().or(z.literal('')),
+  regimeGestion: z.string().trim().optional().or(z.literal('')),
   sections: z.array(z.string()).optional(),
   options: z.array(z.string()).optional(),
+  secteur: z.string().trim().optional().or(z.literal('')),
+  quartier: z.string().trim().optional().or(z.literal('')),
+  avenue: z.string().trim().optional().or(z.literal('')),
+  numeroParcelle: z.string().trim().optional().or(z.literal('')),
+  coordinationProvinciale: z.string().trim().optional().or(z.literal('')),
+  codeCoordProv: z.string().trim().optional().or(z.literal('')),
+  codeCoordSous: z.string().trim().optional().or(z.literal('')),
+  sousDivision: z.string().trim().optional().or(z.literal('')),
+  promoteur: z.string().trim().optional().or(z.literal('')),
+  directeurEtudes: z.string().trim().optional().or(z.literal('')),
+  responsableAdministratif: z.string().trim().optional().or(z.literal('')),
+  numeroNU: z.string().trim().optional().or(z.literal('')),
+  numeroNP: z.string().trim().optional().or(z.literal('')),
   dinacope: z.string().trim().optional().or(z.literal('')),
   province: z.string().trim().optional().or(z.literal('')),
   provinceEducationnelle: z.string().trim().optional().or(z.literal('')),
@@ -75,7 +93,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
   }
 
-  return NextResponse.json({ ecole });
+  return NextResponse.json({ ecole: { ...ecole, logoUrl: await resolveFileUrl(ecole.logoUrl) } });
 }
 
 /** PUT /api/ecoles/[id] — modifier un école (protégé si validé). */
@@ -147,8 +165,26 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       institutionId: institutionRecord?.id ?? existing.institutionId,
       numeroAgrement: data.numeroAgrement !== undefined ? data.numeroAgrement : existing.numeroAgrement,
       dateCreation: data.dateCreation !== undefined ? parseDateCreation(data.dateCreation) : existing.dateCreation,
+      dateFermeture: data.dateFermeture !== undefined ? parseDateCreation(data.dateFermeture) : existing.dateFermeture,
+      nomAbrege: data.nomAbrege ?? existing.nomAbrege,
+      idSecope: data.idSecope ?? existing.idSecope,
+      regimeGestion: data.regimeGestion ?? existing.regimeGestion,
       sections: data.sections ?? existing.sections,
       options: data.options ?? existing.options,
+      nombreSections: data.sections ? data.sections.length : existing.nombreSections,
+      secteur: data.secteur ?? existing.secteur,
+      quartier: data.quartier ?? existing.quartier,
+      avenue: data.avenue ?? existing.avenue,
+      numeroParcelle: data.numeroParcelle ?? existing.numeroParcelle,
+      coordinationProvinciale: data.coordinationProvinciale ?? existing.coordinationProvinciale,
+      codeCoordProv: data.codeCoordProv ?? existing.codeCoordProv,
+      codeCoordSous: data.codeCoordSous ?? existing.codeCoordSous,
+      sousDivision: data.sousDivision ?? existing.sousDivision,
+      promoteur: data.promoteur ?? existing.promoteur,
+      directeurEtudes: data.directeurEtudes ?? existing.directeurEtudes,
+      responsableAdministratif: data.responsableAdministratif ?? existing.responsableAdministratif,
+      numeroNU: data.numeroNU ?? existing.numeroNU,
+      numeroNP: data.numeroNP ?? existing.numeroNP,
       dinacope: data.dinacope ?? '',
       province: data.province ?? '',
       provinceEducationnelle: data.provinceEducationnelle ?? '',

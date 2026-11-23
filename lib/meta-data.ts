@@ -103,6 +103,38 @@ export const schoolOptions: string[] = OPTIONS_RDC
   .filter((o) => o.type === 'Option')
   .map((o) => o.nom);
 
+/**
+ * Niveaux d'enseignement du système éducatif congolais.
+ * Liste exhaustive utilisée par le filtre de niveau et le profil de l'école.
+ */
+export const NIVEAUX_SCOLAIRES: string[] = [
+  'Maternelle',
+  'Primaire',
+  'Secondaire',
+  'Humanités',
+  'Supérieur',
+  'Professionnel',
+  'Technique / Professionnel',
+];
+
+/** Sections sélectionnables dans la fenêtre « Configurer les sections et options ». */
+export const PROFIL_ECOLE_SECTIONS: string[] = ['Maternelle', 'Primaire', 'Secondaire', 'Humanités'];
+
+/**
+ * Options des humanités organisées par l'établissement, regroupées par filière.
+ * Source unique : `OPTIONS_RDC` (curriculum officiel RDC).
+ */
+export const humanitesOptions: { filiere: string; options: string[] }[] = [
+  {
+    filiere: 'Humanités générales',
+    options: OPTIONS_RDC.filter((o) => o.type === 'Section').map((o) => o.nom),
+  },
+  {
+    filiere: 'Humanités techniques',
+    options: OPTIONS_RDC.filter((o) => o.type === 'Option').map((o) => o.nom),
+  },
+];
+
 export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },
   { value: 'COORDINATION_PROVINCIALE', label: 'Coordination provinciale' },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { INSTITUTION_MAP, DOCUMENT_TYPES, isPrivateInstitution } from '@/lib/institutions';
+import { INSTITUTION_MAP, DOCUMENT_TYPES } from '@/lib/institutions';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { useSessionUser } from '@/lib/use-session-user';
 import { DocumentAuditTrail } from '@/components/ecoles/DocumentAuditTrail';
@@ -33,21 +33,39 @@ type ValidationLog = {
 type Ecole = {
   id: string;
   nom: string;
+  nomAbrege: string;
+  idSecope: string;
   type: string;
+  regimeGestion: string;
   institution: string;
   numeroAgrement: string;
   dateCreation: string | null;
+  dateFermeture: string | null;
   sections: string[];
   options: string[];
+  nombreSections: number;
   dinacope: string;
+  numeroNU: string;
+  numeroNP: string;
   province: string;
   provinceEducationnelle: string;
   ville: string;
   commune: string;
+  secteur: string;
+  quartier: string;
+  avenue: string;
+  numeroParcelle: string;
   adresse: string;
   localisationGeo: string;
   latitude: number | null;
   longitude: number | null;
+  coordinationProvinciale: string;
+  codeCoordProv: string;
+  codeCoordSous: string;
+  sousDivision: string;
+  promoteur: string;
+  directeurEtudes: string;
+  responsableAdministratif: string;
   telephone: string;
   email: string;
   chefEcole: string;
@@ -71,6 +89,27 @@ const sectionClass = 'rounded-2xl border border-slate-200 bg-white p-5';
 const labelClass = 'text-xs font-medium uppercase tracking-wide text-slate-400';
 const valueClass = 'mt-0.5 text-sm font-medium text-slate-900';
 
+const STATUT_ETABLISSEMENT_STYLES: Record<string, string> = {
+  Actif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'En attente': 'bg-amber-50 text-amber-700 border-amber-200',
+  Suspendu: 'bg-orange-50 text-orange-700 border-orange-200',
+  Fermé: 'bg-red-50 text-red-700 border-red-200',
+};
+
+function Info({ label, value }: { label: string; value?: string | number | null }) {
+  const display = value === 0 ? '0' : value ? String(value) : '—';
+  return (
+    <div>
+      <p className={labelClass}>{label}</p>
+      <p className={valueClass}>{display}</p>
+    </div>
+  );
+}
+
+function formatDate(value: string | null | undefined) {
+  return value ? new Date(value).toLocaleDateString('fr-FR') : '—';
+}
+
 export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => void; onClose: () => void }) {
   const session = useSessionUser();
   const canManageDocs = !!session && SCHOOL_ROLES.includes(session.role);
@@ -83,6 +122,12 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
   const [docType, setDocType] = useState('');
   const [docTitre, setDocTitre] = useState('');
   const [docFile, setDocFile] = useState<File | null>(null);
+
+  // Hook inconditionnel : doit être appelé avant les retours anticipés.
+  const configCheck = useMemo(
+    () => (ecole ? checkEcoleConfigured(ecole) : { isConfigured: false, missingFields: [] }),
+    [ecole],
+  );
 
   async function loadData() {
     setLoading(true);
@@ -171,8 +216,9 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
   const inst = INSTITUTION_MAP[ecole.institution];
 
   // Vérifier que l'école est bien configurée avant l'envoi du dossier
-  const configCheck = useMemo(() => checkEcoleConfigured(ecole), [ecole]);
   const isConfigured = configCheck.isConfigured;
+  const nombreSections = ecole.nombreSections || ecole.sections?.length || 0;
+  const statutStyle = STATUT_ETABLISSEMENT_STYLES[ecole.statut] || 'bg-slate-50 text-slate-700 border-slate-200';
 
   return (
     <div className="space-y-5">
@@ -193,27 +239,33 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             {ecole.logoUrl ? (
-              <img src={ecole.logoUrl} alt="Logo" className="h-16 w-16 rounded-xl object-cover" />
+              <img src={ecole.logoUrl} alt="Logo de l'établissement" className="h-20 w-20 rounded-2xl border border-white/70 bg-white object-cover" />
             ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/60 text-2xl font-bold text-slate-400">
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/70 text-3xl font-bold text-slate-400">
                 {ecole.nom[0]?.toUpperCase()}
               </div>
             )}
             <div>
               <h2 className="text-xl font-bold text-slate-900">{ecole.nom}</h2>
-              <p className="mt-0.5 text-sm text-slate-500">
+              {ecole.nomAbrege && <p className="text-sm font-medium text-slate-600">{ecole.nomAbrege}</p>}
+              <p className="mt-1 text-sm text-slate-500">
                 {ecole.identifiantSM && (
                   <span className="font-mono font-semibold text-blue-600">ID: {ecole.identifiantSM}</span>
                 )}
-                {ecole.identifiantSM && ecole.dinacope && ' · '}
-                {ecole.dinacope && <span>DINACOPE: {ecole.dinacope}</span>}
+                {ecole.identifiantSM && ecole.idSecope && ' · '}
+                {ecole.idSecope && <span>SECOPE: {ecole.idSecope}</span>}
+                {!ecole.identifiantSM && !ecole.idSecope && 'Identifiant non attribué'}
               </p>
-              <div className="mt-1.5 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${inst?.bgColor} ${inst?.color}`}>
                   {inst?.label || ecole.institution}
                 </span>
-                <StatutBadge statut={ecole.statutValidation} />
+                {ecole.regimeGestion && (
+                  <span className="rounded-lg bg-white/70 px-2.5 py-1 text-xs font-medium text-slate-700">{ecole.regimeGestion}</span>
+                )}
                 {ecole.type && <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{ecole.type}</span>}
+                <span className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${statutStyle}`}>{ecole.statut || 'Statut non défini'}</span>
+                <StatutBadge statut={ecole.statutValidation} />
               </div>
             </div>
           </div>
@@ -226,77 +278,115 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{inst?.label || ecole.institution}</span>
           <span className="text-slate-400">→</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{ecole.province}</span>
+          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{ecole.province || 'Province'}</span>
           <span className="text-slate-400">→</span>
-          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{ecole.provinceEducationnelle}</span>
+          <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700">{ecole.provinceEducationnelle || 'Province éduc.'}</span>
           <span className="text-slate-400">→</span>
           <span className="rounded-lg bg-blue-50 px-3 py-1.5 font-medium text-blue-700">
-            {ecole.coordSousProvinciale?.nom || 'Structure non assignée'}
+            {ecole.coordSousProvinciale?.nom || ecole.coordinationProvinciale || 'Structure non assignée'}
           </span>
           <span className="text-slate-400">→</span>
           <span className="rounded-lg bg-blue-600 px-3 py-1.5 font-medium text-white">{ecole.nom}</span>
         </div>
       </div>
 
-      {/* Informations générales */}
+      {/* Informations administratives */}
       <div className={sectionClass}>
-        <h3 className="mb-3 text-sm font-bold text-slate-900">Informations générales</h3>
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Informations administratives</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div><p className={labelClass}>Type</p><p className={valueClass}>{ecole.type || '—'}</p></div>
-          <div><p className={labelClass}>DINACOPE</p><p className={valueClass}>{ecole.dinacope || '—'}</p></div>
-          <div><p className={labelClass}>Chef d'établissement</p><p className={valueClass}>{ecole.chefEcole || '—'}</p></div>
-          <div><p className={labelClass}>Téléphone</p><p className={valueClass}>{ecole.telephone || '—'}</p></div>
-          <div><p className={labelClass}>Email</p><p className={valueClass}>{ecole.email || '—'}</p></div>
-          <div><p className={labelClass}>Effectif</p><p className={valueClass}>{ecole.effectif.toLocaleString('fr-FR')}</p></div>
-          <div><p className={labelClass}>Province</p><p className={valueClass}>{ecole.province || '—'}</p></div>
-          <div><p className={labelClass}>Province éducationnelle</p><p className={valueClass}>{ecole.provinceEducationnelle || '—'}</p></div>
-          <div><p className={labelClass}>Commune</p><p className={valueClass}>{ecole.commune || '—'}</p></div>
-          <div><p className={labelClass}>Ville</p><p className={valueClass}>{ecole.ville || '—'}</p></div>
-          <div className="sm:col-span-2"><p className={labelClass}>Adresse</p><p className={valueClass}>{ecole.adresse || '—'}</p></div>
+          <Info label="Nom officiel" value={ecole.nom} />
+          <Info label="Nom abrégé" value={ecole.nomAbrege} />
+          <Info label="ID SECOPE" value={ecole.idSecope} />
+          <Info label="Type d'établissement" value={ecole.type} />
+          <Info label="Régime de gestion" value={ecole.regimeGestion} />
+          <Info label="Institution de tutelle" value={INSTITUTION_MAP[ecole.institution]?.label ?? ecole.institution} />
+          <Info label="Numéro de l'arrêté d'agrément" value={ecole.numeroAgrement} />
+          <Info label="Date de création" value={formatDate(ecole.dateCreation)} />
+          <Info label="Date de fermeture" value={ecole.dateFermeture ? formatDate(ecole.dateFermeture) : '—'} />
+          <Info label="Statut de l'établissement" value={ecole.statut} />
+          <Info label="Effectif" value={ecole.effectif.toLocaleString('fr-FR')} />
         </div>
       </div>
 
-      {/* Profil de l'établissement privé */}
-      {isPrivateInstitution(ecole.institution) && (
-        <div className={sectionClass}>
-          <h3 className="mb-3 text-sm font-bold text-slate-900">Profil de l’établissement privé</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div><p className={labelClass}>Numéro d’agrément</p><p className={valueClass}>{ecole.numeroAgrement || '—'}</p></div>
-            <div>
-              <p className={labelClass}>Date de création</p>
-              <p className={valueClass}>
-                {ecole.dateCreation ? new Date(ecole.dateCreation).toLocaleDateString('fr-FR') : '—'}
-              </p>
-            </div>
-            <div><p className={labelClass}>Institution</p><p className={valueClass}>{INSTITUTION_MAP[ecole.institution]?.label ?? ecole.institution}</p></div>
-            <div className="sm:col-span-2 lg:col-span-3">
-              <p className={labelClass}>Sections</p>
-              {ecole.sections?.length ? (
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {ecole.sections.map((section) => (
-                    <span key={section} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{section}</span>
-                  ))}
-                </div>
-              ) : <p className={valueClass}>—</p>}
-            </div>
-            <div className="sm:col-span-2 lg:col-span-3">
-              <p className={labelClass}>Options</p>
-              {ecole.options?.length ? (
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {ecole.options.map((option) => (
-                    <span key={option} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{option}</span>
-                  ))}
-                </div>
-              ) : <p className={valueClass}>—</p>}
-            </div>
+      {/* Localisation géographique */}
+      <div className={sectionClass}>
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Localisation géographique</h3>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Info label="Province" value={ecole.province} />
+          <Info label="Province éducationnelle" value={ecole.provinceEducationnelle} />
+          <Info label="Ville ou territoire" value={ecole.ville} />
+          <Info label="Commune" value={ecole.commune} />
+          <Info label="Secteur" value={ecole.secteur} />
+          <Info label="Quartier" value={ecole.quartier} />
+          <Info label="Avenue" value={ecole.avenue} />
+          <Info label="Numéro de parcelle" value={ecole.numeroParcelle} />
+          <div className="sm:col-span-2 lg:col-span-3">
+            <Info label="Adresse complète" value={ecole.adresse} />
           </div>
         </div>
-      )}
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <GeoLocationMap latitude={ecole.latitude} longitude={ecole.longitude} />
+        </div>
+      </div>
 
-      {/* Géolocalisation */}
+      {/* Coordination éducationnelle */}
       <div className={sectionClass}>
-        <h3 className="mb-3 text-sm font-bold text-slate-900">Géolocalisation</h3>
-        <GeoLocationMap latitude={ecole.latitude} longitude={ecole.longitude} />
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Coordination éducationnelle</h3>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Info label="Coordination provinciale" value={ecole.coordinationProvinciale} />
+          <Info label="Code COORD-PROV" value={ecole.codeCoordProv} />
+          <Info label="Coordination sous-provinciale" value={ecole.coordSousProvinciale?.nom} />
+          <Info label="Code COORD-SOUS" value={ecole.codeCoordSous} />
+          <Info label="Sous-division" value={ecole.sousDivision} />
+        </div>
+      </div>
+
+      {/* Responsables et identification */}
+      <div className={sectionClass}>
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Responsables et identification</h3>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Info label="Promoteur" value={ecole.promoteur} />
+          <Info label="Chef d'établissement" value={ecole.chefEcole} />
+          <Info label="Directeur des études" value={ecole.directeurEtudes} />
+          <Info label="Responsable administratif" value={ecole.responsableAdministratif} />
+          <Info label="Téléphone" value={ecole.telephone} />
+          <Info label="Adresse électronique" value={ecole.email} />
+          <Info label="DINACOPE" value={ecole.dinacope} />
+          <Info label="Numéro N.U" value={ecole.numeroNU} />
+          <Info label="Numéro N.P" value={ecole.numeroNP} />
+        </div>
+      </div>
+
+      {/* Sections et options */}
+      <div className={sectionClass}>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="text-sm font-bold text-slate-900">Sections et options</h3>
+          <span className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            {nombreSections} section(s)
+          </span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className={labelClass}>Sections</p>
+            {ecole.sections?.length ? (
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {ecole.sections.map((section) => (
+                  <span key={section} className="rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">{section}</span>
+                ))}
+              </div>
+            ) : <p className={valueClass}>—</p>}
+          </div>
+          <div>
+            <p className={labelClass}>Options des humanités</p>
+            {ecole.options?.length ? (
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {ecole.options.map((option) => (
+                  <span key={option} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{option}</span>
+                ))}
+              </div>
+            ) : <p className={valueClass}>—</p>}
+          </div>
+        </div>
       </div>
 
       {/* Documents justificatifs */}

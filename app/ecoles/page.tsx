@@ -17,22 +17,41 @@ import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
 type Ecole = {
   id: string;
   nom: string;
+  nomAbrege: string;
+  idSecope: string;
   type: string;
+  regimeGestion: string;
   institution: string;
   institutionId: string | null;
   numeroAgrement: string;
   dateCreation: string | null;
+  dateFermeture: string | null;
   sections: string[];
   options: string[];
+  nombreSections: number;
   dinacope: string;
+  numeroNU: string;
+  numeroNP: string;
   province: string;
   provinceEducationnelle: string;
   commune: string;
   ville: string;
+  secteur: string;
+  quartier: string;
+  avenue: string;
+  numeroParcelle: string;
   adresse: string;
+  coordinationProvinciale: string;
+  codeCoordProv: string;
+  codeCoordSous: string;
+  sousDivision: string;
+  promoteur: string;
+  directeurEtudes: string;
+  responsableAdministratif: string;
   telephone: string;
   email: string;
   chefEcole: string;
+  logoUrl: string | null;
   identifiantSM: string | null;
   effectif: number;
   statut: string;
@@ -109,14 +128,23 @@ export default function EcolesPage() {
   function startEdit(et: Ecole) {
     setEditingId(et.id);
     setInitialFormData({
-      nom: et.nom, type: et.type, institution: et.institution, dinacope: et.dinacope,
+      nom: et.nom, nomAbrege: et.nomAbrege ?? '', idSecope: et.idSecope ?? '',
+      type: et.type, regimeGestion: et.regimeGestion ?? '', institution: et.institution, dinacope: et.dinacope,
+      numeroNU: et.numeroNU ?? '', numeroNP: et.numeroNP ?? '',
       numeroAgrement: et.numeroAgrement ?? '',
       dateCreation: et.dateCreation ? et.dateCreation.slice(0, 10) : '',
+      dateFermeture: et.dateFermeture ? et.dateFermeture.slice(0, 10) : '',
       sections: et.sections ?? [],
       options: et.options ?? [],
       province: et.province, provinceEducationnelle: et.provinceEducationnelle,
       ville: et.ville, commune: et.commune, adresse: et.adresse,
+      secteur: et.secteur ?? '', quartier: et.quartier ?? '', avenue: et.avenue ?? '', numeroParcelle: et.numeroParcelle ?? '',
+      coordinationProvinciale: et.coordinationProvinciale ?? '',
+      codeCoordProv: et.codeCoordProv ?? '', codeCoordSous: et.codeCoordSous ?? '', sousDivision: et.sousDivision ?? '',
+      promoteur: et.promoteur ?? '', directeurEtudes: et.directeurEtudes ?? '',
+      responsableAdministratif: et.responsableAdministratif ?? '',
       telephone: et.telephone, email: et.email, chefEcole: et.chefEcole,
+      logoUrl: et.logoUrl ?? '',
       effectif: String(et.effectif), statut: et.statut, statutValidation: et.statutValidation,
       latitude: et.latitude ?? null,
       longitude: et.longitude ?? null,
@@ -515,9 +543,10 @@ export default function EcolesPage() {
                 initialData={initialFormData}
                 onSubmit={handleSubmit}
                 onCancel={() => { setView('list'); setEditingId(null); setInitialFormData(null); }}
-                submitLabel={editingId ? 'Modifier l\'école' : 'Enregistrer l\'école'}
+                submitLabel={editingId ? 'Enregistrer les modifications' : 'Enregistrer l\'école'}
                 loading={formLoading}
                 error={formError}
+                ecoleId={editingId}
               />
             </div>
           )}

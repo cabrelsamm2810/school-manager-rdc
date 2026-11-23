@@ -276,6 +276,25 @@ model Ecole {
   telephone            String   @default("")
   email                String   @default("")
   chefEcole    String   @default("")
+  // ── Profil institutionnel (module Profil École) ──
+  nomAbrege               String   @default("")
+  idSecope                String   @default("")
+  regimeGestion           String   @default("")
+  dateFermeture           DateTime?
+  secteur                 String   @default("")
+  quartier                String   @default("")
+  avenue                  String   @default("")
+  numeroParcelle          String   @default("")
+  coordinationProvinciale String   @default("")
+  codeCoordProv           String   @default("")
+  codeCoordSous           String   @default("")
+  sousDivision            String   @default("")
+  promoteur               String   @default("")
+  directeurEtudes         String   @default("")
+  responsableAdministratif String  @default("")
+  numeroNU                String   @default("")
+  numeroNP                String   @default("")
+  nombreSections          Int      @default(0)
   logoUrl              String?
   identifiantSM        String?  @unique
   effectif             Int      @default(0)
