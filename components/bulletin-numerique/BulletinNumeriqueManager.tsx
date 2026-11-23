@@ -38,7 +38,7 @@ const MENTION_COLORS: Record<string, string> = {
 const inputClass =
   'w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
 
-type EleveOption = { id: string; nom: string; matricule: string; classe: string };
+type EleveOption = { id: string; nom: string; matricule: string; classe: string; section: string; option: string };
 
 export function BulletinNumeriqueManager() {
   const [bulletins, setBulletins] = useState<Bulletin[]>([]);
@@ -46,6 +46,8 @@ export function BulletinNumeriqueManager() {
   const [search, setSearch] = useState('');
   const [filterPeriode, setFilterPeriode] = useState('');
   const [filterClasse, setFilterClasse] = useState('');
+  const [filterSection, setFilterSection] = useState('');
+  const [filterOption, setFilterOption] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [previewBulletin, setPreviewBulletin] = useState<Bulletin | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -68,6 +70,8 @@ export function BulletinNumeriqueManager() {
         nom: `${e.prenom} ${e.nom} ${e.postNom || ''}`.trim(),
         matricule: e.matricule,
         classe: e.classe,
+        section: e.section || '',
+        option: e.option || '',
       }));
       setEleves(list);
     } catch {
@@ -90,10 +94,26 @@ export function BulletinNumeriqueManager() {
 
   const classes = [...new Set(bulletins.map((b) => b.classe).filter(Boolean))].sort();
 
+  // Sections et options réellement renseignées (donc organisées par l'école)
+  // sur les élèves concernés : aucune section non organisée n'est proposée.
+  const eleveById = new Map(eleves.map((e) => [e.id, e]));
+  const sections = [...new Set(eleves.map((e) => e.section).filter(Boolean))].sort();
+  const optionsDisponibles = [
+    ...new Set(
+      eleves
+        .filter((e) => !filterSection || e.section === filterSection)
+        .map((e) => e.option)
+        .filter(Boolean),
+    ),
+  ].sort();
+
   const filtered = bulletins.filter((b) => {
     if (search && !b.eleveNom.toLowerCase().includes(search.toLowerCase()) && !b.eleveMatricule.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterPeriode && b.periode !== filterPeriode) return false;
     if (filterClasse && b.classe !== filterClasse) return false;
+    const eleve = eleveById.get(b.eleveId);
+    if (filterSection && eleve?.section !== filterSection) return false;
+    if (filterOption && eleve?.option !== filterOption) return false;
     return true;
   });
 
@@ -256,6 +276,31 @@ export function BulletinNumeriqueManager() {
               <option value="">Toutes</option>
               {classes.map((c) => (
                 <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Section</label>
+            <select
+              value={filterSection}
+              onChange={(e) => {
+                setFilterSection(e.target.value);
+                setFilterOption('');
+              }}
+              className={inputClass}
+            >
+              <option value="">Toutes</option>
+              {sections.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500">Option</label>
+            <select value={filterOption} onChange={(e) => setFilterOption(e.target.value)} className={inputClass}>
+              <option value="">Toutes</option>
+              {optionsDisponibles.map((o) => (
+                <option key={o} value={o}>{o}</option>
               ))}
             </select>
           </div>

@@ -95,6 +95,13 @@ export async function GET(request: NextRequest) {
       ecErc: { select: { id: true, nom: true } },
       chefPrincipal: { select: { id: true, nom: true, telephone: true, email: true } },
       profilAdministratif: { select: { id: true, numeroDossier: true, dateOuverture: true } },
+      sections: {
+        where: { statut: 'Actif' },
+        select: {
+          nom: true,
+          options: { where: { statut: 'Actif' }, select: { nom: true } },
+        },
+      },
       _count: { select: { documents: true, validationLogs: true } },
     },
   });

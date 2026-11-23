@@ -82,6 +82,8 @@ model Eleve {
   dateNaissance   DateTime?
   lieuNaissance   String    @default("")
   classe          String
+  section         String    @default("")
+  option          String    @default("")
   telephone       String    @default("")
   email           String    @default("")
   adresse         String    @default("")
@@ -279,6 +281,8 @@ model Ecole {
   validationLogs       EcoleValidationLog[]
   cahierDeCotes        CahierDeCote[]
   bulletins            Bulletin[]
+  sections             EcoleSection[]
+  optionsOrganisees    EcoleOption[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -289,6 +293,41 @@ model Ecole {
   @@index([coordSousProvincialeId])
   @@index([ecErcId])
   @@map("ecoles")
+}
+
+/// Section scolaire réellement organisée par un établissement
+/// (Maternelle, Primaire, Secondaire, Humanités).
+model EcoleSection {
+  id        String   @id @default(cuid())
+  ecoleId   String
+  ecole     Ecole    @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  nom       String
+  statut    String   @default("Actif")
+  options   EcoleOption[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ecoleId, nom])
+  @@index([ecoleId])
+  @@map("ecole_sections")
+}
+
+/// Option organisée par un établissement, rattachée à une section
+/// (notamment les options des Humanités).
+model EcoleOption {
+  id        String   @id @default(cuid())
+  ecoleId   String
+  ecole     Ecole    @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  sectionId String
+  section   EcoleSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  nom       String
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sectionId, nom])
+  @@index([ecoleId])
+  @@map("ecole_options")
 }
 
 /// Profil administratif créé automatiquement avec chaque école.

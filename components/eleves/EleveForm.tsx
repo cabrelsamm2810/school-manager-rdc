@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { SECTIONS_SCOLAIRES, classesForSections } from '@/lib/ecole-sections';
 
 type EleveFormProps = {
   onCreated?: () => void;
@@ -14,6 +15,8 @@ type EleveFormProps = {
     dateNaissance: string | null;
     lieuNaissance: string;
     classe: string;
+    section?: string;
+    option?: string;
     telephone: string;
     email: string;
     adresse: string;
@@ -28,6 +31,7 @@ type EleveFormProps = {
 type Ecole = {
   id: string;
   nom: string;
+  sections?: { nom: string; options: { nom: string }[] }[];
 };
 
 const emptyForm = {
@@ -39,6 +43,8 @@ const emptyForm = {
   dateNaissance: '',
   lieuNaissance: '',
   classe: '',
+  section: '',
+  option: '',
   telephone: '',
   email: '',
   adresse: '',
@@ -59,6 +65,17 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [ecoles, setEcoles] = useState<Ecole[]>([]);
+
+  // Sections et options réellement organisées par l'école choisie.
+  // Tant qu'aucune section n'est configurée, toutes les sections restent
+  // proposées pour ne pas bloquer les écoles existantes.
+  const selectedEcole = ecoles.find((e) => e.id === form.ecoleId);
+  const configuredSections = selectedEcole?.sections ?? [];
+  const sectionsDisponibles =
+    configuredSections.length > 0 ? configuredSections.map((s) => s.nom) : [...SECTIONS_SCOLAIRES];
+  const optionsDisponibles =
+    configuredSections.find((s) => s.nom === form.section)?.options.map((o) => o.nom) ?? [];
+  const classesDisponibles = classesForSections(configuredSections.map((s) => s.nom));
 
   useEffect(() => {
     fetch('/api/ecoles')
@@ -81,6 +98,8 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
         dateNaissance: eleve.dateNaissance ? new Date(eleve.dateNaissance).toISOString().split('T')[0] : '',
         lieuNaissance: eleve.lieuNaissance,
         classe: eleve.classe,
+        section: eleve.section ?? '',
+        option: eleve.option ?? '',
         telephone: eleve.telephone,
         email: eleve.email,
         adresse: eleve.adresse,
@@ -155,7 +174,12 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
           <select
             id="ecoleId"
             value={form.ecoleId}
-            onChange={(e) => updateField('ecoleId', e.target.value)}
+            onChange={(e) => {
+              updateField('ecoleId', e.target.value);
+              updateField('section', '');
+              updateField('option', '');
+              updateField('classe', '');
+            }}
             className={inputClass}
           >
             <option value="">— Non assigné —</option>
@@ -165,16 +189,56 @@ export function EleveForm({ onCreated, eleve, onUpdated }: EleveFormProps) {
           </select>
         </div>
         <div>
+          <label htmlFor="section" className={labelClass}>Section</label>
+          <select
+            id="section"
+            value={form.section}
+            onChange={(e) => {
+              updateField('section', e.target.value);
+              updateField('option', '');
+              updateField('classe', '');
+            }}
+            className={inputClass}
+          >
+            <option value="">— Non précisée —</option>
+            {sectionsDisponibles.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        {optionsDisponibles.length > 0 && (
+          <div>
+            <label htmlFor="option" className={labelClass}>Option</label>
+            <select
+              id="option"
+              value={form.option}
+              onChange={(e) => updateField('option', e.target.value)}
+              className={inputClass}
+            >
+              <option value="">— Non précisée —</option>
+              {optionsDisponibles.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div>
           <label htmlFor="classe" className={labelClass}>Classe *</label>
           <input
             id="classe"
             type="text"
+            list="classes-disponibles"
             value={form.classe}
             onChange={(e) => updateField('classe', e.target.value)}
             className={inputClass}
-            placeholder="Ex. 6ème primaire"
+            placeholder="Ex. 6ème année"
             required
           />
+          <datalist id="classes-disponibles">
+            {classesDisponibles.map((c) => (
+              <option key={c.nom} value={c.nom} />
+            ))}
+          </datalist>
         </div>
         <div>
           <label htmlFor="nom" className={labelClass}>Nom *</label>

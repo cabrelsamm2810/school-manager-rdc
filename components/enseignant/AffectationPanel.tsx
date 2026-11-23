@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
 import { Icon } from '@/components/ui/Icon';
 import { CLASSES_RDC, MATIERES_RDC, CYCLES_RDC, type CycleRdc } from '@/lib/curriculum-rdc';
+import { classesForSections } from '@/lib/ecole-sections';
 import { isSimpleFlowClass, getCycleForClass, getMatieresForCycle } from '@/lib/presence-flow';
 
 type Affectation = {
@@ -33,6 +34,32 @@ export function AffectationPanel({ enseignantId, enseignantNom, ecoleId, onClose
   const [selectedMatiere, setSelectedMatiere] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Classes autorisées par les sections organisées par l'école de l'enseignant.
+  const [classesEcole, setClassesEcole] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!ecoleId) {
+      setClassesEcole(null);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/ecoles')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const ecole = (data?.ecoles ?? []).find((e: any) => e.id === ecoleId);
+        const sections: string[] = (ecole?.sections ?? []).map((s: any) => s.nom);
+        setClassesEcole(sections.length > 0 ? classesForSections(sections).map((c) => c.nom) : null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [ecoleId]);
+
+  const classesDisponibles = classesEcole
+    ? CLASSES_RDC.filter((c) => classesEcole.includes(c.nom))
+    : CLASSES_RDC;
 
   const loadAffectations = useCallback(async () => {
     setLoading(true);
@@ -160,14 +187,14 @@ export function AffectationPanel({ enseignantId, enseignantNom, ecoleId, onClose
               >
                 <option value="">— Sélectionner une classe —</option>
                 <optgroup label="Maternel & Primaire (Titulaire)">
-                  {CLASSES_RDC.filter((c) => isSimpleFlowClass(c.nom)).map((c) => (
+                  {classesDisponibles.filter((c) => isSimpleFlowClass(c.nom)).map((c) => (
                     <option key={c.nom} value={c.nom}>
                       {c.nom} {affectedClasses.has(c.nom) ? '✓' : ''}
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="Secondaire (Professeur)">
-                  {CLASSES_RDC.filter((c) => !isSimpleFlowClass(c.nom)).map((c) => (
+                  {classesDisponibles.filter((c) => !isSimpleFlowClass(c.nom)).map((c) => (
                     <option key={c.nom} value={c.nom}>
                       {c.nom} {affectedClasses.has(c.nom) ? '✓' : ''}
                     </option>

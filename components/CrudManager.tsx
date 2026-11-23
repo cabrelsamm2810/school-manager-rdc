@@ -95,7 +95,14 @@ function formToPayload(form: Record<string, any>, config: CrudConfig): Record<st
 
 /* ── Component ── */
 
-export function CrudManager({ config }: { config: CrudConfig }) {
+export function CrudManager({
+  config,
+  filterItems,
+}: {
+  config: CrudConfig;
+  /** Filtre optionnel appliqué aux éléments reçus de l'API. */
+  filterItems?: (items: Record<string, any>[]) => Record<string, any>[];
+}) {
   const [items, setItems] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -170,7 +177,10 @@ export function CrudManager({ config }: { config: CrudConfig }) {
       const res = await fetch(`${config.apiPath}?${params.toString()}`);
       const data = await res.json();
       const key = config.entityNamePlural;
-      if (res.ok) setItems(data[key] ?? data.items ?? []);
+      if (res.ok) {
+        const raw: Record<string, any>[] = data[key] ?? data.items ?? [];
+        setItems(filterItems ? filterItems(raw) : raw);
+      }
     } catch {
       // ignore
     } finally {
@@ -182,7 +192,7 @@ export function CrudManager({ config }: { config: CrudConfig }) {
     const timer = setTimeout(loadData, search ? 300 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, filters]);
+  }, [search, filters, filterItems]);
 
   function startCreate() {
     setEditingId(null);

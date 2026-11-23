@@ -48,6 +48,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       ecErc: { select: { id: true, nom: true, type: true } },
       chefPrincipal: true,
       profilAdministratif: true,
+      sections: {
+        include: { options: { orderBy: { nom: 'asc' } } },
+        orderBy: { createdAt: 'asc' },
+      },
       documents: { orderBy: { createdAt: 'desc' } },
       documentAudits: { orderBy: { createdAt: 'desc' }, take: 50 },
       validationLogs: { orderBy: { createdAt: 'desc' }, take: 20 },

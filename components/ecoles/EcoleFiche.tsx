@@ -8,6 +8,7 @@ import { DocumentAuditTrail } from '@/components/ecoles/DocumentAuditTrail';
 import type { DocumentAudit } from '@/components/ecoles/DocumentAuditTrail';
 import { checkEcoleConfigured } from '@/lib/ecole-config';
 import { GeoLocationMap } from '@/components/ecoles/GeoLocationMap';
+import { SectionsOptionsPanel } from '@/components/ecoles/SectionsOptionsPanel';
 
 /** Rôles autorisés à téléverser/supprimer des documents (école uniquement). */
 const SCHOOL_ROLES = ['DIRECTION_ECOLE', 'PROMOTEUR', 'SECRETAIRE', 'COMPTABLE'];
@@ -53,6 +54,7 @@ type Ecole = {
   qrCodeUrl: string | null;
   chefPrincipal?: { id: string; nom: string; telephone: string; email: string; fonction: string; userId: string | null } | null;
   profilAdministratif?: { id: string; numeroDossier: string; dateOuverture: string } | null;
+  sections?: { id: string; nom: string; statut: string; options: { id: string; nom: string; statut: string }[] }[];
   effectif: number;
   statut: string;
   statutValidation: string;
@@ -265,6 +267,9 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
           )}
         </div>
       </div>
+
+      {/* Sections & options organisées par l'établissement */}
+      <SectionsOptionsPanel ecoleId={ecole.id} canEdit={canManageDocs} />
 
       {/* Hiérarchie de rattachement */}
       <div className={sectionClass}>
