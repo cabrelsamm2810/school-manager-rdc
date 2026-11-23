@@ -8,6 +8,7 @@ import { GeoLocationInput } from '@/components/ecoles/GeoLocationInput';
 
 export type EcoleFormData = {
   nom: string;
+  codeEcole: string;
   type: string;
   institution: string;
   dinacope: string;
@@ -22,6 +23,8 @@ export type EcoleFormData = {
   telephone: string;
   email: string;
   chefEcole: string;
+  chefTelephone: string;
+  chefEmail: string;
   logoUrl: string;
   effectif: string;
   statut: string;
@@ -33,10 +36,10 @@ export type EcoleFormData = {
 };
 
 export const emptyForm: EcoleFormData = {
-  nom: '', type: '', institution: '', dinacope: '', province: '',
+  nom: '', codeEcole: '', type: '', institution: '', dinacope: '', province: '',
   provinceEducationnelle: '', ville: '', commune: '', adresse: '',
   localisationGeo: '', latitude: null, longitude: null,
-  telephone: '', email: '', chefEcole: '',
+  telephone: '', email: '', chefEcole: '', chefTelephone: '', chefEmail: '',
   logoUrl: '', effectif: '', statut: 'Actif', statutValidation: 'Brouillon',
   coordSousProvincialeId: '', ecErcId: '', structureRattachementId: '',
   structureRattachementType: '',
@@ -326,6 +329,12 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
                 className={inputClass} placeholder="Ex. Institut Tuendelee" />
             </div>
             <div>
+              <label className={labelClass} htmlFor="etab-code">Code unique de l&apos;école</label>
+              <input id="etab-code" type="text" value={form.codeEcole}
+                onChange={(e) => update('codeEcole', e.target.value)}
+                className={inputClass} placeholder="Généré automatiquement si vide" />
+            </div>
+            <div>
               <label className={labelClass} htmlFor="etab-dinacope">DINACOPE</label>
               <input id="etab-dinacope" type="text" value={form.dinacope}
                 onChange={(e) => update('dinacope', e.target.value)}
@@ -344,10 +353,22 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
               </select>
             </div>
             <div>
-              <label className={labelClass} htmlFor="etab-chef">Chef d'établissement{requiredMark}</label>
+              <label className={labelClass} htmlFor="etab-chef">Chef d&apos;établissement{requiredMark}</label>
               <input id="etab-chef" type="text" required value={form.chefEcole}
                 onChange={(e) => update('chefEcole', e.target.value)}
                 className={inputClass} placeholder="Nom du directeur" />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="etab-chef-tel">Téléphone du chef</label>
+              <input id="etab-chef-tel" type="tel" value={form.chefTelephone}
+                onChange={(e) => update('chefTelephone', e.target.value)}
+                className={inputClass} placeholder="+243 ..." />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="etab-chef-email">Email du chef</label>
+              <input id="etab-chef-email" type="email" value={form.chefEmail}
+                onChange={(e) => update('chefEmail', e.target.value)}
+                className={inputClass} placeholder="chef@example.com" />
             </div>
             <div>
               <label className={labelClass} htmlFor="etab-tel">Numéro de téléphone{requiredMark}</label>
@@ -401,6 +422,16 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
                 onChange={(e) => update('statutValidation', e.target.value)}
                 className={inputClass}>
                 {VALIDATION_STATUTS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="etab-statut">Statut de l&apos;établissement</label>
+              <select id="etab-statut" value={form.statut}
+                onChange={(e) => update('statut', e.target.value)}
+                className={inputClass}>
+                <option value="Actif">Actif</option>
+                <option value="Inactif">Inactif</option>
+                <option value="Fermé">Fermé</option>
               </select>
             </div>
           </div>

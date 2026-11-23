@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
 import { generateIdentifiantSM, INSTITUTIONS } from '@/lib/institutions';
 import { normalizeInstitution, type ParsedSchoolRow } from '@/lib/txt-import-parser';
+import { buildEcoleRegistration } from '@/lib/ecole-registration';
 
 /**
  * POST /api/import/ecoles/batch
@@ -238,6 +239,20 @@ export async function POST(request: NextRequest) {
 
         const effectifNum = Number(row.effectif);
         const structureCompetente = INSTITUTIONS.find((inst) => inst.code === finalInstitution)?.structureCompetente ?? 'coordSousProvinciale';
+        const coordSousProvincialeId = targetCoordSousProvincialeId ?? (scope === 'sousProvincial' ? user.coordSousProvincialeId : null);
+
+        // Code unique, QR code, profil administratif et chef principal
+        const registration = await buildEcoleRegistration({
+          identifiantSM,
+          nom,
+          institution: finalInstitution,
+          province: row.province,
+          provinceEducationnelle: row.provinceEducationnelle,
+          coordSousProvincialeId,
+          structureRattachementId: coordSousProvincialeId,
+          structureRattachementType: structureCompetente,
+          chef: row.chefEcole ? { nom: row.chefEcole } : null,
+        });
 
         const ecole = await tx.ecole.create({
           data: {
@@ -258,8 +273,21 @@ export async function POST(request: NextRequest) {
             statut: 'Actif',
             statutValidation: 'Brouillon',
             structureRattachementType: structureCompetente,
-            coordSousProvincialeId: targetCoordSousProvincialeId ?? (scope === 'sousProvincial' ? user.coordSousProvincialeId : null),
+            coordSousProvincialeId,
+            codeEcole: registration.codeEcole,
+            qrCodeUrl: registration.qrCodeUrl,
           },
+        });
+
+        // Chef principal, relié à l'école par son identifiant.
+        if (registration.chefPrincipal) {
+          const chef = await tx.ecoleChef.create({ data: registration.chefPrincipal });
+          await tx.ecole.update({ where: { id: ecole.id }, data: { chefPrincipalId: chef.id } });
+        }
+
+        // Profil administratif de l'école.
+        await tx.ecoleProfilAdministratif.create({
+          data: { ...registration.profilAdministratif, ecoleId: ecole.id },
         });
 
         // Journal d'audit : trace de la création

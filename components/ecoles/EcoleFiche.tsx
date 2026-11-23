@@ -49,6 +49,10 @@ type Ecole = {
   chefEcole: string;
   logoUrl: string | null;
   identifiantSM: string | null;
+  codeEcole: string | null;
+  qrCodeUrl: string | null;
+  chefPrincipal?: { id: string; nom: string; telephone: string; email: string; fonction: string; userId: string | null } | null;
+  profilAdministratif?: { id: string; numeroDossier: string; dateOuverture: string } | null;
   effectif: number;
   statut: string;
   statutValidation: string;
@@ -79,6 +83,10 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
   const [docType, setDocType] = useState('');
   const [docTitre, setDocTitre] = useState('');
   const [docFile, setDocFile] = useState<File | null>(null);
+
+  // Ce hook doit rester avant les retours conditionnels ci-dessous :
+  // React exige le même nombre de hooks à chaque rendu.
+  const configCheck = useMemo(() => checkEcoleConfigured(ecole ?? {}), [ecole]);
 
   async function loadData() {
     setLoading(true);
@@ -167,7 +175,6 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
   const inst = INSTITUTION_MAP[ecole.institution];
 
   // Vérifier que l'école est bien configurée avant l'envoi du dossier
-  const configCheck = useMemo(() => checkEcoleConfigured(ecole), [ecole]);
   const isConfigured = configCheck.isConfigured;
 
   return (
@@ -201,7 +208,13 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
                 {ecole.identifiantSM && (
                   <span className="font-mono font-semibold text-blue-600">ID: {ecole.identifiantSM}</span>
                 )}
-                {ecole.identifiantSM && ecole.dinacope && ' · '}
+                {ecole.codeEcole && (
+                  <>
+                    {ecole.identifiantSM && ' · '}
+                    <span className="font-mono font-semibold text-slate-600">Code: {ecole.codeEcole}</span>
+                  </>
+                )}
+                {(ecole.identifiantSM || ecole.codeEcole) && ecole.dinacope && ' · '}
                 {ecole.dinacope && <span>DINACOPE: {ecole.dinacope}</span>}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-2">
@@ -213,6 +226,43 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Profil administratif & QR code d'identification */}
+      <div className={sectionClass}>
+        <h3 className="mb-3 text-sm font-bold text-slate-900">Profil administratif</h3>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <p className={labelClass}>Numéro de dossier</p>
+              <p className={valueClass}>{ecole.profilAdministratif?.numeroDossier || '—'}</p>
+            </div>
+            <div>
+              <p className={labelClass}>Ouvert le</p>
+              <p className={valueClass}>
+                {ecole.profilAdministratif?.dateOuverture
+                  ? new Date(ecole.profilAdministratif.dateOuverture).toLocaleDateString('fr-FR')
+                  : '—'}
+              </p>
+            </div>
+            <div>
+              <p className={labelClass}>Statut de l&apos;établissement</p>
+              <p className={valueClass}>{ecole.statut || '—'}</p>
+            </div>
+          </div>
+          {ecole.qrCodeUrl && (
+            <div className="flex shrink-0 flex-col items-center gap-2 rounded-xl border border-slate-200 p-3">
+              <img src={ecole.qrCodeUrl} alt={`QR code de ${ecole.nom}`} className="h-32 w-32" />
+              <a
+                href={ecole.qrCodeUrl}
+                download={`qr-${ecole.codeEcole || ecole.identifiantSM || ecole.id}.png`}
+                className="text-xs font-medium text-blue-600 transition hover:text-blue-700"
+              >
+                Télécharger le QR code
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
@@ -240,7 +290,9 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div><p className={labelClass}>Type</p><p className={valueClass}>{ecole.type || '—'}</p></div>
           <div><p className={labelClass}>DINACOPE</p><p className={valueClass}>{ecole.dinacope || '—'}</p></div>
-          <div><p className={labelClass}>Chef d'établissement</p><p className={valueClass}>{ecole.chefEcole || '—'}</p></div>
+          <div><p className={labelClass}>Chef d&apos;établissement</p><p className={valueClass}>{ecole.chefPrincipal?.nom || ecole.chefEcole || '—'}</p></div>
+          <div><p className={labelClass}>Téléphone du chef</p><p className={valueClass}>{ecole.chefPrincipal?.telephone || '—'}</p></div>
+          <div><p className={labelClass}>Email du chef</p><p className={valueClass}>{ecole.chefPrincipal?.email || '—'}</p></div>
           <div><p className={labelClass}>Téléphone</p><p className={valueClass}>{ecole.telephone || '—'}</p></div>
           <div><p className={labelClass}>Email</p><p className={valueClass}>{ecole.email || '—'}</p></div>
           <div><p className={labelClass}>Effectif</p><p className={valueClass}>{ecole.effectif.toLocaleString('fr-FR')}</p></div>

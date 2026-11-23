@@ -3,9 +3,11 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
+import { buildProfilAdministratif } from '@/lib/ecole-registration';
 
 const updateSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom officiel est obligatoire.'),
+  codeEcole: z.string().trim().optional().or(z.literal('')),
   type: z.string().trim().optional().or(z.literal('')),
   institution: z.string().trim().optional().or(z.literal('')),
   dinacope: z.string().trim().optional().or(z.literal('')),
@@ -20,6 +22,8 @@ const updateSchema = z.object({
   telephone: z.string().trim().optional().or(z.literal('')),
   email: z.string().trim().email('L\u2019email est invalide.').optional().or(z.literal('')),
   chefEcole: z.string().trim().optional().or(z.literal('')),
+  chefTelephone: z.string().trim().optional().or(z.literal('')),
+  chefEmail: z.string().trim().email('L\u2019email du chef est invalide.').optional().or(z.literal('')),
   logoUrl: z.string().trim().optional().or(z.literal('')),
   effectif: z.number().int().min(0).optional(),
   statut: z.string().trim().optional().or(z.literal('')),
@@ -42,6 +46,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     include: {
       coordSousProvinciale: { select: { id: true, nom: true, province: true } },
       ecErc: { select: { id: true, nom: true, type: true } },
+      chefPrincipal: true,
+      profilAdministratif: true,
       documents: { orderBy: { createdAt: 'desc' } },
       documentAudits: { orderBy: { createdAt: 'desc' }, take: 50 },
       validationLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
@@ -122,33 +128,107 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     );
   }
 
-  const ecole = await prisma.ecole.update({
-    where: { id: params.id },
-    data: {
-      nom: data.nom,
-      type: data.type ?? '',
-      institution: data.institution || existing.institution,
-      dinacope: data.dinacope ?? '',
-      province: data.province ?? '',
-      provinceEducationnelle: data.provinceEducationnelle ?? '',
-      ville: data.ville ?? '',
-      commune: data.commune ?? '',
-      adresse: data.adresse ?? '',
-      localisationGeo: data.localisationGeo ?? '',
-      latitude: data.latitude ?? null,
-      longitude: data.longitude ?? null,
-      telephone: data.telephone ?? '',
-      email: data.email ?? '',
-      chefEcole: data.chefEcole ?? '',
-      logoUrl: data.logoUrl || null,
-      effectif: data.effectif ?? 0,
-      statut: data.statut ?? 'Actif',
-      statutValidation: data.statutValidation ?? existing.statutValidation,
-      structureRattachementId: data.structureRattachementId || null,
-      structureRattachementType: data.structureRattachementType || existing.structureRattachementType,
-      coordSousProvincialeId: data.coordSousProvincialeId || null,
-      ecErcId: data.ecErcId || null,
+  // ── Anti-doublon à la modification ──
+  const nextCode = data.codeEcole?.trim();
+  if (nextCode && nextCode !== (existing.codeEcole || '')) {
+    const dupCode = await prisma.ecole.findFirst({
+      where: {
+        id: { not: params.id },
+        OR: [
+          { codeEcole: { equals: nextCode, mode: 'insensitive' } },
+          { identifiantSM: { equals: nextCode, mode: 'insensitive' } },
+        ],
+      },
+      select: { nom: true },
+    });
+    if (dupCode) {
+      return NextResponse.json(
+        { error: `Le code « ${nextCode} » est déjà utilisé par « ${dupCode.nom} ».` },
+        { status: 409 },
+      );
+    }
+  }
+  const dupName = await prisma.ecole.findFirst({
+    where: {
+      id: { not: params.id },
+      nom: { equals: data.nom, mode: 'insensitive' },
+      province: data.province ?? existing.province,
+      commune: { equals: data.commune ?? existing.commune, mode: 'insensitive' },
     },
+    select: { nom: true },
+  });
+  if (dupName) {
+    return NextResponse.json(
+      { error: `Un établissement identique existe déjà : « ${dupName.nom} ».` },
+      { status: 409 },
+    );
+  }
+
+  const profil = buildProfilAdministratif({
+    identifiantSM: existing.identifiantSM ?? params.id,
+    institution: data.institution || existing.institution,
+    province: data.province ?? existing.province,
+    provinceEducationnelle: data.provinceEducationnelle ?? existing.provinceEducationnelle,
+    coordSousProvincialeId: data.coordSousProvincialeId || existing.coordSousProvincialeId,
+    structureRattachementId: data.structureRattachementId || existing.structureRattachementId,
+    structureRattachementType: data.structureRattachementType || existing.structureRattachementType,
+  });
+
+  const ecole = await prisma.$transaction(async (tx) => {
+    const updated = await tx.ecole.update({
+      where: { id: params.id },
+      data: {
+        nom: data.nom,
+        type: data.type ?? '',
+        institution: data.institution || existing.institution,
+        dinacope: data.dinacope ?? '',
+        province: data.province ?? '',
+        provinceEducationnelle: data.provinceEducationnelle ?? '',
+        ville: data.ville ?? '',
+        commune: data.commune ?? '',
+        adresse: data.adresse ?? '',
+        localisationGeo: data.localisationGeo ?? '',
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        telephone: data.telephone ?? '',
+        email: data.email ?? '',
+        chefEcole: data.chefEcole ?? '',
+        logoUrl: data.logoUrl || null,
+        effectif: data.effectif ?? 0,
+        statut: data.statut ?? 'Actif',
+        statutValidation: data.statutValidation ?? existing.statutValidation,
+        structureRattachementId: data.structureRattachementId || null,
+        structureRattachementType: data.structureRattachementType || existing.structureRattachementType,
+        coordSousProvincialeId: data.coordSousProvincialeId || null,
+        ecErcId: data.ecErcId || null,
+        codeEcole: data.codeEcole?.trim() || existing.codeEcole || undefined,
+      },
+    });
+
+    // Chef principal : mise à jour du chef existant, ou création puis association.
+    let chefPrincipal: { id: string; nom: string; telephone: string; email: string } | null = null;
+    if (data.chefEcole) {
+      const chefData = {
+        nom: data.chefEcole,
+        telephone: data.chefTelephone ?? '',
+        email: data.chefEmail ?? '',
+      };
+      if (existing.chefPrincipalId) {
+        chefPrincipal = await tx.ecoleChef.update({ where: { id: existing.chefPrincipalId }, data: chefData });
+      } else {
+        chefPrincipal = await tx.ecoleChef.create({ data: chefData });
+        await tx.ecole.update({ where: { id: params.id }, data: { chefPrincipalId: chefPrincipal.id } });
+      }
+    }
+
+    // Profil administratif : maintenu en phase avec le rattachement.
+    const profilAdministratif = await tx.ecoleProfilAdministratif.upsert({
+      where: { ecoleId: params.id },
+      create: { ...profil, ecoleId: params.id },
+      update: profil,
+    });
+
+    return { ...updated, chefPrincipal, profilAdministratif };
   });
 
   // Si le statut de validation change, créer un log
@@ -204,6 +284,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
   }
 
-  await prisma.ecole.delete({ where: { id: params.id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.ecole.delete({ where: { id: params.id } });
+    // Le chef principal n'a plus d'école : supprimer son enregistrement orphelin.
+    if (existing.chefPrincipalId) {
+      await tx.ecoleChef.delete({ where: { id: existing.chefPrincipalId } });
+    }
+  });
   return NextResponse.json({ ok: true });
 }

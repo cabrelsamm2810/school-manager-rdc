@@ -29,6 +29,10 @@ type Ecole = {
   email: string;
   chefEcole: string;
   identifiantSM: string | null;
+  codeEcole: string | null;
+  qrCodeUrl: string | null;
+  chefPrincipal?: { id: string; nom: string; telephone: string; email: string } | null;
+  profilAdministratif?: { id: string; numeroDossier: string; dateOuverture: string } | null;
   effectif: number;
   statut: string;
   statutValidation: string;
@@ -104,10 +108,12 @@ export default function EcolesPage() {
   function startEdit(et: Ecole) {
     setEditingId(et.id);
     setInitialFormData({
-      nom: et.nom, type: et.type, institution: et.institution, dinacope: et.dinacope,
+      nom: et.nom, codeEcole: et.codeEcole ?? '', type: et.type, institution: et.institution, dinacope: et.dinacope,
       province: et.province, provinceEducationnelle: et.provinceEducationnelle,
       ville: et.ville, commune: et.commune, adresse: et.adresse,
       telephone: et.telephone, email: et.email, chefEcole: et.chefEcole,
+      chefTelephone: et.chefPrincipal?.telephone ?? '',
+      chefEmail: et.chefPrincipal?.email ?? '',
       effectif: String(et.effectif), statut: et.statut, statutValidation: et.statutValidation,
       latitude: et.latitude ?? null,
       longitude: et.longitude ?? null,
@@ -382,7 +388,7 @@ export default function EcolesPage() {
                                 <tr key={et.id} className="cursor-pointer hover:bg-slate-50" onClick={() => showFiche(et.id)}>
                                   <td className="px-4 py-3">
                                     <p className="font-medium text-slate-900">{et.nom}</p>
-                                    <p className="text-xs text-slate-400">{et.identifiantSM || '—'} · {et.dinacope || 'DINACOPE —'}</p>
+                                    <p className="text-xs text-slate-400">{et.codeEcole || et.identifiantSM || '—'} · {et.dinacope || 'DINACOPE —'}</p>
                                   </td>
                                   <td className="px-4 py-3">
                                     <span className={`rounded-lg px-2 py-0.5 text-xs font-medium ${inst?.bgColor || 'bg-slate-100'} ${inst?.color || 'text-slate-600'}`}>

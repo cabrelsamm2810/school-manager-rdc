@@ -61,6 +61,7 @@ model User {
   chatGroupMemberships  ChatGroupMember[]
   chatGroupMessages     ChatGroupMessage[]
   userDocuments         UserDocument[]
+  chefEtablissement     EcoleChef? @relation("ChefEtablissement")
 
   @@index([role])
   @@index([isActive])
@@ -254,6 +255,11 @@ model Ecole {
   chefEcole    String   @default("")
   logoUrl              String?
   identifiantSM        String?  @unique
+  codeEcole            String?  @unique
+  qrCodeUrl            String?
+  chefPrincipalId      String?  @unique
+  chefPrincipal        EcoleChef? @relation("EcoleChefPrincipal", fields: [chefPrincipalId], references: [id], onDelete: SetNull)
+  profilAdministratif  EcoleProfilAdministratif?
   effectif             Int      @default(0)
   statut               String   @default("Actif")
   statutValidation     String   @default("Brouillon")
@@ -283,6 +289,47 @@ model Ecole {
   @@index([coordSousProvincialeId])
   @@index([ecErcId])
   @@map("ecoles")
+}
+
+/// Profil administratif créé automatiquement avec chaque école.
+/// Il fige le rattachement hiérarchique (par identifiants) et le numéro de dossier.
+model EcoleProfilAdministratif {
+  id                        String   @id @default(cuid())
+  ecoleId                   String   @unique
+  ecole                     Ecole    @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  numeroDossier             String   @unique
+  institution               String   @default("")
+  province                  String   @default("")
+  provinceEducationnelle    String   @default("")
+  coordSousProvincialeId    String?
+  coordSousProvinciale      CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
+  structureRattachementId   String?
+  structureRattachementType String   @default("")
+  dateOuverture             DateTime @default(now())
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([coordSousProvincialeId])
+  @@index([institution])
+  @@map("ecole_profils_administratifs")
+}
+
+/// Chef principal d'un établissement (une école a un seul chef principal).
+/// `userId` relie le chef à un compte utilisateur réel quand il en existe un.
+model EcoleChef {
+  id         String   @id @default(cuid())
+  nom        String
+  telephone  String   @default("")
+  email      String   @default("")
+  fonction   String   @default("Chef d'établissement")
+  userId     String?  @unique
+  user       User?    @relation("ChefEtablissement", fields: [userId], references: [id], onDelete: SetNull)
+  ecole      Ecole?   @relation("EcoleChefPrincipal")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([email])
+  @@map("ecole_chefs")
 }
 
 model EcoleDocument {
@@ -535,6 +582,7 @@ model CoordSousProvinciale {
   coordProvincialeId  String?
   coordProvinciale    CoordProvinciale? @relation(fields: [coordProvincialeId], references: [id], onDelete: SetNull)
   ecoles      Ecole[]
+  profilsAdministratifs EcoleProfilAdministratif[]
   users               User[]
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

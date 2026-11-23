@@ -4,11 +4,13 @@ import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
 import { generateIdentifiantSM, INSTITUTIONS } from '@/lib/institutions';
+import { buildEcoleRegistration } from '@/lib/ecole-registration';
 
 const createSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom officiel est obligatoire.'),
   type: z.string().trim().optional().or(z.literal('')),
   institution: z.string().trim().min(1, 'L\u2019institution est obligatoire.'),
+  codeEcole: z.string().trim().optional().or(z.literal('')),
   dinacope: z.string().trim().optional().or(z.literal('')),
   province: z.string().trim().min(1, 'La province est obligatoire.'),
   provinceEducationnelle: z.string().trim().min(1, 'La province éducationnelle est obligatoire.'),
@@ -20,6 +22,8 @@ const createSchema = z.object({
   longitude: z.number().optional().nullable(),
   telephone: z.string().trim().min(1, 'Le numéro de téléphone est obligatoire.'),
   email: z.string().trim().email('L\u2019email est invalide.').optional().or(z.literal('')),
+  chefTelephone: z.string().trim().optional().or(z.literal('')),
+  chefEmail: z.string().trim().email('L\u2019email du chef est invalide.').optional().or(z.literal('')),
   chefEcole: z.string().trim().min(1, 'Le chef d\u2019établissement est obligatoire.'),
   logoUrl: z.string().trim().optional().or(z.literal('')),
   effectif: z.number().int().min(0).optional(),
@@ -89,6 +93,8 @@ export async function GET(request: NextRequest) {
     include: {
       coordSousProvinciale: { select: { id: true, nom: true } },
       ecErc: { select: { id: true, nom: true } },
+      chefPrincipal: { select: { id: true, nom: true, telephone: true, email: true } },
+      profilAdministratif: { select: { id: true, numeroDossier: true, dateOuverture: true } },
       _count: { select: { documents: true, validationLogs: true } },
     },
   });
@@ -153,11 +159,45 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ── Anti-doublon ──
+  // Un établissement est un doublon si son code unique, son DINACOPE, ou son
+  // nom + province + commune correspondent à une école déjà enregistrée.
+  const codeEcole = data.codeEcole?.trim() || '';
+  const duplicateConditions: Record<string, unknown>[] = [
+    {
+      AND: [
+        { nom: { equals: data.nom, mode: 'insensitive' } },
+        { province: data.province },
+        { commune: { equals: data.commune, mode: 'insensitive' } },
+      ],
+    },
+  ];
+  if (codeEcole) {
+    duplicateConditions.push({ codeEcole: { equals: codeEcole, mode: 'insensitive' } });
+    duplicateConditions.push({ identifiantSM: { equals: codeEcole, mode: 'insensitive' } });
+  }
+  if (data.dinacope) duplicateConditions.push({ dinacope: { equals: data.dinacope, mode: 'insensitive' } });
+
+  const duplicate = await prisma.ecole.findFirst({
+    where: { OR: duplicateConditions },
+    select: { id: true, nom: true, codeEcole: true, dinacope: true },
+  });
+  if (duplicate) {
+    const ref = duplicate.codeEcole || duplicate.dinacope;
+    return NextResponse.json(
+      { error: `Un établissement identique existe déjà : « ${duplicate.nom} »${ref ? ` (${ref})` : ''}.` },
+      { status: 409 },
+    );
+  }
+
   // Générer un identifiant School Manager unique
   let identifiantSM = generateIdentifiantSM(data.institution);
   let attempts = 0;
   while (attempts < 10) {
-    const exists = await prisma.ecole.findFirst({ where: { identifiantSM } });
+    // L'identifiant généré ne doit entrer en collision avec aucun code déjà utilisé.
+    const exists = await prisma.ecole.findFirst({
+      where: { OR: [{ identifiantSM }, { codeEcole: identifiantSM }] },
+    });
     if (!exists) break;
     identifiantSM = generateIdentifiantSM(data.institution);
     attempts++;
@@ -167,34 +207,88 @@ export async function POST(request: NextRequest) {
   const structureRattachementId = data.structureRattachementId || data.coordSousProvincialeId || '';
   const structureRattachementType = data.structureRattachementType || validInstitution.structureCompetente;
 
-  const ecole = await prisma.ecole.create({
-    data: {
-      nom: data.nom,
-      type: data.type ?? '',
-      institution: data.institution,
-      dinacope: data.dinacope ?? '',
-      province: data.province,
-      provinceEducationnelle: data.provinceEducationnelle,
-      ville: data.ville ?? '',
-      commune: data.commune,
-      adresse: data.adresse,
-      localisationGeo: data.localisationGeo ?? '',
-      latitude: data.latitude ?? null,
-      longitude: data.longitude ?? null,
-      telephone: data.telephone,
-      email: data.email ?? '',
-      chefEcole: data.chefEcole,
-      logoUrl: data.logoUrl || null,
-      identifiantSM,
-      effectif: data.effectif ?? 0,
-      statut: data.statut ?? 'Actif',
-      statutValidation: data.statutValidation || 'Brouillon',
-      structureRattachementId: structureRattachementId || null,
-      structureRattachementType,
-      coordSousProvincialeId: data.coordSousProvincialeId || null,
-      ecErcId: data.ecErcId || null,
+  // Code unique, QR code, profil administratif et chef principal :
+  // tout est écrit avec l'école dans la même opération.
+  const registration = await buildEcoleRegistration({
+    identifiantSM,
+    nom: data.nom,
+    codeEcole,
+    institution: data.institution,
+    province: data.province,
+    provinceEducationnelle: data.provinceEducationnelle,
+    coordSousProvincialeId: data.coordSousProvincialeId || null,
+    structureRattachementId: structureRattachementId || null,
+    structureRattachementType,
+    chef: {
+      nom: data.chefEcole,
+      telephone: data.chefTelephone,
+      email: data.chefEmail,
     },
   });
+
+  const ecole = await prisma.$transaction(async (tx) => {
+    const created = await tx.ecole.create({
+      data: {
+        nom: data.nom,
+        type: data.type ?? '',
+        institution: data.institution,
+        dinacope: data.dinacope ?? '',
+        province: data.province,
+        provinceEducationnelle: data.provinceEducationnelle,
+        ville: data.ville ?? '',
+        commune: data.commune,
+        adresse: data.adresse,
+        localisationGeo: data.localisationGeo ?? '',
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        telephone: data.telephone,
+        email: data.email ?? '',
+        chefEcole: data.chefEcole,
+        logoUrl: data.logoUrl || null,
+        identifiantSM,
+        codeEcole: registration.codeEcole,
+        qrCodeUrl: registration.qrCodeUrl,
+        effectif: data.effectif ?? 0,
+        statut: data.statut ?? 'Actif',
+        statutValidation: data.statutValidation || 'Brouillon',
+        structureRattachementId: structureRattachementId || null,
+        structureRattachementType,
+        coordSousProvincialeId: data.coordSousProvincialeId || null,
+        ecErcId: data.ecErcId || null,
+      },
+    });
+
+    // Chef principal, relié à l'école par son identifiant.
+    const chefPrincipal = registration.chefPrincipal
+      ? await tx.ecoleChef.create({ data: registration.chefPrincipal })
+      : null;
+    if (chefPrincipal) {
+      await tx.ecole.update({ where: { id: created.id }, data: { chefPrincipalId: chefPrincipal.id } });
+    }
+
+    // Profil administratif de l'école.
+    const profilAdministratif = await tx.ecoleProfilAdministratif.create({
+      data: { ...registration.profilAdministratif, ecoleId: created.id },
+    });
+
+    return { ...created, chefPrincipal, profilAdministratif };
+  });
+
+  // Associer définitivement l'école à son chef principal : si l'email du chef
+  // correspond à un compte DIRECTION_ECOLE encore sans école, ce compte est
+  // rattaché à l'établissement et le chef lui est relié par son identifiant.
+  if (ecole.chefPrincipal && data.chefEmail) {
+    const chefUser = await prisma.user.findFirst({
+      where: { email: { equals: data.chefEmail, mode: 'insensitive' }, role: 'DIRECTION_ECOLE', ecoleId: null },
+      select: { id: true },
+    });
+    if (chefUser) {
+      await prisma.$transaction([
+        prisma.ecoleChef.update({ where: { id: ecole.chefPrincipal.id }, data: { userId: chefUser.id } }),
+        prisma.user.update({ where: { id: chefUser.id }, data: { ecoleId: ecole.id } }),
+      ]);
+    }
+  }
 
   // Si le statut est "En attente de vérification", créer un log de validation
   if (ecole.statutValidation === 'En attente de vérification') {
