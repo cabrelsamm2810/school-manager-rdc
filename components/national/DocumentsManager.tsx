@@ -27,7 +27,7 @@ type DocumentNational = {
   description: string;
   province: string;
   statut: string;
-  fileUrl: string;
+  hasFile: boolean;
   fileName: string;
   fileSize: number;
   auteurNom: string;
@@ -287,15 +287,23 @@ export function DocumentsManager() {
                   {doc.description && <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-400">{doc.description}</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {doc.fileUrl && (
-                    <a
-                      href={doc.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-3 py-1.5 text-[11.5px] font-semibold text-brand-700 transition hover:bg-brand-50"
-                    >
-                      <Icon name="external" className="h-3.5 w-3.5" /> Ouvrir
-                    </a>
+                  {doc.hasFile && (
+                    <>
+                      <a
+                        href={`/api/coordination-nationale/documents/${doc.id}/file`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-3 py-1.5 text-[11.5px] font-semibold text-brand-700 transition hover:bg-brand-50"
+                      >
+                        <Icon name="eye" className="h-3.5 w-3.5" /> Consulter
+                      </a>
+                      <a
+                        href={`/api/coordination-nationale/documents/${doc.id}/file?download=1`}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-[11.5px] font-semibold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        <Icon name="download" className="h-3.5 w-3.5" /> Télécharger
+                      </a>
+                    </>
                   )}
                   <button
                     onClick={() => handleDelete(doc)}

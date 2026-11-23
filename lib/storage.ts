@@ -21,7 +21,7 @@ import {
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { writeFile, mkdir, stat, unlink } from 'fs/promises';
+import { writeFile, mkdir, stat, unlink, readFile as readLocalFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
@@ -210,6 +210,52 @@ export async function deleteFile(storedUrl: string | null | undefined): Promise<
       /* file may already be gone — ignore */
     }
   }
+}
+
+// ── Read ──────────────────────────────────────────────────────
+
+export interface StoredFile {
+  buffer: Buffer;
+  contentType: string | null;
+}
+
+/**
+ * Lit le contenu d'un fichier stocké (R2 ou disque local).
+ * Utilisé par les routes qui servent un fichier à travers l'application
+ * (consultation / téléchargement contrôlés) plutôt que par une URL directe.
+ */
+export async function readFile(storedUrl: string | null | undefined): Promise<StoredFile | null> {
+  if (!storedUrl) return null;
+
+  if (isR2Url(storedUrl) && isR2Configured()) {
+    try {
+      const res = await getS3().send(
+        new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: r2Key(storedUrl) }),
+      );
+      const bytes = await res.Body?.transformToByteArray();
+      if (!bytes) return null;
+      return {
+        buffer: Buffer.from(bytes),
+        contentType: res.ContentType ?? null,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  // Local file
+  if (storedUrl.startsWith('/uploads/')) {
+    try {
+      return {
+        buffer: await readLocalFile(path.join(process.cwd(), 'public', storedUrl.slice(1))),
+        contentType: null,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 // ── File size ─────────────────────────────────────────────────

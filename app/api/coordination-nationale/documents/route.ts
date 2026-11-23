@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import prisma from '@/lib/prisma';
 import { requireNationalAccess, displayName } from '@/lib/national-access';
-import { uploadFile, resolveFileUrl, resolveFileUrls, deleteFile } from '@/lib/storage';
+import { uploadFile, resolveFileUrl, deleteFile } from '@/lib/storage';
 import { validateDocumentFile } from '@/lib/file-validation';
 import { logAudit, getClientIP } from '@/lib/audit';
 import {
@@ -49,8 +49,13 @@ export async function GET(request: NextRequest) {
     take: 200,
   });
 
+  // Aucune URL de stockage n'est exposée : les fichiers sont servis par
+  // /api/coordination-nationale/documents/[id]/file, après contrôle du rôle.
   return NextResponse.json({
-    documents: await resolveFileUrls(documents, 'fileUrl', { signed: true }),
+    documents: documents.map(({ fileUrl, ...document }) => ({
+      ...document,
+      hasFile: !!fileUrl,
+    })),
   });
 }
 
