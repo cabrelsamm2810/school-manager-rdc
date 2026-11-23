@@ -4,6 +4,7 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
 import { sendValidationCode } from '@/lib/mail';
+import { PUBLIC_REGISTRATION_ROLES } from '@/lib/meta-data';
 import type { User } from '@prisma/client';
 
 /**
@@ -70,6 +71,18 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
   const existing = await prisma.user.findFirst({ where: { email: { equals: data.email, mode: 'insensitive' } } });
   if (existing) return { ok: false, error: 'Un compte existe d\u00e9j\u00e0 avec cet email.' };
 
+  // Les profils d'administration (coordinations, chef d'administration, agents)
+  // sont créés par l'administration : ils ne passent jamais par l'inscription publique.
+  if (!PUBLIC_REGISTRATION_ROLES.includes(data.role)) {
+    return { ok: false, error: 'Ce profil est créé par l\u2019administration et n\u2019est pas disponible à l\u2019inscription publique.' };
+  }
+
+  // Tout utilisateur public appartient à un établissement : c'est lui qui fixe
+  // l'institution, la province et le périmètre de ses permissions.
+  if (!data.ecoleId) {
+    return { ok: false, error: 'Sélectionnez votre établissement scolaire.' };
+  }
+
   // Durée de vie et compteurs persistants, également appliqués au premier envoi.
   const verification = reserveVerificationSend(createVerification());
   const validationCode = JSON.stringify(verification);
@@ -92,9 +105,24 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
     if (!coord) return { ok: false, error: 'La coordination sous-provinciale sélectionnée est introuvable. Sélectionnez-la à nouveau dans la liste.' };
   }
 
-  if (data.ecoleId) {
-    const ecole = await prisma.ecole.findUnique({ where: { id: data.ecoleId }, select: { id: true } });
-    if (!ecole) return { ok: false, error: 'L’école sélectionnée est introuvable. Sélectionnez-la à nouveau dans la liste.' };
+  // L'établissement porte l'institution, la province et le rattachement administratif :
+  // ces valeurs viennent de la base, jamais du navigateur.
+  const ecole = await prisma.ecole.findUnique({
+    where: { id: data.ecoleId },
+    select: {
+      id: true,
+      nom: true,
+      institution: true,
+      province: true,
+      provinceEducationnelle: true,
+      coordSousProvincialeId: true,
+    },
+  });
+  if (!ecole) {
+    return { ok: false, error: 'L’école sélectionnée est introuvable. Sélectionnez-la à nouveau dans la liste.' };
+  }
+  if (data.typeInstitution && data.typeInstitution !== ecole.institution) {
+    return { ok: false, error: 'L’établissement sélectionné n’appartient pas à l’institution choisie. Sélectionnez-le à nouveau.' };
   }
 
   const user = await prisma.user.create({
@@ -107,16 +135,16 @@ export async function registerUser(payload: unknown): Promise<AccountResult> {
       telephone: data.telephone ?? '',
       passwordHash,
       role: data.role,
-      typeInstitution: data.typeInstitution ?? '',
-      institutionName: data.institutionName ?? '',
-      provinceAdministrative: data.provinceAdministrative ?? '',
-      provinceEducationnelle: data.provinceEducationnelle ?? '',
+      typeInstitution: ecole.institution,
+      institutionName: ecole.nom,
+      provinceAdministrative: ecole.province || data.provinceAdministrative || '',
+      provinceEducationnelle: ecole.provinceEducationnelle || data.provinceEducationnelle || '',
       bureauAffectation: data.bureauAffectation ?? '',
       fonction: data.fonction ?? '',
       grade: data.grade ?? '',
       dinacope: data.dinacope ?? '',
-      coordSousProvincialeId,
-      ecoleId: data.ecoleId || null,
+      coordSousProvincialeId: ecole.coordSousProvincialeId ?? coordSousProvincialeId,
+      ecoleId: ecole.id,
       profilePhotoUrl: data.profilePhotoUrl || null,
       validationCode,
       isActive: false,

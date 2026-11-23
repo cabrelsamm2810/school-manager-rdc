@@ -235,11 +235,35 @@ model Presence {
   @@map("presences")
 }
 
+/// Institution administrative (publique, conventionnée, privée agréée, privée indépendante).
+/// Chaque établissement est relié par identifiant (`Ecole.institutionId`) tout en
+/// conservant le code texte historique (`Ecole.institution`) pour la compatibilité.
+model Institution {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nom         String
+  categorie   String   @default("CONVENTIONNE")
+  description String   @default("")
+  statut      String   @default("Actif")
+  ecoles      Ecole[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categorie])
+  @@map("institutions")
+}
+
 model Ecole {
   id                   String   @id @default(cuid())
   nom                  String
   type                 String   @default("")
   institution          String   @default("EC_ERC")
+  institutionId        String?
+  institutionRef       Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  numeroAgrement       String   @default("")
+  dateCreation         DateTime?
+  sections             String[] @default([])
+  options              String[] @default([])
   dinacope             String   @default("")
   province             String   @default("")
   provinceEducationnelle String @default("")
@@ -282,6 +306,7 @@ model Ecole {
   @@index([statutValidation])
   @@index([coordSousProvincialeId])
   @@index([ecErcId])
+  @@index([institutionId])
   @@map("ecoles")
 }
 

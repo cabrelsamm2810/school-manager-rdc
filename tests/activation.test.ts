@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 const mocks = vi.hoisted(() => ({
-  findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn(),
+  findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn(), ecoleFindUnique: vi.fn(),
   sendValidationCode: vi.fn(), hashPassword: vi.fn(), verifyPassword: vi.fn(),
 }));
 vi.mock('server-only', () => ({}));
-vi.mock('@/lib/prisma', () => ({ default: { user: {
-  findFirst: mocks.findFirst, create: mocks.create, updateMany: mocks.updateMany,
-} } }));
+vi.mock('@/lib/prisma', () => ({ default: {
+  user: { findFirst: mocks.findFirst, create: mocks.create, updateMany: mocks.updateMany },
+  ecole: { findUnique: mocks.ecoleFindUnique },
+} }));
 vi.mock('@/lib/mail', () => ({ sendValidationCode: mocks.sendValidationCode }));
 vi.mock('@/lib/auth', () => ({ hashPassword: mocks.hashPassword, verifyPassword: mocks.verifyPassword }));
 
@@ -42,6 +43,13 @@ beforeEach(() => {
     return { count: 1 };
   });
   mocks.create.mockImplementation(async ({ data }) => ({ ...storedUser, ...data }));
+  // Tout compte public est rattaché à un établissement : c'est lui qui porte
+  // l'institution et la province (inscription dynamique).
+  mocks.ecoleFindUnique.mockResolvedValue({
+    id: 'ecole-test', nom: 'École Test', institution: 'EC_ERC',
+    province: 'Kinshasa', provinceEducationnelle: 'Kinshasa Lukunga',
+    coordSousProvincialeId: null,
+  });
   mocks.sendValidationCode.mockResolvedValue(undefined);
   mocks.hashPassword.mockResolvedValue('hashed-password');
   mocks.verifyPassword.mockResolvedValue(true);
@@ -164,6 +172,7 @@ describe('activation et renvoi du code', () => {
 describe('inscription et connexion avant activation', () => {
   const registration = () => register(request('register', {
     nom: 'Test', prenom: 'Activation', email: ' COMPTE@example.invalid ', password: 'TestPassword123!', role: 'ELEVE',
+    typeInstitution: 'EC_ERC', ecoleId: 'ecole-test',
   }));
   it('conserve le compte en cas d’échec SMTP sans divulguer le code', async () => {
     mocks.findFirst.mockResolvedValue(null);

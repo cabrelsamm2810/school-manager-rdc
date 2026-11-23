@@ -22,6 +22,8 @@ export const crudModels: Record<string, CrudModelConfig> = {
     // L'enseignant n'a pas de province : aucun filtre de périmètre n'est applicable.
     provinceField: false,
     institutionField: false,
+    // Les utilisateurs d'un établissement ne voient que les enseignants de leur école.
+    ecoleField: 'ecoleId',
     include: { ecoleRattachee: { select: { id: true, nom: true } } },
     // Filtres territoriaux cascades via la relation ecoleRattachee
     extraFilters: {

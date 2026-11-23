@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { INSTITUTIONS, DOCUMENT_TYPES, VALIDATION_STATUTS } from '@/lib/institutions';
-import { allProvinces, educationProvincesByAdmin } from '@/lib/meta-data';
+import { INSTITUTIONS, DOCUMENT_TYPES, VALIDATION_STATUTS, isPrivateInstitution } from '@/lib/institutions';
+import { allProvinces, educationProvincesByAdmin, schoolSections, schoolOptions } from '@/lib/meta-data';
 import { getCommunesForProvinceEduc } from '@/lib/communes-rdc';
 import { GeoLocationInput } from '@/components/ecoles/GeoLocationInput';
 
@@ -10,6 +10,10 @@ export type EcoleFormData = {
   nom: string;
   type: string;
   institution: string;
+  numeroAgrement: string;
+  dateCreation: string;
+  sections: string[];
+  options: string[];
   dinacope: string;
   province: string;
   provinceEducationnelle: string;
@@ -33,7 +37,8 @@ export type EcoleFormData = {
 };
 
 export const emptyForm: EcoleFormData = {
-  nom: '', type: '', institution: '', dinacope: '', province: '',
+  nom: '', type: '', institution: '', numeroAgrement: '', dateCreation: '', sections: [], options: [],
+  dinacope: '', province: '',
   provinceEducationnelle: '', ville: '', commune: '', adresse: '',
   localisationGeo: '', latitude: null, longitude: null,
   telephone: '', email: '', chefEcole: '',
@@ -64,6 +69,7 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
   const [structuresLoading, setStructuresLoading] = useState(false);
 
   const selectedInstitution = INSTITUTIONS.find((i) => i.code === form.institution);
+  const isPrivate = isPrivateInstitution(form.institution);
   const educationProvinces = form.province ? (educationProvincesByAdmin[form.province] || []) : [];
   const communes = form.provinceEducationnelle ? getCommunesForProvinceEduc(form.provinceEducationnelle) : [];
 
@@ -88,11 +94,27 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
   }
 
   function selectInstitution(code: string) {
-    update('institution', code);
-    // Réinitialiser les structures liées
-    update('coordSousProvincialeId', '');
-    update('structureRattachementId', '');
-    update('structureRattachementType', INSTITUTIONS.find((i) => i.code === code)?.structureCompetente || '');
+    // Changer d'institution réinitialise les champs devenus incompatibles :
+    // parcours administratif et, hors privé, le profil privé.
+    const prive = isPrivateInstitution(code);
+    setForm((prev) => ({
+      ...prev,
+      institution: code,
+      coordSousProvincialeId: '',
+      structureRattachementId: '',
+      structureRattachementType: INSTITUTIONS.find((i) => i.code === code)?.structureCompetente || '',
+      numeroAgrement: prive ? prev.numeroAgrement : '',
+      dateCreation: prive ? prev.dateCreation : '',
+      sections: prive ? prev.sections : [],
+      options: prive ? prev.options : [],
+    }));
+  }
+
+  function toggleListValue(key: 'sections' | 'options', value: string) {
+    setForm((prev) => {
+      const list = prev[key];
+      return { ...prev, [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] };
+    });
   }
 
   function handleProvinceChange(prov: string) {
@@ -404,6 +426,65 @@ export function EcoleForm({ initialData, onSubmit, onCancel, submitLabel = 'Enre
               </select>
             </div>
           </div>
+
+          {/* ── Profil de l'établissement privé ── */}
+          {isPrivate && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-4 w-1 rounded-full bg-rose-500" />
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Profil de l’établissement privé</p>
+                  <p className="text-xs text-slate-500">Agrément, date de création, sections et options.</p>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass} htmlFor="etab-agrement">Numéro d’agrément</label>
+                  <input id="etab-agrement" type="text" value={form.numeroAgrement}
+                    onChange={(e) => update('numeroAgrement', e.target.value)}
+                    className={inputClass} placeholder="Ex. AGR/2024/0123" />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="etab-date-creation">Date de création</label>
+                  <input id="etab-date-creation" type="date" value={form.dateCreation}
+                    onChange={(e) => update('dateCreation', e.target.value)}
+                    className={inputClass} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Sections</label>
+                  <div className="flex flex-wrap gap-2">
+                    {schoolSections.map((section) => {
+                      const active = form.sections.includes(section);
+                      return (
+                        <button key={section} type="button" onClick={() => toggleListValue('sections', section)}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                            active ? 'border-rose-500 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-600 hover:border-rose-300'
+                          }`}>
+                          {section}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Options</label>
+                  <div className="flex flex-wrap gap-2">
+                    {schoolOptions.map((option) => {
+                      const active = form.options.includes(option);
+                      return (
+                        <button key={option} type="button" onClick={() => toggleListValue('options', option)}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                            active ? 'border-rose-500 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-600 hover:border-rose-300'
+                          }`}>
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>

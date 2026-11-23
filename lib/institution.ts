@@ -10,6 +10,7 @@ export const INSTITUTION_LABELS: Record<string, string> = {
   PUBLIQUE: 'École publique',
   CATHOLIQUE: 'École catholique',
   ISLAMIQUE: 'École islamique',
+  PRIVE_AGREE: 'École privée agréée',
   INDEPENDANTE: 'École indépendante'
 };
 

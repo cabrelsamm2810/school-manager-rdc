@@ -3,11 +3,16 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
+import { INSTITUTIONS, parseDateCreation } from '@/lib/institutions';
 
 const updateSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom officiel est obligatoire.'),
   type: z.string().trim().optional().or(z.literal('')),
   institution: z.string().trim().optional().or(z.literal('')),
+  numeroAgrement: z.string().trim().optional().or(z.literal('')),
+  dateCreation: z.string().trim().optional().or(z.literal('')),
+  sections: z.array(z.string()).optional(),
+  options: z.array(z.string()).optional(),
   dinacope: z.string().trim().optional().or(z.literal('')),
   province: z.string().trim().optional().or(z.literal('')),
   provinceEducationnelle: z.string().trim().optional().or(z.literal('')),
@@ -122,12 +127,28 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     );
   }
 
+  // Relation par identifiant : si le code d'institution change, l'identifiant suit.
+  const institutionCode = data.institution || existing.institution;
+  const institutionConfig = INSTITUTIONS.find((i) => i.code === institutionCode);
+  const institutionRecord = institutionConfig
+    ? await prisma.institution.upsert({
+        where: { code: institutionCode },
+        update: { nom: institutionConfig.label, categorie: institutionConfig.categorie, description: institutionConfig.description },
+        create: { code: institutionCode, nom: institutionConfig.label, categorie: institutionConfig.categorie, description: institutionConfig.description },
+      })
+    : null;
+
   const ecole = await prisma.ecole.update({
     where: { id: params.id },
     data: {
       nom: data.nom,
       type: data.type ?? '',
-      institution: data.institution || existing.institution,
+      institution: institutionCode,
+      institutionId: institutionRecord?.id ?? existing.institutionId,
+      numeroAgrement: data.numeroAgrement !== undefined ? data.numeroAgrement : existing.numeroAgrement,
+      dateCreation: data.dateCreation !== undefined ? parseDateCreation(data.dateCreation) : existing.dateCreation,
+      sections: data.sections ?? existing.sections,
+      options: data.options ?? existing.options,
       dinacope: data.dinacope ?? '',
       province: data.province ?? '',
       provinceEducationnelle: data.provinceEducationnelle ?? '',

@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     code: i.code,
     label: i.label,
     description: i.description,
+    categorie: i.categorie,
     structureCompetente: i.structureCompetente,
     adminPath: i.adminPath,
   }));

@@ -3,12 +3,16 @@ import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { requireRole } from '@/lib/rbac';
 import { getScopeLevel } from '@/lib/territory-filter';
-import { generateIdentifiantSM, INSTITUTIONS } from '@/lib/institutions';
+import { generateIdentifiantSM, INSTITUTIONS, parseDateCreation } from '@/lib/institutions';
 
 const createSchema = z.object({
   nom: z.string().trim().min(2, 'Le nom officiel est obligatoire.'),
   type: z.string().trim().optional().or(z.literal('')),
   institution: z.string().trim().min(1, 'L\u2019institution est obligatoire.'),
+  numeroAgrement: z.string().trim().optional().or(z.literal('')),
+  dateCreation: z.string().trim().optional().or(z.literal('')),
+  sections: z.array(z.string()).optional(),
+  options: z.array(z.string()).optional(),
   dinacope: z.string().trim().optional().or(z.literal('')),
   province: z.string().trim().min(1, 'La province est obligatoire.'),
   provinceEducationnelle: z.string().trim().min(1, 'La province éducationnelle est obligatoire.'),
@@ -167,11 +171,24 @@ export async function POST(request: NextRequest) {
   const structureRattachementId = data.structureRattachementId || data.coordSousProvincialeId || '';
   const structureRattachementType = data.structureRattachementType || validInstitution.structureCompetente;
 
+  // L'établissement est relié à l'institution par son identifiant (relation
+  // dynamique), tout en conservant le code texte historique.
+  const institutionRecord = await prisma.institution.upsert({
+    where: { code: data.institution },
+    update: { nom: validInstitution.label, categorie: validInstitution.categorie, description: validInstitution.description },
+    create: { code: data.institution, nom: validInstitution.label, categorie: validInstitution.categorie, description: validInstitution.description },
+  });
+
   const ecole = await prisma.ecole.create({
     data: {
       nom: data.nom,
       type: data.type ?? '',
       institution: data.institution,
+      institutionId: institutionRecord.id,
+      numeroAgrement: data.numeroAgrement ?? '',
+      dateCreation: parseDateCreation(data.dateCreation),
+      sections: data.sections ?? [],
+      options: data.options ?? [],
       dinacope: data.dinacope ?? '',
       province: data.province,
       provinceEducationnelle: data.provinceEducationnelle,

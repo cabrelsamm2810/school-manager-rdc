@@ -69,6 +69,35 @@ credentials. Nothing external is required to boot.
   `components/CrudManager.tsx` (list + form + delete UI). Route files are thin wrappers around
   `createCrudHandlers()`. To add a module: add the Prisma model, add entries to `crud-models.ts` and
   `crud-configs.tsx`, add the two route files, and render `<CrudManager config={crudConfigs.xxx} />`.
+## Chaîne institutionnelle et profil école
+
+- **Source unique : `lib/institutions.ts`.** Quatre catégories de structure (`PUBLIC`,
+  `CONVENTIONNE`, `PRIVE_AGREE`, `PRIVE_INDEPENDANT`) regroupent six institutions :
+  `PUBLIQUE`, `EC_ERC`, `CATHOLIQUE`, `ISLAMIQUE`, `PRIVE_AGREE`, `INDEPENDANTE`.
+  `STRUCTURE_CATEGORIES`, `institutionsForCategorie()` et `isPrivateInstitution()` alimentent
+  l'inscription et le profil école ; ne jamais recopier ces listes ailleurs.
+- **Relation par identifiant.** La table `institutions` (seedée à chaque démarrage) porte
+  `code`/`categorie`. `Ecole.institutionId` est la FK ; `Ecole.institution` reste le code texte
+  historique (toutes les requêtes existantes l'utilisent). Les routes `POST/PUT /api/ecoles`
+  résolvent/upsertent l'institution et renseignent les deux champs ; le seed rattrape les
+  écoles dont `institutionId` est nul.
+- **Inscription publique = communauté scolaire uniquement.** `registrationRoleOptions` exclut
+  les profils d'administration (coordinations, chef d'administration, agents) ; `registerUser`
+  les refuse aussi côté serveur. Tout compte public exige un `ecoleId` : le serveur reprend
+  l'institution, la province, la province éducationnelle et `coordSousProvincialeId` de
+  l'établissement (jamais du navigateur), puis `buildScopeWhere(..., { ecoleField })` limite
+  les lectures à cette école (les enseignants déclarent `ecoleField: 'ecoleId'`).
+- **Chaîne du formulaire d'inscription :** Type de structure → Institution → Établissement →
+  Rôle → Bureau/fonction → Province → Permissions (résumé dérivé de `ROLE_PERMISSIONS` par
+  `lib/structure-permissions.ts`). Changer de structure ou d'institution réinitialise
+  établissement, rôle, bureau, fonction, grade et localisation.
+- **Profil privé** (`Ecole.numeroAgrement`, `dateCreation`, `sections`, `options`) affiché dans
+  `EcoleForm` (bloc rose) et `EcoleFiche` uniquement pour les institutions privées. `sections`
+  et `options` viennent de `OPTIONS_RDC` (`schoolSections` / `schoolOptions`).
+- Vérification : `GET /api/ecoles/public?institution=EC_ERC` renvoie `provinceEducationnelle` ;
+  un POST `/api/auth/register` avec `role=COORDINATION_NATIONALE` → 400 ; sans `ecoleId` → 400.
+  Tests : `npx vitest run tests/institutions.test.ts tests/activation.test.ts`.
+
 - **`tsconfig.tsbuildinfo` is not tracked** (`.gitignore` has `*.tsbuildinfo`). It is a TypeScript
   incremental cache, and committing it made stale `TS2802` diagnostics replay for files that were already
   fixed. To type-check from scratch: `npx tsc --noEmit --incremental false`.

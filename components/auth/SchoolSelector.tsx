@@ -7,6 +7,7 @@ export type SchoolOption = {
   nom: string;
   dinacope: string;
   province: string;
+  provinceEducationnelle: string;
   commune: string;
   type: string;
   adresse: string;
@@ -16,7 +17,7 @@ type SchoolSelectorProps = {
   institution: string;
   province?: string;
   value: string; // ecoleId
-  onChange: (ecoleId: string, ecoleNom: string) => void;
+  onChange: (ecoleId: string, ecoleNom: string, ecole?: SchoolOption | null) => void;
   required?: boolean;
   label?: string;
 };
@@ -72,7 +73,7 @@ export function SchoolSelector({
   }, []);
 
   function handleSelect(school: SchoolOption) {
-    onChange(school.id, school.nom);
+    onChange(school.id, school.nom, school);
     setOpen(false);
     setSearch('');
   }
@@ -90,6 +91,7 @@ export function SchoolSelector({
           <div className="min-w-0">
             <p className="truncate font-medium text-slate-900">{selected.nom}</p>
             <p className="truncate text-xs text-slate-500">
+              {selected.provinceEducationnelle && `${selected.provinceEducationnelle} · `}
               {selected.commune && `${selected.commune} · `}
               {selected.dinacope && `DINACOPE: ${selected.dinacope}`}
               {!selected.commune && !selected.dinacope && selected.province}
@@ -97,7 +99,7 @@ export function SchoolSelector({
           </div>
           <button
             type="button"
-            onClick={() => { onChange('', ''); setOpen(true); }}
+            onClick={() => { onChange('', '', null); setOpen(true); }}
             className="shrink-0 text-xs font-medium text-blue-600 hover:underline"
           >
             Changer
@@ -131,6 +133,7 @@ export function SchoolSelector({
                   >
                     <span className="font-medium text-slate-900">{school.nom}</span>
                     <span className="text-xs text-slate-500">
+                      {school.provinceEducationnelle && `${school.provinceEducationnelle} · `}
                       {school.commune && `${school.commune} · `}
                       {school.dinacope && `DINACOPE: ${school.dinacope}`}
                       {!school.commune && !school.dinacope && school.province}

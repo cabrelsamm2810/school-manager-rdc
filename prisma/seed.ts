@@ -2,6 +2,7 @@ import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
 import { CLASSES_RDC, MATIERES_RDC, OPTIONS_RDC } from '@/lib/curriculum-rdc';
+import { INSTITUTIONS } from '@/lib/institutions';
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,25 @@ async function main() {
     Object.values(Role).map((role) => prisma.user.count({ where: { role } }))
   );
   console.log(`Seed vérifié : ${roleCounts.length} rôles disponibles.`);
+
+  // ── Institutions administratives ──
+  // Source de vérité : `lib/institutions.ts`. Le code reste la clé historique
+  // (`Ecole.institution`) et `institutionId` porte la relation par identifiant.
+  for (const inst of INSTITUTIONS) {
+    await prisma.institution.upsert({
+      where: { code: inst.code },
+      update: { nom: inst.label, categorie: inst.categorie, description: inst.description },
+      create: { code: inst.code, nom: inst.label, categorie: inst.categorie, description: inst.description },
+    });
+  }
+  const institutions = await prisma.institution.findMany();
+  for (const institution of institutions) {
+    await prisma.ecole.updateMany({
+      where: { institution: institution.code, institutionId: null },
+      data: { institutionId: institution.id },
+    });
+  }
+  console.log(`Seed terminé : ${institutions.length} institutions administratives synchronisées.`);
 
   // ── Compte de démonstration — Coordination nationale EC-ERC ──
   // Idempotent (upsert par email) : le compte est créé ou remis à jour à chaque

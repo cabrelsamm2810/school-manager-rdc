@@ -4,30 +4,32 @@ import { FormEvent, useState, useEffect, ReactNode } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
 import {
-  registrationInstitutionTypes,
-  allRegistrationRoleOptions,
+  registrationStructureTypes,
+  registrationRoleOptions,
+  rolesByStructureCategorie,
+  schoolBureauxByRole,
   allProvinces,
-  provincialBureaux,
   fonctionsByRole,
   gradesByRole,
-  fonctionsByBureau,
-  gradesByBureau,
   rolesNeedingFonctionGrade,
-  rolesNeedingDinacope,
-  educationProvincesByAdminFromSousDivisions,
-  sousDivisionsByEducationProvince,
+  educationProvincesByAdmin,
   type RoleOption,
 } from '@/lib/meta-data';
+import { institutionsForCategorie, getInstitution } from '@/lib/institutions';
+import { describeRolePermissions } from '@/lib/structure-permissions';
 import { ProfilePhotoUpload } from '@/components/auth/ProfilePhotoUpload';
-import { SchoolSelector } from '@/components/auth/SchoolSelector';
+import { SchoolSelector, type SchoolOption } from '@/components/auth/SchoolSelector';
 
-const STEP_LABELS = ['Institution', 'Structure', 'Fonction', 'Informations', 'Compte', 'Vérification'];
+const STEP_LABELS = ['Structure', 'Établissement', 'Rôle', 'Province', 'Compte', 'Vérification'];
 
 const inputClass = 'reg-field';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
 
 type FormState = {
+  structureType: string;
   typeInstitution: string;
+  ecoleId: string;
+  institutionName: string;
   role: string;
   bureauAffectation: string;
   fonction: string;
@@ -35,7 +37,6 @@ type FormState = {
   dinacope: string;
   provinceAdministrative: string;
   provinceEducationnelle: string;
-  coordSousProvinciale: string;
   nom: string;
   postNom: string;
   prenom: string;
@@ -45,34 +46,15 @@ type FormState = {
   email: string;
   password: string;
   confirmPassword: string;
-  institutionName: string;
-  ecoleId: string;
 };
 
 const emptyForm: FormState = {
-  typeInstitution: '', role: '', bureauAffectation: '', fonction: '', grade: '', dinacope: '',
-  provinceAdministrative: '', provinceEducationnelle: '', coordSousProvinciale: '',
+  structureType: '', typeInstitution: '', ecoleId: '', institutionName: '',
+  role: '', bureauAffectation: '', fonction: '', grade: '', dinacope: '',
+  provinceAdministrative: '', provinceEducationnelle: '',
   nom: '', postNom: '', prenom: '', sexe: '', telephone: '', profilePhotoUrl: '',
-  email: '', password: '', confirmPassword: '', institutionName: '', ecoleId: '',
+  email: '', password: '', confirmPassword: '',
 };
-
-const ROLES_NEEDING_LOCATION = new Set([
-  'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE', 'ENSEIGNANT', 'ELEVE', 'PARENT',
-]);
-
-const ROLES_NEEDING_BUREAU = new Set([
-  'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL',
-]);
-const ROLES_NEEDING_EDUC_PROVINCE = new Set(['COORDINATION_SOUS_PROVINCIALE', 'DIRECTION_ECOLE']);
-const ROLES_NEEDING_SCHOOL_FORM = new Set(['DIRECTION_ECOLE']);
-
-function isStepNeeded(step: number, role: string): boolean {
-  switch (step) {
-    case 0: case 1: case 3: case 4: case 5: return true;
-    case 2: return rolesNeedingFonctionGrade.has(role) || rolesNeedingDinacope.has(role);
-    default: return true;
-  }
-}
 
 /* ── Display helpers (presentation only — no logic change) ── */
 
@@ -81,22 +63,22 @@ const INSTITUTION_SHORT: Record<string, string> = {
   'PUBLIQUE': 'École publique',
   'CATHOLIQUE': 'École catholique',
   'ISLAMIQUE': 'École islamique',
-  'INDEPENDANTE': 'École indépendante',
+  'PRIVE_AGREE': 'Privé agréé',
+  'INDEPENDANTE': 'Privé indépendant',
 };
 const INSTITUTION_DESC: Record<string, string> = {
   'EC_ERC': 'Écoles Conventionnées des Églises du Réveil du Congo',
-  'PUBLIQUE': 'École public',
+  'PUBLIQUE': 'École publique',
   'CATHOLIQUE': 'Conventionné catholique',
   'ISLAMIQUE': 'École islamique',
-  'INDEPENDANTE': 'École indépendant',
+  'PRIVE_AGREE': 'Établissement privé agréé',
+  'INDEPENDANTE': 'Établissement privé indépendant',
 };
 const ROLE_DESC: Record<string, string> = {
-  'COORDINATION_NATIONALE': 'Administration nationale',
-  'COORDINATION_PROVINCIALE': 'Administration provinciale',
-  'CHEF_ADMINISTRATION': 'Chef de l\u2019administration provinciale',
-  'AGENT_PROVINCIAL': 'Agent de la coordination provinciale',
-  'COORDINATION_SOUS_PROVINCIALE': 'Administration sous-provinciale',
   'DIRECTION_ECOLE': 'Gestion d’école',
+  'PROMOTEUR': 'Promotion de l’établissement',
+  'SECRETAIRE': 'Secrétariat et scolarité',
+  'COMPTABLE': 'Comptabilité et finances',
   'ENSEIGNANT': 'Corps enseignant',
   'ELEVE': 'Espace élève',
   'PARENT': 'Espace parent',
@@ -120,6 +102,7 @@ function InstitutionIcon({ type, selected }: { type: string; selected: boolean }
   if (type === 'PUBLIQUE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
   else if (type === 'CATHOLIQUE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 3v6M9 6h6M5 21V11l7-3 7 3v10M5 21h14" />);
   else if (type === 'ISLAMIQUE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />);
+  else if (type === 'PRIVE_AGREE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />);
   else if (type === 'INDEPENDANTE') path = (<path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.5a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.662.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.482 19.34a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />);
   return (
     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${bg}`}>
@@ -131,12 +114,10 @@ function InstitutionIcon({ type, selected }: { type: string; selected: boolean }
 function RoleIcon({ type, selected }: { type: string; selected: boolean }) {
   const bg = selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500';
   let content: ReactNode = null;
-  if (type === 'COORDINATION_NATIONALE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0-18c2.5 3 4 6 4 9s-1.5 6-4 9m-4-18c-2.5 3-4 6-4 9s1.5 6 4 9" />);
-  else if (type === 'COORDINATION_PROVINCIALE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 3 4-5 4 4 3-3" />);
-  else if (type === 'CHEF_ADMINISTRATION') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m1.5-5.5h-11A2.5 2.5 0 003.5 7.5v9A2.5 2.5 0 006 19h11a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0017 6.5z" />);
-  else if (type === 'AGENT_PROVINCIAL') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m1.5-5.5h-11A2.5 2.5 0 003.5 7.5v9A2.5 2.5 0 006 19h11a2.5 2.5 0 002.5-2.5v-9A2.5 2.5 0 0017 6.5z" />);
-  else if (type === 'COORDINATION_SOUS_PROVINCIALE') content = (<g><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></g>);
-  else if (type === 'DIRECTION_ECOLE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
+  if (type === 'DIRECTION_ECOLE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h9v18h-9V3zM13.5 8.25h6v12.75h-6V8.25z" />);
+  else if (type === 'PROMOTEUR') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 3l2.4 4.86 5.36.78-3.88 3.78.92 5.34L12 15.24l-4.8 2.52.92-5.34L4.24 8.64l5.36-.78L12 3z" />);
+  else if (type === 'SECRETAIRE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6.75h-9A2.25 2.25 0 005.25 9v9a2.25 2.25 0 002.25 2.25h9A2.25 2.25 0 0018.75 18V9a2.25 2.25 0 00-2.25-2.25zM8.25 11.25h7.5M8.25 15h4.5" />);
+  else if (type === 'COMPTABLE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5M7.5 3.75v16.5m9-16.5v16.5" />);
   else if (type === 'ENSEIGNANT') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25v14.25" />);
   else if (type === 'ELEVE') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347M3.75 21.75h4.5a.75.75 0 00.75-.75v-4.5a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75v-6a.75.75 0 00-.75-.75h-6a.75.75 0 01-.75-.75v-3a.75.75 0 00-.75-.75H3.75a.75.75 0 00-.75.75v3a.75.75 0 00.75.75h.75" />);
   else if (type === 'PARENT') content = (<path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />);
@@ -179,6 +160,7 @@ const EyeOffIcon: ReactNode = <EyeOff className="h-5 w-5" strokeWidth={1.8} />;
 
 export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) => void }) {
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [selectedSchool, setSelectedSchool] = useState<SchoolOption | null>(null);
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [error, setError] = useState('');
@@ -201,17 +183,13 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
     const v = validateStep(step);
     if (v) { setError(v); return; }
     setDirection('forward');
-    let next = step + 1;
-    while (next < 6 && !isStepNeeded(next, form.role)) next++;
-    if (next < 6) setStep(next);
+    setStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
   }
 
   function prevStep() {
     setError('');
     setDirection('back');
-    let prev = step - 1;
-    while (prev >= 0 && !isStepNeeded(prev, form.role)) prev--;
-    if (prev >= 0) setStep(prev);
+    setStep((s) => Math.max(s - 1, 0));
   }
 
   function goToStep(target: number) {
@@ -222,35 +200,27 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   function validateStep(s: number): string {
     switch (s) {
       case 0:
+        if (!form.structureType) return 'Veuillez sélectionner un type de structure.';
         if (!form.typeInstitution) return 'Veuillez sélectionner une institution.';
         return '';
       case 1:
-        if (!form.role) return 'Veuillez sélectionner un niveau.';
+        if (!form.ecoleId) return 'Veuillez sélectionner votre établissement scolaire.';
         return '';
       case 2:
-        if (ROLES_NEEDING_BUREAU.has(form.role)) {
-          if (!form.bureauAffectation) return 'Veuillez sélectionner un bureau d’affectation.';
-          if (!form.fonction) return 'Veuillez sélectionner une fonction.';
-          if (!form.grade) return 'Veuillez sélectionner un grade.';
-        }
+        if (!form.role) return 'Veuillez sélectionner votre rôle.';
+        if ((schoolBureauxByRole[form.role]?.length ?? 0) > 0 && !form.bureauAffectation)
+          return 'Veuillez sélectionner un bureau d’affectation.';
         if (rolesNeedingFonctionGrade.has(form.role) && !form.fonction)
           return 'Veuillez sélectionner une fonction.';
-        if (rolesNeedingFonctionGrade.has(form.role) && gradesByRole[form.role]?.length > 0 && !form.grade)
+        if (rolesNeedingFonctionGrade.has(form.role) && (gradesByRole[form.role]?.length ?? 0) > 0 && !form.grade)
           return 'Veuillez sélectionner un grade.';
         return '';
       case 3:
-        if (!form.nom.trim()) return 'Le nom est obligatoire.';
-        if (!form.prenom.trim()) return 'Le prénom est obligatoire.';
-        if (ROLES_NEEDING_LOCATION.has(form.role) && !form.provinceAdministrative)
-          return 'Veuillez sélectionner une province.';
-        if (ROLES_NEEDING_EDUC_PROVINCE.has(form.role) && !form.provinceEducationnelle)
-          return 'Veuillez sélectionner une province éducationnelle.';
-        if (ROLES_NEEDING_EDUC_PROVINCE.has(form.role) && !form.coordSousProvinciale)
-          return 'Veuillez sélectionner une coordination sous-provinciale.';
-        if (ROLES_NEEDING_SCHOOL_FORM.has(form.role) && !form.ecoleId)
-          return 'Veuillez sélectionner votre école dans la liste.';
+        if (!form.provinceAdministrative) return 'Veuillez sélectionner une province.';
         return '';
       case 4:
+        if (!form.nom.trim()) return 'Le nom est obligatoire.';
+        if (!form.prenom.trim()) return 'Le prénom est obligatoire.';
         if (!form.email.trim()) return 'L’email est obligatoire.';
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'L’email est invalide.';
         if (form.password.length < 8) return 'Le mot de passe doit faire au moins 8 caractères.';
@@ -264,11 +234,9 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    for (let s = 0; s < 5; s++) {
-      if (isStepNeeded(s, form.role)) {
-        const v = validateStep(s);
-        if (v) { setStep(s); setError(v); return; }
-      }
+    for (let s = 0; s < STEP_LABELS.length - 1; s++) {
+      const v = validateStep(s);
+      if (v) { setStep(s); setError(v); return; }
     }
     setLoading(true);
     try {
@@ -280,12 +248,11 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
           email: form.email, telephone: form.telephone, password: form.password,
           role: form.role, typeInstitution: form.typeInstitution,
           institutionName: form.institutionName,
-          ecoleId: form.ecoleId || undefined,
+          ecoleId: form.ecoleId,
           provinceAdministrative: form.provinceAdministrative,
           provinceEducationnelle: form.provinceEducationnelle,
           bureauAffectation: form.bureauAffectation, fonction: form.fonction,
           grade: form.grade, dinacope: form.dinacope,
-          coordSousProvinciale: form.coordSousProvinciale,
           profilePhotoUrl: form.profilePhotoUrl || undefined,
         }),
       });
@@ -300,52 +267,63 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
     }
   }
 
-  function handleInstitutionType(value: string) {
-    setForm((cur) => ({ ...cur, typeInstitution: value, role: '', fonction: '', grade: '', bureauAffectation: '' }));
+  /* ── Cascade : chaque changement réinitialise les champs devenus incompatibles ── */
+
+  function handleStructureType(value: string) {
+    setForm((cur) => ({
+      ...cur,
+      structureType: value,
+      typeInstitution: '', ecoleId: '', institutionName: '', role: '',
+      bureauAffectation: '', fonction: '', grade: '', dinacope: '',
+      provinceAdministrative: '', provinceEducationnelle: '',
+    }));
+    setSelectedSchool(null);
   }
+
+  function handleInstitution(value: string) {
+    setForm((cur) => ({
+      ...cur,
+      typeInstitution: value,
+      ecoleId: '', institutionName: '', role: '',
+      bureauAffectation: '', fonction: '', grade: '',
+      provinceAdministrative: '', provinceEducationnelle: '',
+    }));
+    setSelectedSchool(null);
+  }
+
+  function handleSchool(id: string, nom: string, school?: SchoolOption | null) {
+    setSelectedSchool(id ? school ?? null : null);
+    setForm((cur) => ({
+      ...cur,
+      ecoleId: id,
+      institutionName: nom,
+      provinceAdministrative: school?.province ?? '',
+      provinceEducationnelle: school?.provinceEducationnelle ?? '',
+      bureauAffectation: '', fonction: '', grade: '',
+    }));
+  }
+
   function handleRole(value: string) {
-    setForm((cur) => ({ ...cur, role: value, fonction: '', grade: '', bureauAffectation: '' }));
-  }
-  function handleAdminProvince(value: string) {
-    setForm((cur) => ({ ...cur, provinceAdministrative: value, provinceEducationnelle: '', coordSousProvinciale: '' }));
-  }
-  function handleEducProvince(value: string) {
-    setForm((cur) => ({ ...cur, provinceEducationnelle: value, coordSousProvinciale: '' }));
-  }
-  function handleBureau(value: string) {
-    setForm((cur) => ({ ...cur, bureauAffectation: value, fonction: '', grade: '' }));
+    setForm((cur) => ({ ...cur, role: value, bureauAffectation: '', fonction: '', grade: '' }));
   }
 
-  const isEcErc = form.typeInstitution === 'EC_ERC';
-  const COORDINATION_ROLES = new Set([
-    'COORDINATION_NATIONALE', 'COORDINATION_PROVINCIALE', 'CHEF_ADMINISTRATION', 'AGENT_PROVINCIAL', 'COORDINATION_SOUS_PROVINCIALE',
-  ]);
-  const roleOptions: RoleOption[] = isEcErc
-    ? allRegistrationRoleOptions
-    : allRegistrationRoleOptions.filter((r) => !COORDINATION_ROLES.has(r.value));
-  const availableEdProvinces = form.provinceAdministrative
-    ? educationProvincesByAdminFromSousDivisions[form.provinceAdministrative] ?? []
+  const structure = registrationStructureTypes.find((s) => s.value === form.structureType);
+  const institutions = form.structureType ? institutionsForCategorie(form.structureType) : [];
+  const institution = getInstitution(form.typeInstitution);
+  const availableRoleCodes = rolesByStructureCategorie[form.structureType] ?? [];
+  const roleOptions: RoleOption[] = registrationRoleOptions.filter((r) => availableRoleCodes.includes(r.value));
+  const availableBureaux = schoolBureauxByRole[form.role] ?? [];
+  const availableFonctions = fonctionsByRole[form.role] ?? [];
+  const availableGrades = gradesByRole[form.role] ?? [];
+  const permissionSummary = describeRolePermissions(form.role);
+  const educationProvinces = form.provinceAdministrative
+    ? educationProvincesByAdmin[form.provinceAdministrative] ?? []
     : [];
-  const availableSousDivisions = form.provinceEducationnelle
-    ? sousDivisionsByEducationProvince[form.provinceEducationnelle] ?? []
-    : [];
-  const availableFonctions = (ROLES_NEEDING_BUREAU.has(form.role))
-    ? fonctionsByBureau[form.bureauAffectation] ?? []
-    : fonctionsByRole[form.role] ?? [];
-  const availableGrades = (ROLES_NEEDING_BUREAU.has(form.role))
-    ? gradesByBureau[form.bureauAffectation] ?? []
-    : gradesByRole[form.role] ?? [];
 
-  const visibleStepIndices = STEP_LABELS.map((_, i) => i).filter(
-    (i) => i === 0 || i === 5 || isStepNeeded(i, form.role)
-  );
-  const visibleCount = visibleStepIndices.length;
-  const currentVisiblePosition = visibleStepIndices.indexOf(step) + 1;
+  const currentVisiblePosition = step + 1;
+  const visibleCount = STEP_LABELS.length;
   const animClass = direction === 'forward' ? 'step-enter' : 'step-enter-back';
-  const isLastStep = step === 5;
-  const needsLocation = ROLES_NEEDING_LOCATION.has(form.role);
-  const needsEducProvince = ROLES_NEEDING_EDUC_PROVINCE.has(form.role);
-
+  const isLastStep = step === STEP_LABELS.length - 1;
 
   if (success) {
     return (
@@ -379,14 +357,12 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Progress indicator */}
       <div className="sticky top-0 z-10 -mx-5 rounded-t-[2rem] bg-white/95 px-5 pb-3 pt-1 backdrop-blur-md sm:-mx-8 sm:px-8">
-        {/* Desktop: full progress with labels */}
         <div className="hidden items-center justify-between sm:flex">
-          {visibleStepIndices.map((i, displayIdx) => {
-            const label = STEP_LABELS[i];
+          {STEP_LABELS.map((label, i) => {
             const isActive = i === step;
             const isPast = i < step;
             return (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
+              <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => goToStep(i)}
@@ -400,14 +376,13 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                  ) : displayIdx + 1}
+                  ) : i + 1}
                 </button>
                 <span className={`text-[10px] font-medium ${isActive ? 'text-blue-600' : isPast ? 'text-blue-400' : 'text-slate-400'}`}>{label}</span>
               </div>
             );
           })}
         </div>
-        {/* Mobile: compact progress bar */}
         <div className="sm:hidden">
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-xs font-semibold text-blue-600">Étape {currentVisiblePosition}/{visibleCount}</span>
@@ -418,7 +393,6 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
               style={{ width: `${(currentVisiblePosition / visibleCount) * 100}%` }} />
           </div>
         </div>
-        {/* Desktop progress bar */}
         <div className="mt-2 hidden h-1 w-full rounded-full bg-slate-100 sm:block">
           <div className="h-1 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
             style={{ width: `${(currentVisiblePosition / visibleCount) * 100}%` }} />
@@ -427,34 +401,87 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
 
       {/* Step content */}
       <div key={step} className={animClass}>
-        {/* STEP 0: Institution */}
+        {/* STEP 0: Type de structure → Institution */}
         {step === 0 && (
-          <div className="space-y-4">
-            <StepHeader num={1} title="Institution" desc="Sélectionnez votre type d’institution." />
+          <div className="space-y-5">
+            <StepHeader num={1} title="Type de structure" desc="Choisissez la catégorie de votre établissement." />
             <div className="grid gap-3 sm:grid-cols-2">
-              {registrationInstitutionTypes.map((inst) => (
-                <div key={inst.value} onClick={() => handleInstitutionType(inst.value)}
-                  className={`select-card rounded-2xl border-2 p-4 ${form.typeInstitution === inst.value ? 'selected' : 'border-slate-200'}`}>
-                  {form.typeInstitution === inst.value && <CheckBadge />}
-                  <div className="flex items-start gap-3">
-                    <div className="flex shrink-0 items-center justify-center">
-                      <InstitutionIcon type={inst.value} selected={form.typeInstitution === inst.value} />
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="font-bold tracking-tight text-slate-900">{INSTITUTION_SHORT[inst.value] ?? inst.label}</p>
-                      <p className="text-xs leading-snug text-slate-500">{INSTITUTION_DESC[inst.value]}</p>
-                    </div>
-                  </div>
+              {registrationStructureTypes.map((type) => (
+                <div key={type.value} onClick={() => handleStructureType(type.value)}
+                  className={`select-card rounded-2xl border-2 p-4 ${form.structureType === type.value ? 'selected' : 'border-slate-200'}`}>
+                  {form.structureType === type.value && <CheckBadge />}
+                  <p className="font-bold tracking-tight text-slate-900">{type.label}</p>
+                  <p className="mt-1 text-xs leading-snug text-slate-500">{type.description}</p>
                 </div>
               ))}
             </div>
+
+            {form.structureType && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-1 rounded-full bg-blue-500" />
+                  <p className="text-sm font-semibold text-slate-700">Institution</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {institutions.map((inst) => (
+                    <div key={inst.code} onClick={() => handleInstitution(inst.code)}
+                      className={`select-card rounded-2xl border-2 p-4 ${form.typeInstitution === inst.code ? 'selected' : 'border-slate-200'}`}>
+                      {form.typeInstitution === inst.code && <CheckBadge />}
+                      <div className="flex items-start gap-3">
+                        <div className="flex shrink-0 items-center justify-center">
+                          <InstitutionIcon type={inst.code} selected={form.typeInstitution === inst.code} />
+                        </div>
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <p className="font-bold tracking-tight text-slate-900">{INSTITUTION_SHORT[inst.code] ?? inst.label}</p>
+                          <p className="text-xs leading-snug text-slate-500">{INSTITUTION_DESC[inst.code] ?? inst.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* STEP 1: Structure */}
+        {/* STEP 1: Établissement scolaire */}
         {step === 1 && (
           <div className="space-y-4">
-            <StepHeader num={2} title="Structure" desc="Sélectionnez votre niveau. Chaque niveau donne accès à un espace indépendant." />
+            <StepHeader num={2} title="Établissement scolaire" desc="Sélectionnez votre établissement dans l’institution choisie." />
+            <SchoolSelector
+              institution={form.typeInstitution}
+              value={form.ecoleId}
+              onChange={handleSchool}
+              required
+              label="Votre établissement"
+            />
+            {selectedSchool && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm">
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="h-4 w-1 rounded-full bg-blue-500" />
+                  <p className="font-semibold text-slate-700">Établissement sélectionné</p>
+                </div>
+                <dl className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+                  <SummaryLine label="Nom officiel" value={selectedSchool.nom} />
+                  <SummaryLine label="Province" value={selectedSchool.province} />
+                  <SummaryLine label="Province éducationnelle" value={selectedSchool.provinceEducationnelle} />
+                  <SummaryLine label="Commune" value={selectedSchool.commune} />
+                  {selectedSchool.dinacope && <SummaryLine label="DINACOPE" value={selectedSchool.dinacope} />}
+                </dl>
+              </div>
+            )}
+            {form.typeInstitution && !form.ecoleId && (
+              <p className="text-xs text-slate-500">
+                Votre établissement n’apparaît pas ? Contactez l’administration de votre institution.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* STEP 2: Rôle, bureau et fonction */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <StepHeader num={3} title="Rôle" desc={`Rôles disponibles pour ${institution ? INSTITUTION_SHORT[institution.code] ?? institution.label : 'cette institution'}.`} />
             <div className="grid gap-3 sm:grid-cols-2">
               {roleOptions.map((role) => (
                 <div key={role.value} onClick={() => handleRole(role.value)}
@@ -470,27 +497,13 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                 </div>
               ))}
             </div>
-          </div>
-        )}
 
-        {/* STEP 2: Fonction */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <StepHeader num={3} title="Fonction" desc="Renseignez vos informations professionnelles." />
-
-            {rolesNeedingDinacope.has(form.role) && (
-              <div>
-                <label className={labelClass}>Numéro DINACOPE</label>
-                <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE (optionnel)" />
-              </div>
-            )}
-
-            {(ROLES_NEEDING_BUREAU.has(form.role)) && (
+            {availableBureaux.length > 0 && (
               <div>
                 <label className={labelClass}>Bureau d’affectation *</label>
-                <select className={inputClass} value={form.bureauAffectation} onChange={(e) => handleBureau(e.target.value)}>
+                <select className={inputClass} value={form.bureauAffectation} onChange={(e) => updateField('bureauAffectation', e.target.value)}>
                   <option value="">— Sélectionner —</option>
-                  {provincialBureaux.map((b) => <option key={b} value={b}>{b}</option>)}
+                  {availableBureaux.map((b) => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
             )}
@@ -498,14 +511,10 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
             {form.role !== 'ELEVE' && form.role !== 'PARENT' && (
               <div>
                 <label className={labelClass}>Fonction *</label>
-                <select className={inputClass} value={form.fonction} onChange={(e) => updateField('fonction', e.target.value)}
-                  disabled={(ROLES_NEEDING_BUREAU.has(form.role)) && !form.bureauAffectation}>
+                <select className={inputClass} value={form.fonction} onChange={(e) => updateField('fonction', e.target.value)}>
                   <option value="">— Sélectionner —</option>
                   {availableFonctions.map((f) => <option key={f} value={f}>{f}</option>)}
                 </select>
-                {(ROLES_NEEDING_BUREAU.has(form.role)) && !form.bureauAffectation && (
-                  <p className="mt-1 text-xs text-slate-400">Sélectionnez d’abord un bureau.</p>
-                )}
               </div>
             )}
 
@@ -518,15 +527,83 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                 </select>
               </div>
             )}
+
+            {(form.role === 'DIRECTION_ECOLE' || form.role === 'ENSEIGNANT') && (
+              <div>
+                <label className={labelClass}>Numéro DINACOPE</label>
+                <input className={inputClass} value={form.dinacope} onChange={(e) => updateField('dinacope', e.target.value)} placeholder="Numéro DINACOPE (optionnel)" />
+              </div>
+            )}
           </div>
         )}
 
-        {/* STEP 3: Informations */}
+        {/* STEP 3: Province → Permissions */}
         {step === 3 && (
           <div className="space-y-4">
-            <StepHeader num={4} title="Informations" desc="Vos informations personnelles et localisation." />
+            <StepHeader num={4} title="Province et permissions" desc="La province découle de votre établissement. Vérifiez les permissions accordées." />
 
-            {/* Profile photo */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>Province administrative *</label>
+                {selectedSchool?.province ? (
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
+                    <span>{form.provinceAdministrative}</span>
+                    <span className="text-xs text-slate-400">Établissement</span>
+                  </div>
+                ) : (
+                  <select className={inputClass} value={form.provinceAdministrative} onChange={(e) => updateField('provinceAdministrative', e.target.value)}>
+                    <option value="">— Sélectionner —</option>
+                    {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                )}
+              </div>
+              <div>
+                <label className={labelClass}>Province éducationnelle</label>
+                {selectedSchool?.provinceEducationnelle ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
+                    {form.provinceEducationnelle}
+                  </div>
+                ) : (
+                  <select className={inputClass} value={form.provinceEducationnelle} onChange={(e) => updateField('provinceEducationnelle', e.target.value)}
+                    disabled={!form.provinceAdministrative}>
+                    <option value="">— Sélectionner —</option>
+                    {educationProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-4 w-1 rounded-full bg-blue-500" />
+                <p className="text-sm font-semibold text-slate-700">Permissions — {permissionSummary.roleLabel || 'rôle à sélectionner'}</p>
+              </div>
+              {permissionSummary.items.length > 0 ? (
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {permissionSummary.items.map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-sm text-slate-700">
+                      <svg className="h-4 w-4 shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500">Sélectionnez un rôle à l’étape précédente.</p>
+              )}
+              <p className="mt-3 text-xs text-slate-500">
+                Ces permissions sont limitées à votre établissement : vous ne voyez que les données de l’école sélectionnée.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Identité et compte */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <StepHeader num={5} title="Identité et compte" desc="Vos informations personnelles et vos identifiants." />
+
             <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-4 w-1 rounded-full bg-blue-500" />
@@ -535,7 +612,6 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
               <ProfilePhotoUpload value={form.profilePhotoUrl} onChange={(url) => updateField('profilePhotoUrl', url)} />
             </div>
 
-            {/* Personal info */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={labelClass}>Nom *</label>
@@ -567,87 +643,6 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                   <input type="tel" className={`${inputClass} pl-11`} value={form.telephone} onChange={(e) => updateField('telephone', e.target.value)} placeholder="+243 ..." />
                 </IconInput>
               </div>
-            </div>
-
-            {/* Location */}
-            {needsLocation && (
-              <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-1 rounded-full bg-blue-500" />
-                  <p className="text-sm font-semibold text-slate-700">Localisation</p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className={labelClass}>Province administrative *</label>
-                    <select className={inputClass} value={form.provinceAdministrative} onChange={(e) => handleAdminProvince(e.target.value)}>
-                      <option value="">— Sélectionner —</option>
-                      {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  {needsEducProvince && (
-                    <div>
-                      <label className={labelClass}>Province éducationnelle *</label>
-                      <select className={inputClass} value={form.provinceEducationnelle} onChange={(e) => handleEducProvince(e.target.value)}
-                        disabled={!form.provinceAdministrative}>
-                        <option value="">— Sélectionner —</option>
-                        {availableEdProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                      {!form.provinceAdministrative && <p className="mt-1 text-xs text-slate-400">Sélectionnez d’abord une province.</p>}
-                    </div>
-                  )}
-                  {needsEducProvince && (
-                    <div className="sm:col-span-2">
-                      <label className={labelClass}>Coordination sous-provinciale *</label>
-                      <select className={inputClass} value={form.coordSousProvinciale} onChange={(e) => updateField('coordSousProvinciale', e.target.value)}
-                        disabled={!form.provinceEducationnelle}>
-                        <option value="">— Sélectionner —</option>
-                        {availableSousDivisions.map((sd) => <option key={sd} value={sd}>{sd}</option>)}
-                      </select>
-                      {!form.provinceEducationnelle && <p className="mt-1 text-xs text-slate-400">Sélectionnez d’abord une province éducationnelle.</p>}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* School selector for DIRECTION_ECOLE */}
-            {ROLES_NEEDING_SCHOOL_FORM.has(form.role) && (
-              <div className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50/30 p-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-1 rounded-full bg-blue-500" />
-                  <p className="text-sm font-semibold text-slate-700">Votre école</p>
-                </div>
-                <SchoolSelector
-                  institution={form.typeInstitution}
-                  province={form.provinceAdministrative || undefined}
-                  value={form.ecoleId}
-                  onChange={(id, nom) => { updateField('ecoleId', id); updateField('institutionName', nom); }}
-                  required
-                  label="Sélectionner votre école"
-                />
-              </div>
-            )}
-
-
-
-            {/* School selector for ENSEIGNANT/ELEVE/PARENT */}
-            {(form.role === 'ENSEIGNANT' || form.role === 'ELEVE' || form.role === 'PARENT') && (
-              <SchoolSelector
-                institution={form.typeInstitution}
-                province={form.provinceAdministrative || undefined}
-                value={form.ecoleId}
-                onChange={(id, nom) => { updateField('ecoleId', id); updateField('institutionName', nom); }}
-                label="Sélectionner votre école (optionnel)"
-              />
-            )}
-          </div>
-        )}
-
-        {/* STEP 4: Compte */}
-        {step === 4 && (
-          <div className="space-y-4">
-            <StepHeader num={5} title="Compte" desc="Vos identifiants de connexion." />
-            <div className="grid gap-4">
               <div>
                 <label className={labelClass}>E-mail *</label>
                 <IconInput icon={MailIcon}>
@@ -688,19 +683,22 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
                 <p className="text-sm font-semibold text-slate-700">Récapitulatif de votre inscription</p>
               </div>
               <div className="space-y-2 text-sm">
-                <SummaryRow label="Institution" value={registrationInstitutionTypes.find((i) => i.value === form.typeInstitution)?.label ?? '—'} onEdit={() => goToStep(0)} />
-                <SummaryRow label="Niveau / Rôle" value={roleOptions.find((r) => r.value === form.role)?.label ?? '—'} onEdit={() => goToStep(1)} />
+                <SummaryRow label="Type de structure" value={structure?.label ?? '—'} onEdit={() => goToStep(0)} />
+                <SummaryRow label="Institution" value={institution?.label ?? '—'} onEdit={() => goToStep(0)} />
+                <SummaryRow label="Établissement" value={form.institutionName || '—'} onEdit={() => goToStep(1)} />
+                <SummaryRow label="Rôle" value={roleOptions.find((r) => r.value === form.role)?.label ?? '—'} onEdit={() => goToStep(2)} />
                 {form.bureauAffectation && <SummaryRow label="Bureau" value={form.bureauAffectation} onEdit={() => goToStep(2)} />}
                 {form.fonction && <SummaryRow label="Fonction" value={form.fonction} onEdit={() => goToStep(2)} />}
                 {form.grade && <SummaryRow label="Grade" value={form.grade} onEdit={() => goToStep(2)} />}
                 {form.dinacope && <SummaryRow label="DINACOPE" value={form.dinacope} onEdit={() => goToStep(2)} />}
-                {form.provinceAdministrative && <SummaryRow label="Province" value={form.provinceAdministrative} onEdit={() => goToStep(3)} />}
+                <SummaryRow label="Province" value={form.provinceAdministrative || '—'} onEdit={() => goToStep(3)} />
                 {form.provinceEducationnelle && <SummaryRow label="Province éduc." value={form.provinceEducationnelle} onEdit={() => goToStep(3)} />}
-                {form.coordSousProvinciale && <SummaryRow label="Coord. sous-prov." value={form.coordSousProvinciale} onEdit={() => goToStep(3)} />}
-                {form.institutionName && <SummaryRow label="École" value={form.institutionName} onEdit={() => goToStep(3)} />}
-                <SummaryRow label="Nom complet" value={`${form.nom} ${form.postNom} ${form.prenom}`.trim()} onEdit={() => goToStep(3)} />
-                {form.sexe && <SummaryRow label="Sexe" value={form.sexe === 'M' ? 'Masculin' : 'Féminin'} onEdit={() => goToStep(3)} />}
-                {form.telephone && <SummaryRow label="Téléphone" value={form.telephone} onEdit={() => goToStep(3)} />}
+                {permissionSummary.items.length > 0 && (
+                  <SummaryRow label="Permissions" value={permissionSummary.items.join(' · ')} onEdit={() => goToStep(3)} />
+                )}
+                <SummaryRow label="Nom complet" value={`${form.nom} ${form.postNom} ${form.prenom}`.trim()} onEdit={() => goToStep(4)} />
+                {form.sexe && <SummaryRow label="Sexe" value={form.sexe === 'M' ? 'Masculin' : 'Féminin'} onEdit={() => goToStep(4)} />}
+                {form.telephone && <SummaryRow label="Téléphone" value={form.telephone} onEdit={() => goToStep(4)} />}
                 <SummaryRow label="E-mail" value={form.email} onEdit={() => goToStep(4)} />
                 {form.profilePhotoUrl && (
                   <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-1.5">
@@ -750,6 +748,15 @@ export function RegisterForm({ onStepChange }: { onStepChange?: (step: number) =
         )}
       </div>
     </form>
+  );
+}
+
+function SummaryLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dd className="text-slate-800">{value || '—'}</dd>
+    </div>
   );
 }
 

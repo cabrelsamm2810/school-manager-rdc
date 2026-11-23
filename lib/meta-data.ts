@@ -1,5 +1,7 @@
 import { SOUS_DIVISIONS_RDC } from '@/lib/sous-divisions-rdc';
 import { PROVINCE_NAMES, PROVINCES_EDUC_BY_ADMIN } from '@/lib/provinces-rdc';
+import { INSTITUTIONS, STRUCTURE_CATEGORIES } from '@/lib/institutions';
+import { OPTIONS_RDC } from '@/lib/curriculum-rdc';
 
 export type InstitutionType = {
   value: string;
@@ -40,13 +42,66 @@ export const defaultRoleOptions: RoleOption[] = [
 
 /* ── Données d'inscription ── */
 
-export const registrationInstitutionTypes = [
-  { value: 'EC_ERC', label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo' },
-  { value: 'INDEPENDANTE', label: 'Indépendante' },
-  { value: 'CATHOLIQUE', label: 'Catholique' },
-  { value: 'PUBLIQUE', label: 'Publique' },
-  { value: 'ISLAMIQUE', label: 'Islamique' },
+/**
+ * Chaîne de sélection de l'inscription publique :
+ *   Type de structure → Institution → Établissement → Rôle → Bureau → Province → Permissions
+ * Les institutions sont dérivées de `lib/institutions.ts` (source unique).
+ */
+export const registrationStructureTypes = STRUCTURE_CATEGORIES.map((c) => ({
+  value: c.code,
+  label: c.label,
+  description: c.description,
+}));
+
+export const registrationInstitutionTypes = INSTITUTIONS.map((i) => ({
+  value: i.code,
+  label: i.label,
+  categorie: i.categorie,
+}));
+
+/**
+ * Rôles proposés à l'inscription publique : uniquement la communauté scolaire.
+ * Les profils d'administration (coordination nationale/provinciale, chef
+ * d'administration, agents) sont créés par l'administration et ne doivent jamais
+ * apparaître dans le formulaire public.
+ */
+export const registrationRoleOptions: RoleOption[] = [
+  { value: 'DIRECTION_ECOLE', label: 'Chef d\u2019établissement' },
+  { value: 'PROMOTEUR', label: 'Promoteur' },
+  { value: 'SECRETAIRE', label: 'Secrétaire' },
+  { value: 'COMPTABLE', label: 'Comptable' },
+  { value: 'ENSEIGNANT', label: 'Enseignant' },
+  { value: 'ELEVE', label: 'Élève' },
+  { value: 'PARENT', label: 'Parent / Tuteur' },
 ];
+
+export const PUBLIC_REGISTRATION_ROLES: string[] = registrationRoleOptions.map((r) => r.value);
+
+/** Rôles ouverts à l'inscription publique pour une catégorie de structure. */
+export const rolesByStructureCategorie: Record<string, string[]> = {
+  PUBLIC: ['DIRECTION_ECOLE', 'SECRETAIRE', 'COMPTABLE', 'ENSEIGNANT', 'ELEVE', 'PARENT'],
+  CONVENTIONNE: PUBLIC_REGISTRATION_ROLES,
+  PRIVE_AGREE: PUBLIC_REGISTRATION_ROLES,
+  PRIVE_INDEPENDANT: PUBLIC_REGISTRATION_ROLES,
+};
+
+/** Bureaux d'affectation propres à un établissement scolaire. */
+export const schoolBureauxByRole: Record<string, string[]> = {
+  DIRECTION_ECOLE: ['Direction', 'Direction des études', 'Discipline'],
+  PROMOTEUR: ['Promotion', 'Administration générale'],
+  SECRETAIRE: ['Secrétariat', 'Scolarité'],
+  COMPTABLE: ['Comptabilité', 'Finances'],
+  ENSEIGNANT: ['Enseignement'],
+};
+
+/** Sections (humanités) et options (technique) proposées dans le profil d'école. */
+export const schoolSections: string[] = OPTIONS_RDC
+  .filter((o) => o.type === 'Section')
+  .map((o) => o.nom);
+
+export const schoolOptions: string[] = OPTIONS_RDC
+  .filter((o) => o.type === 'Option')
+  .map((o) => o.nom);
 
 export const allRegistrationRoleOptions: RoleOption[] = [
   { value: 'COORDINATION_NATIONALE', label: 'Coordination nationale' },

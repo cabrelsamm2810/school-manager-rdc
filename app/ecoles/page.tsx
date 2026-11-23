@@ -19,6 +19,11 @@ type Ecole = {
   nom: string;
   type: string;
   institution: string;
+  institutionId: string | null;
+  numeroAgrement: string;
+  dateCreation: string | null;
+  sections: string[];
+  options: string[];
   dinacope: string;
   province: string;
   provinceEducationnelle: string;
@@ -105,6 +110,10 @@ export default function EcolesPage() {
     setEditingId(et.id);
     setInitialFormData({
       nom: et.nom, type: et.type, institution: et.institution, dinacope: et.dinacope,
+      numeroAgrement: et.numeroAgrement ?? '',
+      dateCreation: et.dateCreation ? et.dateCreation.slice(0, 10) : '',
+      sections: et.sections ?? [],
+      options: et.options ?? [],
       province: et.province, provinceEducationnelle: et.provinceEducationnelle,
       ville: et.ville, commune: et.commune, adresse: et.adresse,
       telephone: et.telephone, email: et.email, chefEcole: et.chefEcole,

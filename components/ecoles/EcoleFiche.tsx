@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { INSTITUTION_MAP, DOCUMENT_TYPES } from '@/lib/institutions';
+import { INSTITUTION_MAP, DOCUMENT_TYPES, isPrivateInstitution } from '@/lib/institutions';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { useSessionUser } from '@/lib/use-session-user';
 import { DocumentAuditTrail } from '@/components/ecoles/DocumentAuditTrail';
@@ -35,6 +35,10 @@ type Ecole = {
   nom: string;
   type: string;
   institution: string;
+  numeroAgrement: string;
+  dateCreation: string | null;
+  sections: string[];
+  options: string[];
   dinacope: string;
   province: string;
   provinceEducationnelle: string;
@@ -251,6 +255,43 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
           <div className="sm:col-span-2"><p className={labelClass}>Adresse</p><p className={valueClass}>{ecole.adresse || '—'}</p></div>
         </div>
       </div>
+
+      {/* Profil de l'établissement privé */}
+      {isPrivateInstitution(ecole.institution) && (
+        <div className={sectionClass}>
+          <h3 className="mb-3 text-sm font-bold text-slate-900">Profil de l’établissement privé</h3>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div><p className={labelClass}>Numéro d’agrément</p><p className={valueClass}>{ecole.numeroAgrement || '—'}</p></div>
+            <div>
+              <p className={labelClass}>Date de création</p>
+              <p className={valueClass}>
+                {ecole.dateCreation ? new Date(ecole.dateCreation).toLocaleDateString('fr-FR') : '—'}
+              </p>
+            </div>
+            <div><p className={labelClass}>Institution</p><p className={valueClass}>{INSTITUTION_MAP[ecole.institution]?.label ?? ecole.institution}</p></div>
+            <div className="sm:col-span-2 lg:col-span-3">
+              <p className={labelClass}>Sections</p>
+              {ecole.sections?.length ? (
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {ecole.sections.map((section) => (
+                    <span key={section} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{section}</span>
+                  ))}
+                </div>
+              ) : <p className={valueClass}>—</p>}
+            </div>
+            <div className="sm:col-span-2 lg:col-span-3">
+              <p className={labelClass}>Options</p>
+              {ecole.options?.length ? (
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {ecole.options.map((option) => (
+                    <span key={option} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{option}</span>
+                  ))}
+                </div>
+              ) : <p className={valueClass}>—</p>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Géolocalisation */}
       <div className={sectionClass}>

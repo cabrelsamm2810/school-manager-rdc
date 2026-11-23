@@ -7,14 +7,98 @@
  * Les écoles d'une institution ne doivent jamais apparaître dans les dashboards d'une autre.
  */
 
-import { ROLE_RANK } from '@/lib/rbac';
+import { ROLE_RANK } from '@/lib/roles';
 
 export type InstitutionCode =
   | 'EC_ERC'
   | 'PUBLIQUE'
   | 'CATHOLIQUE'
   | 'ISLAMIQUE'
+  | 'PRIVE_AGREE'
   | 'INDEPENDANTE';
+
+/**
+ * Catégorie de structure administrative. C'est le premier choix de la chaîne
+ * « Type de structure → Institution → Établissement → Rôle → Bureau → Province ».
+ */
+export type StructureCategorie =
+  | 'PUBLIC'
+  | 'CONVENTIONNE'
+  | 'PRIVE_AGREE'
+  | 'PRIVE_INDEPENDANT';
+
+export type StructureCategorieConfig = {
+  code: StructureCategorie;
+  label: string;
+  description: string;
+  /** Institutions rattachées à cette catégorie (dans l'ordre d'affichage). */
+  institutionCodes: InstitutionCode[];
+  /** Vrai pour les établissements privés : le profil privé est alors demandé. */
+  prive: boolean;
+};
+
+export const STRUCTURE_CATEGORIES: StructureCategorieConfig[] = [
+  {
+    code: 'PUBLIC',
+    label: 'Publics',
+    description: 'Établissements publics sous tutelle de l’EPST',
+    institutionCodes: ['PUBLIQUE'],
+    prive: false,
+  },
+  {
+    code: 'CONVENTIONNE',
+    label: 'Conventionnés',
+    description: 'Établissements conventionnés (EC-ERC, catholiques, islamiques)',
+    institutionCodes: ['EC_ERC', 'CATHOLIQUE', 'ISLAMIQUE'],
+    prive: false,
+  },
+  {
+    code: 'PRIVE_AGREE',
+    label: 'Privés agréés',
+    description: 'Établissements privés agréés par l’État',
+    institutionCodes: ['PRIVE_AGREE'],
+    prive: true,
+  },
+  {
+    code: 'PRIVE_INDEPENDANT',
+    label: 'Privés indépendants',
+    description: 'Établissements privés indépendants',
+    institutionCodes: ['INDEPENDANTE'],
+    prive: true,
+  },
+];
+
+export const STRUCTURE_CATEGORIE_MAP: Record<string, StructureCategorieConfig> = Object.fromEntries(
+  STRUCTURE_CATEGORIES.map((c) => [c.code, c]),
+);
+
+export function getStructureCategorie(code: string): StructureCategorieConfig | undefined {
+  return STRUCTURE_CATEGORIE_MAP[code];
+}
+
+/** Institutions disponibles pour une catégorie de structure. */
+export function institutionsForCategorie(code: string): InstitutionConfig[] {
+  const categorie = STRUCTURE_CATEGORIE_MAP[code];
+  if (!categorie) return [];
+  return categorie.institutionCodes
+    .map((institutionCode) => INSTITUTION_MAP[institutionCode])
+    .filter(Boolean) as InstitutionConfig[];
+}
+
+/** Vrai si l'institution correspond à un établissement privé (profil privé requis). */
+export function isPrivateInstitution(code: string | null | undefined): boolean {
+  if (!code) return false;
+  const institution = INSTITUTION_MAP[code];
+  if (!institution) return false;
+  return STRUCTURE_CATEGORIE_MAP[institution.categorie]?.prive ?? false;
+}
+
+/** Convertit une date ISO (formulaire) en Date, ou null si vide/invalide. */
+export function parseDateCreation(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 export type AdminLevel = {
   key: string;
@@ -27,6 +111,8 @@ export type InstitutionConfig = {
   code: InstitutionCode;
   label: string;
   description: string;
+  /** Catégorie de structure à laquelle l'institution appartient. */
+  categorie: StructureCategorie;
   color: string; // tailwind text color
   bgColor: string; // tailwind bg color
   borderColor: string;
@@ -42,6 +128,7 @@ export const INSTITUTIONS: InstitutionConfig[] = [
     code: 'EC_ERC',
     label: 'EC-ERC — Écoles Conventionnées des Églises du Réveil du Congo',
     description: 'Écoles Conventionnées des Églises du Réveil du Congo',
+    categorie: 'CONVENTIONNE',
     color: 'text-blue-700',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
@@ -57,6 +144,7 @@ export const INSTITUTIONS: InstitutionConfig[] = [
     code: 'PUBLIQUE',
     label: 'Écoles publiques',
     description: 'Écoles publiques sous tutelle de l\'EPST',
+    categorie: 'PUBLIC',
     color: 'text-green-700',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200',
@@ -72,6 +160,7 @@ export const INSTITUTIONS: InstitutionConfig[] = [
     code: 'CATHOLIQUE',
     label: 'Écoles conventionnées catholiques',
     description: 'Écoles conventionnées de l\'Église catholique (CENCO)',
+    categorie: 'CONVENTIONNE',
     color: 'text-purple-700',
     bgColor: 'bg-purple-50',
     borderColor: 'border-purple-200',
@@ -87,6 +176,7 @@ export const INSTITUTIONS: InstitutionConfig[] = [
     code: 'ISLAMIQUE',
     label: 'Écoles islamiques',
     description: 'Écoles sous tutelle de la communauté islamique',
+    categorie: 'CONVENTIONNE',
     color: 'text-teal-700',
     bgColor: 'bg-teal-50',
     borderColor: 'border-teal-200',
@@ -102,9 +192,26 @@ export const INSTITUTIONS: InstitutionConfig[] = [
     code: 'INDEPENDANTE',
     label: 'Écoles indépendantes',
     description: 'Écoles privées et indépendantes',
+    categorie: 'PRIVE_INDEPENDANT',
     color: 'text-amber-700',
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-200',
+    icon: 'school',
+    adminPath: [
+      { key: 'coordNationale', label: 'Coordination nationale', model: 'coordNationale', apiPath: '/api/coordination-nationale' },
+      { key: 'coordProvinciale', label: 'Coordination provinciale', model: 'coordProvinciale', apiPath: '/api/coordination-provinciale' },
+      { key: 'coordSousProvinciale', label: 'Coordination sous-provinciale', model: 'coordSousProvinciale', apiPath: '/api/coordination-sous-provinciale' },
+    ],
+    structureCompetente: 'coordSousProvinciale',
+  },
+  {
+    code: 'PRIVE_AGREE',
+    label: 'Écoles privées agréées',
+    description: 'Établissements privés agréés par l’État',
+    categorie: 'PRIVE_AGREE',
+    color: 'text-rose-700',
+    bgColor: 'bg-rose-50',
+    borderColor: 'border-rose-200',
     icon: 'school',
     adminPath: [
       { key: 'coordNationale', label: 'Coordination nationale', model: 'coordNationale', apiPath: '/api/coordination-nationale' },

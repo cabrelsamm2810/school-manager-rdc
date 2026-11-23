@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       nom: true,
       dinacope: true,
       province: true,
+      provinceEducationnelle: true,
       commune: true,
       type: true,
       adresse: true,

@@ -1,3 +1,5 @@
+'use client';
+
 import { AppShell } from '@/components/AppShell';
 import { NationalHeader } from '@/components/national/NationalHeader';
 import { NationalNav } from '@/components/national/NationalNav';
