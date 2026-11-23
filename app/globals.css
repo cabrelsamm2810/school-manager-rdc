@@ -48,6 +48,18 @@ body {
   background: #94a3b8;
 }
 
+/* Barre latérale sombre : défilement discret */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
 /* ── Shadow utilities ── */
 .shadow-soft {
   box-shadow: var(--card-shadow);
