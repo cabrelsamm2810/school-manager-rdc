@@ -53,6 +53,7 @@ model User {
   coordSousProvinciale  CoordSousProvinciale? @relation(fields: [coordSousProvincialeId], references: [id], onDelete: SetNull)
   ecoleId       String?
   ecole         Ecole? @relation(fields: [ecoleId], references: [id], onDelete: SetNull)
+  ecoleProfilChef EcoleProfil? @relation("EcoleProfilChef")
   classe                String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @default(now()) @updatedAt
@@ -273,6 +274,9 @@ model Ecole {
   validationLogs       EcoleValidationLog[]
   cahierDeCotes        CahierDeCote[]
   bulletins            Bulletin[]
+  profil               EcoleProfil?
+  sections             EcoleSection[]
+  profilHistorique     EcoleProfilHistorique[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -283,6 +287,66 @@ model Ecole {
   @@index([coordSousProvincialeId])
   @@index([ecErcId])
   @@map("ecoles")
+}
+
+// Profil administratif unique d'un établissement (relation 1-1 avec Ecole).
+// - codeEcole  : code public d'identification, généré automatiquement.
+// - qrToken    : secret propre à l'école, encodé dans son QR Code.
+// - chefUserId : compte du chef d'établissement, unique → un chef ne peut être
+//                rattaché qu'à une seule école (règle métier n°2).
+model EcoleProfil {
+  id         String   @id @default(cuid())
+  ecoleId    String   @unique
+  ecole      Ecole    @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  codeEcole  String   @unique
+  qrToken    String   @unique
+  chefUserId String?  @unique
+  chefUser   User?    @relation("EcoleProfilChef", fields: [chefUserId], references: [id], onDelete: SetNull)
+  statut     String   @default("Actif")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([chefUserId])
+  @@map("ecole_profils")
+}
+
+// Section ou option ouverte par une école (organisée par cycle).
+model EcoleSection {
+  id        String   @id @default(cuid())
+  ecoleId   String
+  ecole     Ecole    @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  type      String   @default("Section") // Section | Option
+  nom       String
+  cycle     String   @default("")
+  ordre     Int      @default(0)
+  statut    String   @default("Actif")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ecoleId, type, nom, cycle])
+  @@index([ecoleId])
+  @@index([type])
+  @@map("ecole_sections")
+}
+
+// Historique des modifications administratives du profil d'une école.
+model EcoleProfilHistorique {
+  id             String   @id @default(cuid())
+  ecoleId        String
+  ecole          Ecole    @relation(fields: [ecoleId], references: [id], onDelete: Cascade)
+  userId         String   @default("")
+  userName       String   @default("")
+  userRole       String   @default("")
+  action         String // CREATION, MODIFICATION, SECTION_AJOUT, SECTION_MODIFICATION, SECTION_SUPPRESSION, CHEF_ASSOCIE, QR_REGENERATION
+  champ          String   @default("")
+  ancienneValeur String   @default("")
+  nouvelleValeur String   @default("")
+  createdAt      DateTime @default(now())
+
+  @@index([ecoleId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("ecole_profil_historique")
 }
 
 model EcoleDocument {

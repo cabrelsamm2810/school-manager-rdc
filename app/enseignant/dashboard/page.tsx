@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ChevronRight, ScanLine } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
+import { canAccessPath } from '@/lib/route-access';
 import { StatCard, Card } from '@/components/ui/Card';
 import { ClockCard } from '@/components/dashboards/ClockCard';
 import { WelcomeCard } from '@/components/dashboards/WelcomeCard';
@@ -52,6 +55,25 @@ export default function EnseignantDashboardPage() {
               <WelcomeCard user={user} scope="enseignant" />
               <TeacherCheckInCard />
               <PresenceCheckInCard />
+
+              {/* Accès au scanner élève, uniquement si la route est ouverte au rôle */}
+              {canAccessPath(user.role, '/scanner-eleve') && (
+                <Link
+                  href="/scanner-eleve"
+                  className="mb-3 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 shadow-sm transition hover:border-brand-300 hover:shadow-card"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                    <ScanLine className="h-5 w-5" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-slate-900">
+                      Scanner un QR Code élève
+                    </span>
+                    <span className="block text-[11px] text-slate-500">Carte scolaire → fiche élève en un scan</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" aria-hidden />
+                </Link>
+              )}
             </>
           )}
 

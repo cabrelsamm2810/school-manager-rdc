@@ -49,6 +49,7 @@ export const navigationGroups: NavGroup[] = [
     title: 'Gestion scolaire',
     items: [
       { label: 'Écoles', href: '/ecoles', icon: 'school', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
+      { label: 'Profil de l’école', href: '/profil-ecole', icon: 'building', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'Élèves', href: '/eleves', icon: 'users', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'Enseignants', href: '/enseignants', icon: 'teacher', minRole: 'DIRECTION_ECOLE', excludeRoles: ['AGENT_PROVINCIAL'] },
       { label: 'Cahier de cote', href: '/cahier-de-cote', icon: 'notebook', minRole: 'ENSEIGNANT', excludeRoles: ['ENSEIGNANT', 'AGENT_PROVINCIAL'] },
@@ -74,6 +75,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Tableau de bord', href: '/promoteur', icon: 'home', roles: ['PROMOTEUR'] },
       { label: 'Mon école', href: '/ecoles', icon: 'school', roles: ['PROMOTEUR'] },
+      { label: 'Profil de l’école', href: '/profil-ecole', icon: 'building', roles: ['PROMOTEUR'] },
       { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['PROMOTEUR'] },
       { label: 'Enseignants', href: '/enseignants', icon: 'teacher', roles: ['PROMOTEUR'] },
       { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['PROMOTEUR'] },
@@ -84,6 +86,7 @@ export const navigationGroups: NavGroup[] = [
     title: 'Espace secrétaire',
     items: [
       { label: 'Tableau de bord', href: '/secretaire', icon: 'home', roles: ['SECRETAIRE'] },
+      { label: 'Profil de l’école', href: '/profil-ecole', icon: 'building', roles: ['SECRETAIRE'] },
       { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['SECRETAIRE'] },
       { label: 'Dossiers des élèves', href: '/dossiers-eleves', icon: 'folder', roles: ['SECRETAIRE'] },
       { label: 'Visites numériques', href: '/visites', icon: 'visit', roles: ['SECRETAIRE'] },
@@ -95,6 +98,7 @@ export const navigationGroups: NavGroup[] = [
     title: 'Espace comptable',
     items: [
       { label: 'Tableau de bord', href: '/comptable', icon: 'home', roles: ['COMPTABLE'] },
+      { label: 'Profil de l’école', href: '/profil-ecole', icon: 'building', roles: ['COMPTABLE'] },
       { label: 'Paiements', href: '/paiements', icon: 'card', roles: ['COMPTABLE'] },
       { label: 'Élèves', href: '/eleves', icon: 'users', roles: ['COMPTABLE'] },
       { label: 'SchoolChat', href: '/schoolchat', icon: 'chat', roles: ['COMPTABLE'] },

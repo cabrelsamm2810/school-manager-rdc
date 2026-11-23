@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { QRScannerModal, type ScanResult } from './QRScannerModal';
+import { extractEleveMatricule } from '@/lib/qr-eleve';
 
 type Eleve = {
   id: string;
@@ -182,8 +183,9 @@ export function PresenceAppel({ seance, eleves: initialEleves, onBack, onTermine
           }
         } else {
           // Mode hors connexion: stocker localement
-          // Identifier l'élève localement par matricule
-          const eleve = eleves.find((e) => e.matricule === scannedValue || e.id === scannedValue);
+          // Identifier l'élève localement par matricule (QR signé ou ancien format)
+          const matriculeScanne = extractEleveMatricule(scannedValue) ?? scannedValue;
+          const eleve = eleves.find((e) => e.matricule === matriculeScanne || e.id === matriculeScanne);
           if (!eleve) {
             setLastResult({
               eleve: { id: '', matricule: scannedValue, nom: 'Inconnu', postNom: '', prenom: '', classe: '' },

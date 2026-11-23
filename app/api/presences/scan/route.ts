@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session-user';
 import { buildEleveScopeWhere } from '@/lib/territory-filter';
+import { parseEleveQrValue } from '@/lib/qr-eleve';
+import { verifyEleveQrSignature } from '@/lib/qr-eleve-sign';
 import { sendPresenceNotification } from '@/lib/mail';
 
 export const maxDuration = 60;
@@ -36,36 +38,31 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 1. Identifier l'élève à partir du QR code ──
-  // Le QR encode le matricule (identifiant unique), pas les données personnelles.
-  let eleve = null;
+  // Le QR encode le matricule (identifiant unique) et, sur les cartes récentes,
+  // une signature School Manager RDC — jamais les données personnelles.
+  const parsed = parseEleveQrValue(scannedValue);
+  const signatureValide =
+    parsed.ok && (parsed.format === 'legacy' || verifyEleveQrSignature(parsed.matricule, parsed.signature ?? ''));
 
-  // Tentative 1: chercher par matricule direct
-  eleve = await prisma.eleve.findUnique({
-    where: { matricule: scannedValue },
-    include: { ecole: { select: { nom: true, id: true } } },
-  });
-
-  // Tentative 2: extraire le matricule depuis une URL
-  if (!eleve) {
-    try {
-      const url = new URL(scannedValue);
-      const matricule = url.searchParams.get('matricule') || url.searchParams.get('id');
-      if (matricule) {
-        eleve = await prisma.eleve.findUnique({
-          where: { matricule },
-          include: { ecole: { select: { nom: true, id: true } } },
-        });
-      }
-    } catch {
-      // Pas une URL valide
-    }
+  if (!parsed.ok || !signatureValide) {
+    return NextResponse.json(
+      { error: 'QR Code élève invalide ou introuvable.' },
+      { status: 400 },
+    );
   }
 
-  // Tentative 3: chercher par ID
-  if (!eleve) {
+  const includeEcole = { ecole: { select: { nom: true, id: true } } } as const;
+
+  // Tentative 1 : matricule. Tentative 2 : identifiant interne (anciennes cartes).
+  let eleve = await prisma.eleve.findUnique({
+    where: { matricule: parsed.matricule },
+    include: includeEcole,
+  });
+
+  if (!eleve && parsed.format === 'legacy') {
     eleve = await prisma.eleve.findUnique({
-      where: { id: scannedValue },
-      include: { ecole: { select: { nom: true, id: true } } },
+      where: { id: parsed.matricule },
+      include: includeEcole,
     });
   }
 

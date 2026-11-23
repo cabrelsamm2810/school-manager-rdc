@@ -1,215 +1,256 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AlertCircle, Camera, QrCode, RefreshCw, ShieldCheck, WifiOff } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { QRScannerModal, type ScanResult } from '@/components/enseignant/QRScannerModal';
+import { EleveScanFiche, type EleveScanne } from '@/components/enseignant/EleveScanFiche';
+import { useSessionUser } from '@/lib/use-session-user';
+import { signalScanSuccess } from '@/lib/scan-feedback';
 
-type EleveInfo = {
-  id: string;
-  matricule: string;
-  nom: string;
-  postNom: string;
-  prenom: string;
-  classe: string;
-  sexe: string;
-  dateNaissance: string | null;
-  lieuNaissance: string;
-  ecole: string | null;
-};
+const MESSAGE_INVALIDE = 'QR Code élève invalide ou introuvable.';
+const MESSAGE_RESEAU = 'Connexion au serveur impossible. Vérifiez votre réseau, puis réessayez.';
+
+const ELEVE_VIDE = { id: '', matricule: '', nom: '', postNom: '', prenom: '', classe: '' };
 
 export default function ScannerElevePage() {
+  const user = useSessionUser();
   const [showScanner, setShowScanner] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
-  const [eleveInfo, setEleveInfo] = useState<EleveInfo | null>(null);
+  const [eleve, setEleve] = useState<EleveScanne | null>(null);
+  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [online, setOnline] = useState(true);
+  const submittingRef = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dernierScanRef = useRef('');
 
-  const handleScan = useCallback(async (scannedValue: string) => {
+  // État du réseau : le scan exige une connexion, rien n'est affiché hors ligne.
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+
+    // Le scanner met fin à la caméra quand la fenêtre passe en arrière-plan.
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  const rechercherEleve = useCallback(async (scannedValue: string) => {
+    if (submittingRef.current) return;
+    dernierScanRef.current = scannedValue;
+    submittingRef.current = true;
     setSubmitting(true);
+
+    if (!navigator.onLine) {
+      setError(MESSAGE_RESEAU);
+      setLastResult({ eleve: ELEVE_VIDE, status: 'alreadyPresent', error: MESSAGE_RESEAU });
+      submittingRef.current = false;
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/enseignant/scan-eleve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scannedValue }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        setLastResult({
-          eleve: data.eleve || { id: '', matricule: '', nom: '', postNom: '', prenom: '', classe: '' },
-          status: 'alreadyPresent',
-          error: data.error || 'Erreur lors du scan',
-        });
-        setEleveInfo(null);
+      if (!res.ok || !data?.eleve) {
+        const message = data?.error || MESSAGE_INVALIDE;
+        setError(message);
+        setLastResult({ eleve: ELEVE_VIDE, status: 'alreadyPresent', error: message });
         return;
       }
 
-      setEleveInfo(data.eleve);
+      // Détection réussie : retour visuel + sonore léger, puis fiche élève.
+      const trouve = data.eleve as EleveScanne;
+      signalScanSuccess();
+      setError('');
+      setEleve(trouve);
+      // Confirmation dans le scanner pendant quelques instants, puis fiche élève.
       setLastResult({
         eleve: {
-          id: data.eleve.id,
-          matricule: data.eleve.matricule,
-          nom: data.eleve.nom,
-          postNom: data.eleve.postNom,
-          prenom: data.eleve.prenom,
-          classe: data.eleve.classe,
-          ecole: data.eleve.ecole,
+          id: trouve.id,
+          matricule: trouve.matricule,
+          nom: trouve.nom,
+          postNom: trouve.postNom,
+          prenom: trouve.prenom,
+          classe: trouve.classe,
+          ecole: trouve.ecole?.nom ?? null,
         },
         status: 'created',
       });
+      closeTimerRef.current = setTimeout(() => {
+        setShowScanner(false);
+        setLastResult(null);
+      }, 650);
     } catch {
-      setLastResult({
-        eleve: { id: '', matricule: '', nom: '', postNom: '', prenom: '', classe: '' },
-        status: 'alreadyPresent',
-        error: 'Erreur réseau',
-      });
+      setError(MESSAGE_RESEAU);
+      setLastResult({ eleve: ELEVE_VIDE, status: 'alreadyPresent', error: MESSAGE_RESEAU });
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }, []);
 
+  const ouvrirScanner = useCallback(() => {
+    setError('');
+    setLastResult(null);
+    setShowScanner(true);
+  }, []);
+
+  const retourScanner = useCallback(() => {
+    setEleve(null);
+    ouvrirScanner();
+  }, [ouvrirScanner]);
+
   return (
     <AppShell>
-      <div className="p-4 md:p-6">
+      <div className="px-4 pb-6 pt-4 md:px-6 md:pt-6">
         <div className="mx-auto max-w-2xl">
           {/* En-tête */}
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-6 w-6 text-blue-700">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h2v2H7zM15 8h2v2h-2zM7 14h2v2H7zM15 14h2v2h-2zM10 11h4" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Scanner un élève</h1>
-              <p className="text-sm text-slate-500">Scannez le QR code de la carte scolaire pour identifier un élève</p>
+          <div className="flex items-start gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-lg shadow-brand-500/25">
+              <QrCode className="h-6 w-6" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-600">
+                Espace enseignant
+              </p>
+              <h1 className="mt-0.5 text-xl font-bold leading-tight text-slate-900">Scanner QR Code élève</h1>
+              <p className="mt-1 text-[13px] leading-snug text-slate-500">
+                Scannez la carte scolaire : la fiche de l'élève s'affiche automatiquement.
+              </p>
             </div>
           </div>
 
-          {/* Bouton scanner */}
-          {!showScanner && !eleveInfo && (
-            <button
-              onClick={() => {
-                setLastResult(null);
-                setShowScanner(true);
-              }}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-blue-700 to-blue-500 py-4 text-base font-bold text-white shadow-lg shadow-blue-500/30 transition active:scale-[0.98]"
+          {/* État hors ligne */}
+          {!online && (
+            <div
+              role="status"
+              className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-900"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-6 w-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h2v2H7zM15 8h2v2h-2zM7 14h2v2H7zM15 14h2v2h-2zM10 11h4" />
-              </svg>
-              Scanner le QR code
-            </button>
-          )}
-
-          {/* Fiche élève identifié */}
-          {eleveInfo && (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">✅</span>
-                  <p className="text-sm font-semibold text-green-800">Élève identifié</p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                {/* Avatar + nom */}
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-700">
-                    {eleveInfo.prenom.charAt(0)}
-                    {eleveInfo.nom.charAt(0)}
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">
-                      {eleveInfo.nom} {eleveInfo.postNom} {eleveInfo.prenom}
-                    </h2>
-                    <p className="text-sm text-slate-500">Matricule : {eleveInfo.matricule}</p>
-                  </div>
-                </div>
-
-                {/* Informations */}
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
-                  <InfoRow label="Classe" value={eleveInfo.classe} />
-                  <InfoRow label="École" value={eleveInfo.ecole || '—'} />
-                  <InfoRow label="Sexe" value={eleveInfo.sexe || '—'} />
-                  <InfoRow
-                    label="Date de naissance"
-                    value={
-                      eleveInfo.dateNaissance
-                        ? new Date(eleveInfo.dateNaissance).toLocaleDateString('fr-FR')
-                        : '—'
-                    }
-                  />
-                  <InfoRow label="Lieu de naissance" value={eleveInfo.lieuNaissance || '—'} />
-                </div>
-              </div>
-
-              {/* Bouton nouveau scan */}
-              <button
-                onClick={() => {
-                  setEleveInfo(null);
-                  setLastResult(null);
-                  setShowScanner(true);
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:shadow-sm"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Scanner un autre élève
-              </button>
+              <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <p>
+                <span className="font-semibold">Mode hors ligne.</span> La recherche d'un élève nécessite une
+                connexion. Aucune donnée n'est affichée tant que le réseau n'est pas rétabli.
+              </p>
             </div>
           )}
 
-          {/* Info permissions */}
-          {!showScanner && !eleveInfo && (
-            <div className="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
-              <p className="font-medium text-slate-700">Informations</p>
-              <ul className="mt-2 space-y-1.5 text-xs">
-                <li>• Vous ne pouvez scanner que les élèves de vos classes affectées.</li>
-                <li>• Un élève hors de votre établissement affichera « Accès non autorisé pour cet élève. ».</li>
-                <li>• Aucune information financière n'est accessible via ce scanner.</li>
+          {/* Bouton principal */}
+          {!eleve && (
+            <button
+              type="button"
+              onClick={ouvrirScanner}
+              disabled={!online}
+              className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 py-4 text-[15px] font-bold text-white shadow-lg shadow-brand-600/25 transition active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            >
+              <Camera className="h-5 w-5" aria-hidden />
+              Scanner un QR Code
+            </button>
+          )}
+          {!eleve && (
+            <p className="mt-2 text-center text-[11px] text-slate-400">
+              Détection automatique · aucun bouton à appuyer
+            </p>
+          )}
+
+          {/* Erreur de scan */}
+          {error && !eleve && (
+            <div
+              role="alert"
+              className="mt-4 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-3.5 py-3 text-[13px] text-red-800"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{error}</p>
+                <p className="mt-0.5 text-[12px] text-red-700/80">
+                  Vérifiez qu'il s'agit bien d'une carte scolaire School Manager RDC, puis réessayez.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={ouvrirScanner}
+                    disabled={!online}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-[12px] font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                    Réessayer
+                  </button>
+                  {dernierScanRef.current && (
+                    <button
+                      type="button"
+                      onClick={() => rechercherEleve(dernierScanRef.current)}
+                      disabled={!online || submitting}
+                      className="rounded-xl border border-red-300 px-3 py-2 text-[12px] font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                    >
+                      Relancer la recherche
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Fiche élève */}
+          {eleve && (
+            <div className="mt-5 space-y-4">
+              <EleveScanFiche eleve={eleve} role={user?.role} onScanAgain={retourScanner} />
+            </div>
+          )}
+
+          {/* Aide / sécurité */}
+          {!eleve && (
+            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <ShieldCheck className="h-3.5 w-3.5 text-brand-600" aria-hidden />
+                Scan sécurisé
+              </p>
+              <ul className="mt-2.5 space-y-1.5 text-[12px] leading-relaxed text-slate-500">
+                <li>• Le QR Code ne contient que le matricule signé — aucune donnée personnelle.</li>
+                <li>• Seuls les élèves de votre établissement peuvent être consultés.</li>
+                <li>• Aucune information financière ni coordonnée de tuteur n'est affichée.</li>
               </ul>
             </div>
           )}
         </div>
       </div>
 
-      {/* Modal scanner */}
+      {/* Scanner plein écran */}
       {showScanner && (
         <QRScannerModal
-          onScan={handleScan}
+          onScan={rechercherEleve}
           onClose={() => setShowScanner(false)}
           flashOn={flashOn}
-          onToggleFlash={() => setFlashOn((f) => !f)}
+          onToggleFlash={() => setFlashOn((value) => !value)}
           lastResult={lastResult}
           submitting={submitting}
-          title="Scanner un élève"
-          subtitle="Scannez le QR code de la carte scolaire"
-          renderResult={(result) => {
-            if (result.error) {
-              return (
-                <p className="text-sm font-medium text-red-300">⚠️ {result.error}</p>
-              );
-            }
-            return (
-              <p className="text-sm font-medium text-green-300">
-                ✅ {result.eleve.nom} {result.eleve.postNom} {result.eleve.prenom} — {result.eleve.classe}
+          title="Scanner un QR Code"
+          subtitle="Carte scolaire de l'élève"
+          renderResult={(result) =>
+            result.error ? (
+              <p className="flex items-start gap-2 text-[13px] font-medium text-red-300">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                {result.error}
               </p>
-            );
-          }}
+            ) : (
+              <p className="flex items-center gap-2 text-[13px] font-medium text-emerald-300">
+                <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
+                Élève identifié — {result.eleve.nom} {result.eleve.prenom}
+              </p>
+            )
+          }
         />
       )}
     </AppShell>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-slate-400">{label}</p>
-      <p className="text-sm font-semibold text-slate-700">{value}</p>
-    </div>
   );
 }

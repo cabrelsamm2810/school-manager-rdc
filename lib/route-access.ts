@@ -11,6 +11,7 @@ import { ROLE_RANK } from '@/lib/roles';
 /** Mapping route → rôle minimum requis. */
 export const ROUTE_MIN_ROLE: Record<string, string> = {
   '/ecoles': 'DIRECTION_ECOLE',
+  '/profil-ecole': 'ENSEIGNANT',
   '/eleves': 'DIRECTION_ECOLE',
   '/enseignants': 'DIRECTION_ECOLE',
   '/enseignant/dashboard': 'ENSEIGNANT',
@@ -71,6 +72,9 @@ export const ROUTE_MIN_ROLE: Record<string, string> = {
  */
 export const ROUTE_EXACT_ROLE: Record<string, string> = {
   '/enseignant/dashboard': 'ENSEIGNANT',
+  // Le scanner élève est réservé au rôle ENSEIGNANT, exactement comme
+  // `/api/enseignant/scan-eleve` (403 pour tout autre rôle).
+  '/scanner-eleve': 'ENSEIGNANT',
   '/coordination-nationale': 'COORDINATION_NATIONALE',
   '/coordination-provinciale': 'COORDINATION_PROVINCIALE',
   '/agent-provincial': 'AGENT_PROVINCIAL',

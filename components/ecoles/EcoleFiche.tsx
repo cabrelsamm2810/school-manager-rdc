@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { INSTITUTION_MAP, DOCUMENT_TYPES } from '@/lib/institutions';
 import { StatutBadge } from '@/components/ui/StatutBadge';
 import { useSessionUser } from '@/lib/use-session-user';
@@ -179,9 +180,17 @@ export function EcoleFiche({ id, onEdit, onClose }: { id: string; onEdit: () => 
             ← Retour
           </button>
         </div>
-        <button onClick={onEdit} className="btn-secondary-light px-4 py-2 text-sm">
-          Modifier
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/profil-ecole?ecoleId=${encodeURIComponent(id)}`}
+            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Profil complet
+          </Link>
+          <button onClick={onEdit} className="btn-secondary-light px-4 py-2 text-sm">
+            Modifier
+          </button>
+        </div>
       </div>
 
       {/* Carte d'identité */}

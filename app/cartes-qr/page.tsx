@@ -21,30 +21,51 @@ export default function CartesQrPage() {
   const qrCacheRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
+    let active = true;
+
     fetch('/api/eleves')
       .then((r) => (r.ok ? r.json() : null))
       .then(async (data) => {
-        if (data?.eleves) {
-          // Générer les QR codes pour chaque élève
-          for (const e of data.eleves) {
-            if (!qrCacheRef.current[e.matricule]) {
-              try {
-                const qrUrl = await QRCode.toDataURL(e.matricule, {
-                  width: 200,
-                  margin: 1,
-                  color: { dark: '#1e3a5f', light: '#ffffff' },
-                });
-                qrCacheRef.current[e.matricule] = qrUrl;
-              } catch {
-                // ignore
-              }
-            }
-          }
-          setEleves(data.eleves);
+        const liste: Eleve[] = data?.eleves ?? [];
+        if (!active) return;
+
+        // Valeur signée par le serveur (matricule + signature SMRDC) : le QR ne
+        // contient aucune donnée personnelle et reste vérifiable au scan.
+        let payloads = new Map<string, string>();
+        if (liste.length > 0) {
+          const res = await fetch('/api/eleves/qr-payloads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: liste.map((e) => e.id) }),
+          }).catch(() => null);
+          const json = res?.ok ? await res.json().catch(() => null) : null;
+          payloads = new Map<string, string>(
+            (json?.payloads ?? []).map((p: { id: string; payload: string }) => [p.id, p.payload]),
+          );
         }
+
+        for (const e of liste) {
+          if (qrCacheRef.current[e.id]) continue;
+          try {
+            qrCacheRef.current[e.id] = await QRCode.toDataURL(payloads.get(e.id) ?? e.matricule, {
+              width: 200,
+              margin: 1,
+              color: { dark: '#1e3a5f', light: '#ffffff' },
+            });
+          } catch {
+            // ignore
+          }
+        }
+        if (active) setEleves(liste);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const cartesGenerees = eleves.length; // Toutes les cartes sont considérées comme générées
@@ -87,8 +108,8 @@ export default function CartesQrPage() {
                   {e.ecole && <p className="mt-1 text-xs text-slate-500">{e.ecole.nom}</p>}
                 </div>
                 <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-white p-1">
-                  {qrCacheRef.current[e.matricule] ? (
-                    <img src={qrCacheRef.current[e.matricule]} alt={`QR ${e.matricule}`} className="h-full w-full rounded" />
+                  {qrCacheRef.current[e.id] ? (
+                    <img src={qrCacheRef.current[e.id]} alt={`QR ${e.matricule}`} className="h-full w-full rounded" />
                   ) : (
                     <div className="h-full w-full animate-pulse rounded bg-slate-200" />
                   )}
